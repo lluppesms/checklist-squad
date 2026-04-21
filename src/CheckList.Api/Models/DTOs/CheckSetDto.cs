@@ -29,6 +29,7 @@ public record CheckActionDto(
     string ActionText,
     string? ActionDscr,
     string CompleteInd,
+    string? ChangeUserName,
     int SortOrder);
 
 public record CheckSetSummaryDto(

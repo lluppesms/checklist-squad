@@ -38,5 +38,5 @@ public static class DtoMapper
             entity.CheckActions.Select(a => a.ToDto()).ToList());
 
     public static CheckActionDto ToDto(this CheckAction entity) =>
-        new(entity.ActionId, entity.ActionText, entity.ActionDscr, entity.CompleteInd, entity.SortOrder);
+        new(entity.ActionId, entity.ActionText, entity.ActionDscr, entity.CompleteInd, entity.ChangeUserName, entity.SortOrder);
 }

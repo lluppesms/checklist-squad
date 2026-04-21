@@ -13,6 +13,11 @@ builder.Services.AddHttpClient<ICheckListApiClient, CheckListApiClient>(client =
     client.BaseAddress = new Uri("https+http://checklist-api");
 });
 
+builder.Services.AddHttpClient("CheckListApi", client =>
+{
+    client.BaseAddress = new Uri("https+http://checklist-api");
+});
+
 builder.Services.AddScoped<IUserIdentity, UserIdentityService>();
 
 var app = builder.Build();

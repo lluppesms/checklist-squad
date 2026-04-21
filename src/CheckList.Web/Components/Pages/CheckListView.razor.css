@@ -183,6 +183,21 @@
     color: var(--success-color);
 }
 
+/* Per-user color assignments for check icons and attribution */
+.user-color-0 { color: #e07cc5; }  /* pink */
+.user-color-1 { color: #5ba3e6; }  /* blue */
+.user-color-2 { color: #e0a635; }  /* amber */
+.user-color-3 { color: #45b87f; }  /* green */
+.user-color-4 { color: #c06de0; }  /* purple */
+.user-color-5 { color: #e06b4f; }  /* coral */
+
+.action-completed-by {
+    font-size: 0.75rem;
+    font-weight: 500;
+    margin-left: 0.25rem;
+    display: inline;
+}
+
 .action-content {
     display: flex;
     flex-direction: column;
