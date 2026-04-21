@@ -1,0 +1,16 @@
+<Project Sdk="Aspire.AppHost.Sdk/13.2.1">
+
+  <ItemGroup>
+    <ProjectReference Include="..\CheckList.Api\CheckList.Api.csproj" />
+    <ProjectReference Include="..\CheckList.Web\CheckList.Web.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <UserSecretsId>7dab9b51-6391-4f71-a616-8fadac027539</UserSecretsId>
+  </PropertyGroup>
+
+</Project>

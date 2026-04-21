@@ -19,6 +19,23 @@
 | Blain | DevOps | `.squad/agents/blain/charter.md` | ⚙️ Active |
 | Scribe | Scribe | `.squad/agents/scribe/charter.md` | 📋 Active |
 | Ralph | Work Monitor | `.squad/agents/ralph/charter.md` | 🔄 Active |
+| @copilot | Coding Agent | `copilot-instructions.md` | 🤖 Active |
+
+<!-- copilot-auto-assign: true -->
+
+### @copilot Capability Profile
+
+| Capability | Rating | Notes |
+|------------|--------|-------|
+| Single-file implementation | 🟢 Strong | Clean, focused changes |
+| Multi-file refactoring | 🟡 Moderate | May miss cross-cutting concerns |
+| New feature scaffolding | 🟢 Strong | Good at creating new files from patterns |
+| Bug fixes with clear repro | 🟢 Strong | Excellent with specific error messages |
+| Architecture decisions | 🔴 Weak | Needs human/Lead guidance |
+| Database migrations | 🟡 Moderate | Simple schema changes OK |
+| CI/CD pipeline changes | 🟡 Moderate | Straightforward additions OK |
+| Blazor component creation | 🟢 Strong | Good with component patterns |
+| Test writing | 🟢 Strong | Solid test generation from specs |
 
 ## Project Context
 
