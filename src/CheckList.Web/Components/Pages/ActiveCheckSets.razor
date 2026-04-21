@@ -28,7 +28,12 @@ else
     <div class="checklist-grid">
         @foreach (var cs in checkSets)
         {
-            <div class="checklist-card">
+            var isToday = cs.CreateDateTime.Date == DateTime.Today;
+            <div class="checklist-card @(isToday ? "checklist-today" : "")">
+                @if (isToday)
+                {
+                    <span class="today-badge"><i class="bi bi-calendar-check"></i> Today</span>
+                }
                 <a href="checklists/@cs.SetId" class="card-link">
                     <div class="card-body">
                         <h5 class="card-title">@cs.SetName</h5>

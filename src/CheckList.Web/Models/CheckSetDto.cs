@@ -7,7 +7,8 @@ public record CheckSetSummaryDto(
     string? SetDscr,
     string OwnerName,
     string ActiveInd,
-    int SortOrder);
+    int SortOrder,
+    DateTime CreateDateTime);
 
 public record CheckSetDto(
     int SetId,

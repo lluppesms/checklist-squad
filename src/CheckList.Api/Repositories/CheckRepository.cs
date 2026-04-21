@@ -6,7 +6,8 @@ public class CheckRepository(CheckListDbContext db) : ICheckRepository
     {
         return await db.CheckSets
             .Where(s => s.ActiveInd == "Y")
-            .OrderBy(s => s.SortOrder)
+            .OrderByDescending(s => s.CreateDateTime)
+            .ThenBy(s => s.SortOrder)
             .ThenBy(s => s.SetName)
             .AsNoTracking()
             .ToListAsync();
@@ -51,11 +52,13 @@ public class CheckRepository(CheckListDbContext db) : ICheckRepository
             ?? throw new KeyNotFoundException($"TemplateSet {templateSetId} not found.");
 
         var now = DateTime.UtcNow;
+        var localDate = now.ToLocalTime();
+        var dateSuffix = localDate.ToString("ddd, MMM d");
 
         var checkSet = new CheckSet
         {
             TemplateSetId = template.SetId,
-            SetName = template.SetName,
+            SetName = $"{template.SetName} — {dateSuffix}",
             SetDscr = template.SetDscr,
             OwnerName = ownerName,
             ActiveInd = "Y",

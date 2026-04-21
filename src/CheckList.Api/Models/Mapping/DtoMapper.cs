@@ -23,7 +23,7 @@ public static class DtoMapper
         new(entity.ActionId, entity.ActionText, entity.ActionDscr, entity.SortOrder);
 
     public static CheckSetSummaryDto ToSummaryDto(this CheckSet entity) =>
-        new(entity.SetId, entity.TemplateSetId, entity.SetName, entity.SetDscr, entity.OwnerName, entity.ActiveInd, entity.SortOrder);
+        new(entity.SetId, entity.TemplateSetId, entity.SetName, entity.SetDscr, entity.OwnerName, entity.ActiveInd, entity.SortOrder, entity.CreateDateTime);
 
     public static CheckSetDto ToDto(this CheckSet entity) =>
         new(entity.SetId, entity.TemplateSetId, entity.SetName, entity.SetDscr, entity.OwnerName, entity.ActiveInd, entity.SortOrder,
