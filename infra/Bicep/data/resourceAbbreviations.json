@@ -1,0 +1,10 @@
+{
+  "appServicePlanSuffix": "asp",
+  "appInsightsSuffix": "appi",
+  "keyVaultAbbreviation": "kv",
+  "logWorkspaceSuffix": "law",
+  "sqlAbbreviation": "sql",
+  "signalRSuffix": "sigr",
+  "storageAccountSuffix": "stg",
+  "managedIdentity": "id"
+}

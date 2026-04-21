@@ -1,0 +1,75 @@
+# ----------------------------------------------------------------------------------------------------
+# 2 - Build and Deploy Application (API + Web)
+# ----------------------------------------------------------------------------------------------------
+name: 2 - Build & Deploy App
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/CheckList.Api/**'
+      - 'src/CheckList.Web/**'
+      - 'src/CheckList.ServiceDefaults/**'
+      - 'checklist-squad.sln'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - qa
+          - prod
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  build:
+    name: Build Application
+    uses: ./.github/workflows/template-dotnet-build.yml
+    with:
+      dotnetVersion: '10.0.x'
+      solutionFile: 'checklist-squad.sln'
+      publishApi: true
+      publishWeb: true
+
+  deploy:
+    name: Deploy to Azure
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: ${{ inputs.environment || 'dev' }}
+
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Download API artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: api-package
+          path: ./api-package
+
+      - name: Download Web artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: web-package
+          path: ./web-package
+
+      - name: Azure Login
+        uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5 # v2.3.0
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy Web App to Azure
+        uses: azure/webapps-deploy@4bca689e4a5179a131d4c23a0e6697068b3a8ebb # v3.0.2
+        with:
+          app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
+          package: ./web-package

@@ -1,0 +1,83 @@
+# ----------------------------------------------------------------------------------------------------
+# Reusable workflow: .NET build and publish
+# ----------------------------------------------------------------------------------------------------
+name: Template - .NET Build
+
+on:
+  workflow_call:
+    inputs:
+      dotnetVersion:
+        required: false
+        type: string
+        default: '10.0.x'
+      solutionFile:
+        required: false
+        type: string
+        default: 'checklist-squad.sln'
+      publishApi:
+        required: false
+        type: boolean
+        default: true
+      publishWeb:
+        required: false
+        type: boolean
+        default: true
+      apiProjectPath:
+        required: false
+        type: string
+        default: 'src/CheckList.Api'
+      webProjectPath:
+        required: false
+        type: string
+        default: 'src/CheckList.Web'
+
+jobs:
+  build:
+    name: Build .NET Solution
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4.3.1
+        with:
+          dotnet-version: ${{ inputs.dotnetVersion }}
+
+      - name: Restore dependencies
+        run: dotnet restore ${{ inputs.solutionFile }}
+
+      - name: Build solution
+        run: dotnet build ${{ inputs.solutionFile }} --configuration Release --no-restore
+
+      - name: Run tests
+        run: dotnet test ${{ inputs.solutionFile }} --configuration Release --no-build --verbosity normal
+
+      - name: Publish API project
+        if: inputs.publishApi
+        run: dotnet publish ${{ inputs.apiProjectPath }} --configuration Release --output ./publish/api --no-build
+
+      - name: Publish Web project
+        if: inputs.publishWeb
+        run: dotnet publish ${{ inputs.webProjectPath }} --configuration Release --output ./publish/web --no-build
+
+      - name: Upload API artifact
+        if: inputs.publishApi
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: api-package
+          path: ./publish/api
+          retention-days: 5
+
+      - name: Upload Web artifact
+        if: inputs.publishWeb
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: web-package
+          path: ./publish/web
+          retention-days: 5

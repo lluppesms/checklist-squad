@@ -1,0 +1,15 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "appName": { "value": "#{APP_NAME}#" },
+    "environmentCode": { "value": "#{ENVCODE}#" },
+    "location": { "value": "#{RESOURCE_GROUP_LOCATION}#" },
+    "instanceNumber": { "value": "#{INSTANCE_NUMBER}#" },
+    "sqlDatabaseName": { "value": "#{SQL_DATABASE_NAME}#" },
+    "sqlAdminLoginUserId": { "value": "#{SQLADMIN_LOGIN_USERID}#" },
+    "sqlAdminLoginUserSid": { "value": "#{SQLADMIN_LOGIN_USERSID}#" },
+    "sqlAdminLoginTenantId": { "value": "#{SQLADMIN_LOGIN_TENANTID}#" },
+    "adminUserId": { "value": "#{KEYVAULT_OWNER_USERID}#" }
+  }
+}

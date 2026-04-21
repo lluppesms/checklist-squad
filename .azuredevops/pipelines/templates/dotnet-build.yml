@@ -1,0 +1,81 @@
+# ----------------------------------------------------------------------------------------------------
+# Reusable template: .NET build and publish
+# ----------------------------------------------------------------------------------------------------
+parameters:
+  - name: dotnetVersion
+    type: string
+    default: '10.0.x'
+  - name: solutionFile
+    type: string
+    default: 'checklist-squad.sln'
+  - name: publishApi
+    type: boolean
+    default: true
+  - name: publishWeb
+    type: boolean
+    default: true
+  - name: apiProjectPath
+    type: string
+    default: 'src/CheckList.Api'
+  - name: webProjectPath
+    type: string
+    default: 'src/CheckList.Web'
+
+steps:
+  - task: UseDotNet@2
+    displayName: 'Setup .NET SDK'
+    inputs:
+      packageType: 'sdk'
+      version: '${{ parameters.dotnetVersion }}'
+
+  - task: DotNetCoreCLI@2
+    displayName: 'Restore dependencies'
+    inputs:
+      command: 'restore'
+      projects: '${{ parameters.solutionFile }}'
+
+  - task: DotNetCoreCLI@2
+    displayName: 'Build solution'
+    inputs:
+      command: 'build'
+      projects: '${{ parameters.solutionFile }}'
+      arguments: '--configuration Release --no-restore'
+
+  - task: DotNetCoreCLI@2
+    displayName: 'Run tests'
+    inputs:
+      command: 'test'
+      projects: '${{ parameters.solutionFile }}'
+      arguments: '--configuration Release --no-build --verbosity normal'
+
+  - task: DotNetCoreCLI@2
+    displayName: 'Publish API project'
+    condition: eq('${{ parameters.publishApi }}', true)
+    inputs:
+      command: 'publish'
+      publishWebProjects: false
+      projects: '${{ parameters.apiProjectPath }}/*.csproj'
+      arguments: '--configuration Release --output $(Build.ArtifactStagingDirectory)/api --no-build'
+
+  - task: DotNetCoreCLI@2
+    displayName: 'Publish Web project'
+    condition: eq('${{ parameters.publishWeb }}', true)
+    inputs:
+      command: 'publish'
+      publishWebProjects: false
+      projects: '${{ parameters.webProjectPath }}/*.csproj'
+      arguments: '--configuration Release --output $(Build.ArtifactStagingDirectory)/web --no-build'
+
+  - task: PublishBuildArtifacts@1
+    displayName: 'Publish API artifact'
+    condition: eq('${{ parameters.publishApi }}', true)
+    inputs:
+      PathtoPublish: '$(Build.ArtifactStagingDirectory)/api'
+      ArtifactName: 'api-package'
+
+  - task: PublishBuildArtifacts@1
+    displayName: 'Publish Web artifact'
+    condition: eq('${{ parameters.publishWeb }}', true)
+    inputs:
+      PathtoPublish: '$(Build.ArtifactStagingDirectory)/web'
+      ArtifactName: 'web-package'

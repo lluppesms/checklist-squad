@@ -1,0 +1,50 @@
+# ----------------------------------------------------------------------------------------------------
+# Reusable template: Bicep infrastructure deployment
+# ----------------------------------------------------------------------------------------------------
+parameters:
+  - name: environmentName
+    type: string
+  - name: resourceGroupName
+    type: string
+  - name: serviceConnection
+    type: string
+  - name: bicepPath
+    type: string
+    default: 'infra/Bicep/main.bicep'
+  - name: bicepParamPath
+    type: string
+    default: 'infra/Bicep/main.bicepparam'
+
+steps:
+  - task: qetza.replacetokens.replacetokens-task.replacetokens@6
+    displayName: 'Replace tokens in parameter file'
+    inputs:
+      sources: '${{ parameters.bicepParamPath }}'
+      tokenPattern: 'custom'
+      tokenPrefix: '#{'
+      tokenSuffix: '}#'
+
+  - task: AzureCLI@2
+    displayName: 'Validate Bicep template'
+    inputs:
+      azureSubscription: '${{ parameters.serviceConnection }}'
+      scriptType: 'bash'
+      scriptLocation: 'inlineScript'
+      inlineScript: |
+        az deployment group validate \
+          --resource-group ${{ parameters.resourceGroupName }} \
+          --template-file ${{ parameters.bicepPath }} \
+          --parameters ${{ parameters.bicepParamPath }}
+
+  - task: AzureCLI@2
+    displayName: 'Deploy Bicep template'
+    inputs:
+      azureSubscription: '${{ parameters.serviceConnection }}'
+      scriptType: 'bash'
+      scriptLocation: 'inlineScript'
+      inlineScript: |
+        az deployment group create \
+          --resource-group ${{ parameters.resourceGroupName }} \
+          --template-file ${{ parameters.bicepPath }} \
+          --parameters ${{ parameters.bicepParamPath }} \
+          --name "deploy-$(Build.BuildNumber)"
