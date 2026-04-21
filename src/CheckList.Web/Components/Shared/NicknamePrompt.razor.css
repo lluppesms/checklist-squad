@@ -1,0 +1,30 @@
+.nickname-overlay {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1050;
+    padding: 1rem;
+}
+
+.nickname-card {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 0.75rem;
+    padding: 2rem;
+    max-width: 400px;
+    width: 100%;
+    box-shadow: var(--shadow-md);
+}
+
+.nickname-title {
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+.nickname-text {
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+}

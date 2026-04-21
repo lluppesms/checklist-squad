@@ -1,0 +1,27 @@
+@namespace CheckList.Web.Components.Shared
+
+@if (IsVisible)
+{
+    <div class="confirm-overlay" @onclick="Cancel">
+        <div class="confirm-dialog" @onclick:stopPropagation="true">
+            <h5 class="confirm-title">@Title</h5>
+            <p class="confirm-message">@Message</p>
+            <div class="confirm-actions">
+                <button class="btn btn-outline-secondary" @onclick="Cancel">Cancel</button>
+                <button class="btn btn-danger" @onclick="Confirm">@ConfirmText</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsVisible { get; set; }
+    [Parameter] public string Title { get; set; } = "Confirm";
+    [Parameter] public string Message { get; set; } = "Are you sure?";
+    [Parameter] public string ConfirmText { get; set; } = "Delete";
+    [Parameter] public EventCallback OnConfirm { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+
+    private async Task Confirm() => await OnConfirm.InvokeAsync();
+    private async Task Cancel() => await OnCancel.InvokeAsync();
+}

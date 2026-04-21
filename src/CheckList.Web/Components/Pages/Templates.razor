@@ -1,0 +1,106 @@
+@page "/templates"
+
+<PageTitle>Templates — Shared Checklist</PageTitle>
+
+<h2 class="page-title">
+    <i class="bi bi-card-checklist"></i> Templates
+</h2>
+
+@if (loading)
+{
+    <LoadingSpinner Message="Loading templates..." />
+}
+else if (errorMessage is not null)
+{
+    <div class="alert alert-danger" role="alert">
+        <i class="bi bi-exclamation-triangle"></i> @errorMessage
+    </div>
+}
+else if (templates.Count == 0)
+{
+    <div class="empty-state">
+        <i class="bi bi-inbox"></i>
+        <p>No templates available yet.</p>
+    </div>
+}
+else
+{
+    <div class="template-grid">
+        @foreach (var template in templates)
+        {
+            <div class="template-card">
+                <div class="card-body">
+                    <h5 class="card-title">@template.SetName</h5>
+                    <p class="card-description">@template.SetDscr</p>
+                    <div class="card-meta">
+                        <span><i class="bi bi-person"></i> @template.OwnerName</span>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <button class="btn btn-primary btn-sm w-100"
+                            @onclick="() => ActivateTemplate(template.SetId)"
+                            disabled="@activating">
+                        @if (activatingId == template.SetId)
+                        {
+                            <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                        }
+                        <i class="bi bi-play-fill"></i> Activate
+                    </button>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Inject] private ICheckListApiClient ApiClient { get; set; } = default!;
+    [Inject] private IUserIdentity UserIdentity { get; set; } = default!;
+    [Inject] private NavigationManager Navigation { get; set; } = default!;
+
+    private List<TemplateSetSummaryDto> templates = [];
+    private bool loading = true;
+    private bool activating;
+    private int? activatingId;
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            templates = await ApiClient.GetTemplatesAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to load templates: {ex.Message}";
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    private async Task ActivateTemplate(int templateSetId)
+    {
+        if (!UserIdentity.HasNickName) return;
+
+        try
+        {
+            activating = true;
+            activatingId = templateSetId;
+            var checkSet = await ApiClient.ActivateCheckSetAsync(templateSetId, UserIdentity.NickName!);
+            if (checkSet is not null)
+            {
+                Navigation.NavigateTo($"/checklists/{checkSet.SetId}");
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to activate template: {ex.Message}";
+        }
+        finally
+        {
+            activating = false;
+            activatingId = null;
+        }
+    }
+}

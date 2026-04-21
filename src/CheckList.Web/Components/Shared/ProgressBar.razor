@@ -1,0 +1,29 @@
+@namespace CheckList.Web.Components.Shared
+
+<div class="progress-wrapper">
+    <div class="progress" role="progressbar"
+         aria-valuenow="@Percentage" aria-valuemin="0" aria-valuemax="100"
+         aria-label="@($"{Completed} of {Total} completed")">
+        <div class="progress-bar @BarClass" style="width: @Percentage%">
+            @if (Percentage > 15)
+            {
+                <span>@Percentage%</span>
+            }
+        </div>
+    </div>
+    <span class="progress-label">@Completed/@Total — @Percentage%</span>
+</div>
+
+@code {
+    [Parameter] public int Completed { get; set; }
+    [Parameter] public int Total { get; set; }
+
+    private int Percentage => Total > 0 ? (int)Math.Round((double)Completed / Total * 100) : 0;
+
+    private string BarClass => Percentage switch
+    {
+        100 => "bg-success",
+        >= 50 => "bg-primary",
+        _ => "bg-info"
+    };
+}

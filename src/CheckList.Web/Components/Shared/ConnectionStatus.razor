@@ -1,0 +1,26 @@
+@namespace CheckList.Web.Components.Shared
+
+<span class="connection-badge @StatusClass" title="@StatusText">
+    <i class="bi @StatusIcon"></i>
+    <span class="d-none d-md-inline ms-1">@StatusText</span>
+</span>
+
+@code {
+    [Parameter] public string Status { get; set; } = "Disconnected";
+
+    private string StatusClass => Status switch
+    {
+        "Connected" => "badge-connected",
+        "Reconnecting" => "badge-reconnecting",
+        _ => "badge-disconnected"
+    };
+
+    private string StatusIcon => Status switch
+    {
+        "Connected" => "bi-circle-fill",
+        "Reconnecting" => "bi-arrow-repeat",
+        _ => "bi-circle-fill"
+    };
+
+    private string StatusText => Status;
+}

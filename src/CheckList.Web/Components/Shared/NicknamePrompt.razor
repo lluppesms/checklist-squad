@@ -1,0 +1,49 @@
+@namespace CheckList.Web.Components.Shared
+
+@if (!UserIdentity.HasNickName)
+{
+    <div class="nickname-overlay">
+        <div class="nickname-card">
+            <h4 class="nickname-title">Welcome!</h4>
+            <p class="nickname-text">Enter your name to get started:</p>
+            <div class="input-group">
+                <input type="text"
+                       class="form-control"
+                       placeholder="Your nickname"
+                       @bind="nickName"
+                       @bind:event="oninput"
+                       @onkeydown="HandleKeyDown"
+                       maxlength="30"
+                       aria-label="Enter your nickname" />
+                <button class="btn btn-primary"
+                        @onclick="SaveNickName"
+                        disabled="@string.IsNullOrWhiteSpace(nickName)">
+                    <i class="bi bi-arrow-right"></i> Go
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Inject] private IUserIdentity UserIdentity { get; set; } = default!;
+
+    private string nickName = string.Empty;
+
+    private void SaveNickName()
+    {
+        if (!string.IsNullOrWhiteSpace(nickName))
+        {
+            UserIdentity.SetNickName(nickName);
+            StateHasChanged();
+        }
+    }
+
+    private void HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            SaveNickName();
+        }
+    }
+}

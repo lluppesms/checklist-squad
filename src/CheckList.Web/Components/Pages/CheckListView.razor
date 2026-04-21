@@ -1,0 +1,342 @@
+@page "/checklists/{SetId:int}"
+@using Microsoft.AspNetCore.SignalR.Client
+@implements IAsyncDisposable
+
+<PageTitle>@(checkSet?.SetName ?? "Checklist")</PageTitle>
+
+@if (loading)
+{
+    <LoadingSpinner Message="Loading checklist..." />
+}
+else if (errorMessage is not null)
+{
+    <div class="alert alert-danger" role="alert">
+        <i class="bi bi-exclamation-triangle"></i> @errorMessage
+    </div>
+}
+else if (checkSet is not null)
+{
+    <div class="checklist-header">
+        <div class="d-flex align-items-start justify-content-between gap-2">
+            <div>
+                <h2 class="checklist-title">@checkSet.SetName</h2>
+                @if (!string.IsNullOrEmpty(checkSet.SetDscr))
+                {
+                    <p class="checklist-description">@checkSet.SetDscr</p>
+                }
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <ConnectionStatus Status="@connectionStatus" />
+                @if (connectedUsers.Count > 0)
+                {
+                    <span class="users-badge" title="@string.Join(", ", connectedUsers)">
+                        <i class="bi bi-people-fill"></i> @connectedUsers.Count
+                    </span>
+                }
+            </div>
+        </div>
+
+        <div class="mt-2">
+            <ProgressBar Completed="@TotalCompleted" Total="@TotalActions" />
+        </div>
+    </div>
+
+    @foreach (var list in checkSet.Lists.OrderBy(l => l.SortOrder))
+    {
+        var listCompleted = CountCompleted(list);
+        var listTotal = CountTotal(list);
+        var isExpanded = expandedLists.Contains(list.ListId);
+
+        <div class="checklist-list">
+            <button class="list-header" @onclick="() => ToggleList(list.ListId)">
+                <div class="list-header-left">
+                    <i class="bi @(isExpanded ? "bi-chevron-down" : "bi-chevron-right")"></i>
+                    <h4 class="list-name">@list.ListName</h4>
+                </div>
+                <div class="list-progress-mini">
+                    <span>@listCompleted/@listTotal</span>
+                </div>
+            </button>
+
+            @if (isExpanded)
+            {
+                <div class="list-body">
+                    <div class="list-progress-bar">
+                        <ProgressBar Completed="@listCompleted" Total="@listTotal" />
+                    </div>
+
+                    @foreach (var category in list.Categories.OrderBy(c => c.SortOrder))
+                    {
+                        <div class="category-section">
+                            <h5 class="category-title">@category.CategoryText</h5>
+                            @if (!string.IsNullOrEmpty(category.CategoryDscr))
+                            {
+                                <p class="category-description">@category.CategoryDscr</p>
+                            }
+
+                            <div class="action-list">
+                                @foreach (var action in category.Actions.OrderBy(a => a.SortOrder))
+                                {
+                                    var isComplete = action.CompleteInd == "Y";
+                                    <div class="action-row @(isComplete ? "action-complete" : "")"
+                                         @onclick="() => ToggleAction(action)">
+                                        <div class="action-checkbox">
+                                            <i class="bi @(isComplete ? "bi-check-circle-fill" : "bi-circle")"></i>
+                                        </div>
+                                        <div class="action-content">
+                                            <span class="action-text">@action.ActionText</span>
+                                            @if (!string.IsNullOrEmpty(action.ActionDscr))
+                                            {
+                                                <span class="action-description">@action.ActionDscr</span>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    }
+}
+
+@if (toastMessages.Count > 0)
+{
+    <div class="toast-container">
+        @foreach (var toast in toastMessages)
+        {
+            <div class="toast-notification">@toast</div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public int SetId { get; set; }
+
+    [Inject] private ICheckListApiClient ApiClient { get; set; } = default!;
+    [Inject] private IUserIdentity UserIdentity { get; set; } = default!;
+    [Inject] private NavigationManager Navigation { get; set; } = default!;
+
+    private CheckSetDto? checkSet;
+    private bool loading = true;
+    private string? errorMessage;
+    private string connectionStatus = "Disconnected";
+    private HashSet<int> expandedLists = [];
+    private HashSet<string> connectedUsers = [];
+    private List<string> toastMessages = [];
+    private HubConnection? hubConnection;
+    private bool toggling;
+
+    private int TotalActions => checkSet?.Lists
+        .SelectMany(l => l.Categories)
+        .SelectMany(c => c.Actions)
+        .Count() ?? 0;
+
+    private int TotalCompleted => checkSet?.Lists
+        .SelectMany(l => l.Categories)
+        .SelectMany(c => c.Actions)
+        .Count(a => a.CompleteInd == "Y") ?? 0;
+
+    private int CountCompleted(CheckListDto list) =>
+        list.Categories.SelectMany(c => c.Actions).Count(a => a.CompleteInd == "Y");
+
+    private int CountTotal(CheckListDto list) =>
+        list.Categories.SelectMany(c => c.Actions).Count();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            checkSet = await ApiClient.GetCheckSetAsync(SetId);
+            if (checkSet is not null)
+            {
+                // Expand all lists by default
+                foreach (var list in checkSet.Lists)
+                {
+                    expandedLists.Add(list.ListId);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to load checklist: {ex.Message}";
+        }
+        finally
+        {
+            loading = false;
+        }
+
+        await StartSignalR();
+    }
+
+    private async Task StartSignalR()
+    {
+        try
+        {
+            var hubUrl = Navigation.ToAbsoluteUri("/hubs/checklist");
+            hubConnection = new HubConnectionBuilder()
+                .WithUrl(hubUrl)
+                .WithAutomaticReconnect()
+                .Build();
+
+            hubConnection.On<int, string, string, DateTime>("ActionToggled",
+                (actionId, completeInd, userName, changedAt) =>
+                {
+                    UpdateActionLocally(actionId, completeInd);
+                    InvokeAsync(StateHasChanged);
+                });
+
+            hubConnection.On<int, string>("CheckSetActivated", (checkSetId, setName) =>
+            {
+                ShowToast($"New checklist activated: {setName}");
+                InvokeAsync(StateHasChanged);
+            });
+
+            hubConnection.On<int>("CheckSetDeleted", (checkSetId) =>
+            {
+                if (checkSetId == SetId)
+                {
+                    Navigation.NavigateTo("/checklists");
+                }
+            });
+
+            hubConnection.On<string, int>("UserJoined", (userName, checkSetId) =>
+            {
+                if (checkSetId == SetId)
+                {
+                    connectedUsers.Add(userName);
+                    ShowToast($"{userName} joined");
+                    InvokeAsync(StateHasChanged);
+                }
+            });
+
+            hubConnection.On<string, int>("UserLeft", (userName, checkSetId) =>
+            {
+                if (checkSetId == SetId)
+                {
+                    connectedUsers.Remove(userName);
+                    ShowToast($"{userName} left");
+                    InvokeAsync(StateHasChanged);
+                }
+            });
+
+            hubConnection.Reconnecting += _ =>
+            {
+                connectionStatus = "Reconnecting";
+                InvokeAsync(StateHasChanged);
+                return Task.CompletedTask;
+            };
+
+            hubConnection.Reconnected += _ =>
+            {
+                connectionStatus = "Connected";
+                InvokeAsync(StateHasChanged);
+                return Task.CompletedTask;
+            };
+
+            hubConnection.Closed += _ =>
+            {
+                connectionStatus = "Disconnected";
+                InvokeAsync(StateHasChanged);
+                return Task.CompletedTask;
+            };
+
+            await hubConnection.StartAsync();
+            connectionStatus = "Connected";
+
+            if (UserIdentity.HasNickName)
+            {
+                await hubConnection.InvokeAsync("JoinCheckSet", SetId, UserIdentity.NickName);
+            }
+        }
+        catch
+        {
+            connectionStatus = "Disconnected";
+        }
+    }
+
+    private void UpdateActionLocally(int actionId, string completeInd)
+    {
+        if (checkSet is null) return;
+
+        foreach (var list in checkSet.Lists)
+        {
+            foreach (var category in list.Categories)
+            {
+                for (var i = 0; i < category.Actions.Count; i++)
+                {
+                    if (category.Actions[i].ActionId == actionId)
+                    {
+                        var old = category.Actions[i];
+                        category.Actions[i] = old with { CompleteInd = completeInd };
+                        return;
+                    }
+                }
+            }
+        }
+    }
+
+    private async Task ToggleAction(CheckActionDto action)
+    {
+        if (toggling || !UserIdentity.HasNickName) return;
+
+        try
+        {
+            toggling = true;
+            var updated = await ApiClient.ToggleActionAsync(action.ActionId, UserIdentity.NickName!);
+            if (updated is not null)
+            {
+                UpdateActionLocally(updated.ActionId, updated.CompleteInd);
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to toggle action: {ex.Message}";
+        }
+        finally
+        {
+            toggling = false;
+        }
+    }
+
+    private void ToggleList(int listId)
+    {
+        if (!expandedLists.Remove(listId))
+        {
+            expandedLists.Add(listId);
+        }
+    }
+
+    private async void ShowToast(string message)
+    {
+        toastMessages.Add(message);
+        await InvokeAsync(StateHasChanged);
+
+        _ = Task.Run(async () =>
+        {
+            await Task.Delay(3000);
+            toastMessages.Remove(message);
+            await InvokeAsync(StateHasChanged);
+        });
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (hubConnection is not null)
+        {
+            try
+            {
+                if (UserIdentity.HasNickName)
+                {
+                    await hubConnection.InvokeAsync("LeaveCheckSet", SetId, UserIdentity.NickName);
+                }
+                await hubConnection.DisposeAsync();
+            }
+            catch
+            {
+                // Ignore disposal errors
+            }
+        }
+    }
+}

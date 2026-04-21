@@ -1,23 +1,79 @@
-﻿@inherits LayoutComponentBase
+@inherits LayoutComponentBase
 
-<div class="page">
-    <div class="sidebar">
-        <NavMenu />
+<div class="app-layout">
+    <!-- Top Navbar -->
+    <nav class="top-navbar">
+        <div class="container-fluid d-flex align-items-center">
+            <button class="navbar-toggler-btn d-md-none" @onclick="ToggleMenu" aria-label="Toggle navigation">
+                <i class="bi bi-list"></i>
+            </button>
+            <a class="app-brand" href="">
+                <i class="bi bi-clipboard-check me-2"></i>Shared Checklist
+            </a>
+            <div class="ms-auto d-flex align-items-center gap-2">
+                @if (UserIdentity.HasNickName)
+                {
+                    <span class="user-badge d-none d-sm-inline">
+                        <i class="bi bi-person-fill"></i> @UserIdentity.NickName
+                    </span>
+                }
+            </div>
+        </div>
+    </nav>
+
+    <div class="app-body">
+        <!-- Desktop sidebar -->
+        <aside class="sidebar d-none d-md-flex">
+            <NavMenu />
+        </aside>
+
+        <!-- Mobile sidebar overlay -->
+        @if (menuOpen)
+        {
+            <div class="sidebar-overlay d-md-none" @onclick="ToggleMenu">
+                <aside class="sidebar-mobile" @onclick:stopPropagation="true">
+                    <NavMenu OnNavigated="ToggleMenu" />
+                </aside>
+            </div>
+        }
+
+        <!-- Main content -->
+        <main class="main-content">
+            <article class="content-area">
+                @Body
+            </article>
+        </main>
     </div>
 
-    <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
-        </div>
-
-        <article class="content px-4">
-            @Body
-        </article>
-    </main>
+    <!-- Mobile bottom nav -->
+    <nav class="bottom-nav d-md-none">
+        <NavLink class="bottom-nav-item" href="" Match="NavLinkMatch.All">
+            <i class="bi bi-house"></i>
+            <span>Home</span>
+        </NavLink>
+        <NavLink class="bottom-nav-item" href="templates">
+            <i class="bi bi-card-checklist"></i>
+            <span>Templates</span>
+        </NavLink>
+        <NavLink class="bottom-nav-item" href="checklists">
+            <i class="bi bi-clipboard-check"></i>
+            <span>Checklists</span>
+        </NavLink>
+    </nav>
 </div>
+
+<NicknamePrompt />
 
 <div id="blazor-error-ui" data-nosnippet>
     An unhandled error has occurred.
     <a href="." class="reload">Reload</a>
     <span class="dismiss">🗙</span>
 </div>
+
+@code {
+    [Inject] private IUserIdentity UserIdentity { get; set; } = default!;
+
+    private bool menuOpen;
+
+    private void ToggleMenu() => menuOpen = !menuOpen;
+}

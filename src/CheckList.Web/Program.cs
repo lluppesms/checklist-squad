@@ -1,4 +1,5 @@
 using CheckList.Web.Components;
+using CheckList.Web.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -6,6 +7,13 @@ builder.AddServiceDefaults();
 
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+
+builder.Services.AddHttpClient<ICheckListApiClient, CheckListApiClient>(client =>
+{
+    client.BaseAddress = new Uri("https+http://checklist-api");
+});
+
+builder.Services.AddScoped<IUserIdentity, UserIdentityService>();
 
 var app = builder.Build();
 
