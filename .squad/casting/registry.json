@@ -1,0 +1,44 @@
+{
+  "agents": {
+    "dutch": {
+      "persistent_name": "Dutch",
+      "universe": "Predator",
+      "role": "Lead",
+      "created_at": "2026-04-21T09:42:00Z",
+      "legacy_named": false,
+      "status": "active"
+    },
+    "poncho": {
+      "persistent_name": "Poncho",
+      "universe": "Predator",
+      "role": "Frontend Dev",
+      "created_at": "2026-04-21T09:42:00Z",
+      "legacy_named": false,
+      "status": "active"
+    },
+    "mac": {
+      "persistent_name": "Mac",
+      "universe": "Predator",
+      "role": "Backend Dev",
+      "created_at": "2026-04-21T09:42:00Z",
+      "legacy_named": false,
+      "status": "active"
+    },
+    "hawkins": {
+      "persistent_name": "Hawkins",
+      "universe": "Predator",
+      "role": "Tester",
+      "created_at": "2026-04-21T09:42:00Z",
+      "legacy_named": false,
+      "status": "active"
+    },
+    "blain": {
+      "persistent_name": "Blain",
+      "universe": "Predator",
+      "role": "DevOps",
+      "created_at": "2026-04-21T09:42:00Z",
+      "legacy_named": false,
+      "status": "active"
+    }
+  }
+}

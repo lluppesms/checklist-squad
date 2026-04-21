@@ -1,0 +1,29 @@
+# Squad Team
+
+> Shared Checklist App — Real-time RV campground checklists with SignalR sync
+
+## Coordinator
+
+| Name | Role | Notes |
+|------|------|-------|
+| Squad | Coordinator | Routes work, enforces handoffs and reviewer gates. |
+
+## Members
+
+| Name | Role | Charter | Status |
+|------|------|---------|--------|
+| Dutch | Lead | `.squad/agents/dutch/charter.md` | 🏗️ Active |
+| Poncho | Frontend Dev | `.squad/agents/poncho/charter.md` | ⚛️ Active |
+| Mac | Backend Dev | `.squad/agents/mac/charter.md` | 🔧 Active |
+| Hawkins | Tester | `.squad/agents/hawkins/charter.md` | 🧪 Active |
+| Blain | DevOps | `.squad/agents/blain/charter.md` | ⚙️ Active |
+| Scribe | Scribe | `.squad/agents/scribe/charter.md` | 📋 Active |
+| Ralph | Work Monitor | `.squad/agents/ralph/charter.md` | 🔄 Active |
+
+## Project Context
+
+- **Owner:** Lab Luppes
+- **Project:** Shared Checklist App — Real-time RV campground checklists
+- **Stack:** C# Blazor, ASP.NET Core Web API, SignalR, Azure SQL, Aspire, Bicep, Azure DevOps + GitHub Actions
+- **Reference Repo:** lluppesms/dadabase.demo
+- **Created:** 2026-04-21

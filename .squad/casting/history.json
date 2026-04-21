@@ -1,0 +1,24 @@
+{
+  "universe_usage_history": [
+    {
+      "universe": "Predator",
+      "assigned_at": "2026-04-21T09:42:00Z",
+      "project": "Shared Checklist App",
+      "agent_count": 5
+    }
+  ],
+  "assignment_cast_snapshots": {
+    "2026-04-21-initial": {
+      "assignment_id": "2026-04-21-initial",
+      "universe": "Predator",
+      "timestamp": "2026-04-21T09:42:00Z",
+      "cast": {
+        "dutch": "Lead",
+        "poncho": "Frontend Dev",
+        "mac": "Backend Dev",
+        "hawkins": "Tester",
+        "blain": "DevOps"
+      }
+    }
+  }
+}
