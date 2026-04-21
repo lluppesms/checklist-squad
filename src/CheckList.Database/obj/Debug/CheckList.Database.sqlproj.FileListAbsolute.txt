@@ -1,0 +1,5 @@
+C:\ghcp\agents\checklist-squad\src\CheckList.Database\bin\Debug\CheckList.Database.dacpac
+C:\ghcp\agents\checklist-squad\src\CheckList.Database\obj\Debug\Model.xml
+C:\ghcp\agents\checklist-squad\src\CheckList.Database\obj\Debug\refactor.xml
+C:\ghcp\agents\checklist-squad\src\CheckList.Database\obj\Debug\postdeploy.sql
+C:\ghcp\agents\checklist-squad\src\CheckList.Database\obj\Debug\predeploy.sql

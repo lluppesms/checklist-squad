@@ -6,4 +6,7 @@
     <DSP>Microsoft.Data.Tools.Schema.Sql.SqlAzureV12DatabaseSchemaProvider</DSP>
     <ModelCollation>1033, CI</ModelCollation>
   </PropertyGroup>
+  <ItemGroup>
+    <PostDeploy Include="dbo\Post.Deployment.sql" />
+  </ItemGroup>
 </Project>
