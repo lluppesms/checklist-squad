@@ -1,0 +1,22 @@
+# ------------------------------------------------------------------------------------------------------------------------
+# Shared variables for CI/CD pipelines
+# ------------------------------------------------------------------------------------------------------------------------
+variables:
+  - name: appName
+    value: 'checklist'
+  - name: solutionFile
+    value: 'checklist-squad.sln'
+  - name: apiProjectPath
+    value: 'src/CheckList.Api'
+  - name: webProjectPath
+    value: 'src/CheckList.Web'
+  - name: dacpacProjectPath
+    value: 'src/CheckList.Database'
+  - name: dacpacProjectFile
+    value: 'src/CheckList.Database/CheckList.Database.sqlproj'
+  - name: dotnetVersion
+    value: '10.0.x'
+  - name: bicepPath
+    value: 'infra/Bicep/main.bicep'
+  - name: bicepParamPath
+    value: 'infra/Bicep/main.bicepparam'

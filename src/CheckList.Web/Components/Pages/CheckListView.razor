@@ -179,10 +179,6 @@ else if (checkSet is not null)
                 foreach (var list in checkSet.Lists)
                 {
                     expandedLists.Add(list.ListId);
-                    foreach (var category in list.Categories)
-                    {
-                        expandedCategories.Add(category.CategoryId);
-                    }
                 }
             }
         }

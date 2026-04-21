@@ -1,10 +1,11 @@
 // --------------------------------------------------------------------------------
-// Main Bicep file that creates all Azure Resources for the Checklist App
+// Main Bicep file that creates all of the Azure Resources for one environment
 // --------------------------------------------------------------------------------
 // To deploy this Bicep manually:
 //   az login
 //   az account set --subscription <subscriptionId>
-//   az deployment group create -n "manual-deploy" -g "rg-checklist-dev" -f "./main.bicep" -p "./main.bicepparam"
+//   az deployment group create -n manual-$(Get-Date -Format 'yyyyMMddHHmmss') `
+//     -g rg-checklist-dev -f ./main.bicep -p ./main.bicepparam
 // --------------------------------------------------------------------------------
 
 @description('The name of the application.')

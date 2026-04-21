@@ -12,19 +12,20 @@ var sanitizedAppInstanceNameWithDashes = replace(replace(toLower('${appName}${in
 var sanitizedAppNameInstance = replace(replace(replace(toLower('${appName}${instanceNumber}'), ' ', ''), '_', ''), '-', '')
 
 // --------------------------------------------------------------------------------
+// pull resource abbreviations from a common JSON file
 var resourceAbbreviations = loadJsonContent('./data/resourceAbbreviations.json')
 
 // --------------------------------------------------------------------------------
 var webSiteName = environmentCode == 'prod' ? toLower('${sanitizedAppNameWithDashes}') : toLower('${sanitizedAppInstanceNameWithDashes}-${sanitizedEnvironment}')
 
 // --------------------------------------------------------------------------------
-output webSiteName string = webSiteName
-output webSiteAppServicePlanName string = '${webSiteName}-${resourceAbbreviations.appServicePlanSuffix}'
-output webSiteAppInsightsName string = '${webSiteName}-${resourceAbbreviations.appInsightsSuffix}'
-output sqlServerName string = toLower('${sanitizedAppNameInstance}${resourceAbbreviations.sqlAbbreviation}${sanitizedEnvironment}')
-output logAnalyticsWorkspaceName string = toLower('${sanitizedAppInstanceNameWithDashes}-${sanitizedEnvironment}-${resourceAbbreviations.logWorkspaceSuffix}')
-output signalRServiceName string = toLower('${sanitizedAppInstanceNameWithDashes}-${resourceAbbreviations.signalRSuffix}-${sanitizedEnvironment}')
-output userAssignedIdentityName string = toLower('${sanitizedAppNameInstance}-app-${resourceAbbreviations.managedIdentity}')
+output logAnalyticsWorkspaceName string  = toLower('${sanitizedAppInstanceNameWithDashes}-${sanitizedEnvironment}-${resourceAbbreviations.logWorkspaceSuffix}')
+output webSiteName string                = webSiteName
+output webSiteAppServicePlanName string  = '${webSiteName}-${resourceAbbreviations.appServicePlanSuffix}'
+output webSiteAppInsightsName string     = '${webSiteName}-${resourceAbbreviations.appInsightsSuffix}'
+output sqlServerName string              = toLower('${sanitizedAppNameInstance}${resourceAbbreviations.sqlAbbreviation}${sanitizedEnvironment}')
+output signalRServiceName string         = toLower('${sanitizedAppInstanceNameWithDashes}-${resourceAbbreviations.signalRSuffix}-${sanitizedEnvironment}')
+output userAssignedIdentityName string   = toLower('${sanitizedAppNameInstance}-app-${resourceAbbreviations.managedIdentity}')
 
 // Key Vault names are capped at 24 characters
-output keyVaultName string = take('${sanitizedAppNameInstance}${resourceAbbreviations.keyVaultAbbreviation}${sanitizedEnvironment}', 24)
+output keyVaultName string               = take('${sanitizedAppNameInstance}${resourceAbbreviations.keyVaultAbbreviation}${sanitizedEnvironment}', 24)

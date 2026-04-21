@@ -1,0 +1,87 @@
+# ------------------------------------------------------------------------------------------------------------------------
+# Pipeline to build and deploy Application (API + Web)
+# ------------------------------------------------------------------------------------------------------------------------
+# See readme file for info about the contents of the variable group
+# ------------------------------------------------------------------------------------------------------------------------
+name: $(date:yyyy).$(date:MM).$(date:dd)$(rev:.r) ${{ parameters.deployToEnvironment }}
+
+trigger: none
+# trigger:
+#   branches:
+#     include:
+#       - main
+#   paths:
+#     include:
+#       - src/CheckList.Api/**
+#       - src/CheckList.Web/**
+#       - src/CheckList.ServiceDefaults/**
+#       - checklist-squad.sln
+
+# ----------------------------------------------------------------------------------------------------
+parameters:
+  - name: deployToEnvironment
+    displayName: Deploy To
+    type: string
+    default: 'DEV'
+    values:
+      - DEV
+      - QA
+      - PROD
+
+# ----------------------------------------------------------------------------------------------------
+variables:
+  - group: checklist-common
+  - group: checklist-${{ parameters.deployToEnvironment }}
+  - template: vars/var-common.yml
+
+# ----------------------------------------------------------------------------------------------------
+stages:
+  - stage: Build
+    displayName: 'Build Application'
+    jobs:
+      - job: BuildApp
+        displayName: 'Build & Publish'
+        pool:
+          vmImage: 'ubuntu-latest'
+        timeoutInMinutes: 15
+        steps:
+          - checkout: self
+
+          - template: steps/webapp-build-steps.yml
+            parameters:
+              dotnetVersion: '$(dotnetVersion)'
+              solutionFile: '$(solutionFile)'
+              publishApi: true
+              publishWeb: true
+
+  # ----------------------------------------------------------------------------------------------------
+  - stage: Deploy
+    displayName: 'Deploy to Azure'
+    dependsOn: Build
+    condition: succeeded()
+    jobs:
+      - deployment: DeployApp
+        displayName: 'Deploy App - ${{ parameters.deployToEnvironment }}'
+        pool:
+          vmImage: 'ubuntu-latest'
+        timeoutInMinutes: 15
+        environment: '${{ parameters.deployToEnvironment }}'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: DownloadBuildArtifacts@1
+                  displayName: 'Download Web artifact'
+                  inputs:
+                    buildType: 'current'
+                    downloadType: 'single'
+                    artifactName: 'web-package'
+                    downloadPath: '$(System.ArtifactsDirectory)'
+
+                - task: AzureWebApp@1
+                  displayName: 'Deploy to App Service'
+                  inputs:
+                    azureSubscription: '$(serviceConnection)'
+                    appType: 'webAppLinux'
+                    appName: '$(webAppName)'
+                    package: '$(System.ArtifactsDirectory)/web-package/**/*.zip'

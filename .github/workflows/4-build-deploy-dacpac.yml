@@ -1,8 +1,13 @@
-# ----------------------------------------------------------------------------------------------------
-# 3 - Build and Deploy SQL DACPAC
-# ----------------------------------------------------------------------------------------------------
-name: 3 - Build & Deploy DACPAC
+# ------------------------------------------------------------------------------------------------------------------------
+# 4 - Build and Deploy SQL DACPAC
+# ------------------------------------------------------------------------------------------------------------------------
+# FYI: This workflow builds and deploys the SQL Database project (DACPAC) to Azure SQL.
+#   It triggers on pushes to main or manual dispatch.
+# ------------------------------------------------------------------------------------------------------------------------
+name: 4.build.deploy.dacpac
+run-name: '4 - Build & Deploy DACPAC using ENV ${{ inputs.deployEnvironment }} by @${{ github.actor }}'
 
+# ------------------------------------------------------------------------------------------------------------------------
 on:
   push:
     branches: [main]
@@ -10,7 +15,7 @@ on:
       - 'src/CheckList.Database/**'
   workflow_dispatch:
     inputs:
-      environment:
+      deployEnvironment:
         description: 'Target environment'
         required: true
         default: 'dev'
@@ -20,11 +25,14 @@ on:
           - qa
           - prod
 
+# ------------------------------------------------------------------------------------------------------------------------
 permissions:
   id-token: write
   contents: read
 
+# ------------------------------------------------------------------------------------------------------------------------
 jobs:
+  # ----------------------------------------------------------------------------------------------------
   build-dacpac:
     name: Build DACPAC
     runs-on: ubuntu-latest
@@ -52,12 +60,13 @@ jobs:
           path: src/CheckList.Database/bin/Release/
           retention-days: 5
 
+  # ----------------------------------------------------------------------------------------------------
   deploy-dacpac:
     name: Deploy DACPAC
     needs: build-dacpac
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    environment: ${{ inputs.environment || 'dev' }}
+    environment: ${{ inputs.deployEnvironment || 'dev' }}
 
     permissions:
       id-token: write

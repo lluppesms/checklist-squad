@@ -1,0 +1,66 @@
+# ------------------------------------------------------------------------------------------------------------------------
+# 1 - Deploy Bicep Infrastructure
+# ------------------------------------------------------------------------------------------------------------------------
+# FYI: This workflow requires the following secrets to be set in the GitHub repository:
+#   AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID, APP_NAME, RESOURCE_GROUP_LOCATION,
+#   INSTANCE_NUMBER, SQL_DATABASE_NAME, SQLADMIN_LOGIN_USERID, SQLADMIN_LOGIN_USERSID,
+#   SQLADMIN_LOGIN_TENANTID, KEYVAULT_OWNER_USERID
+# ------------------------------------------------------------------------------------------------------------------------
+name: 1.deploy.bicep
+run-name: '1 - Deploy Bicep using ENV ${{ inputs.deployEnvironment }} by @${{ github.actor }}'
+
+# ------------------------------------------------------------------------------------------------------------------------
+on:
+  workflow_dispatch:
+    inputs:
+      deployEnvironment:
+        description: 'Target environment'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - qa
+          - prod
+
+# ------------------------------------------------------------------------------------------------------------------------
+permissions:
+  id-token: write
+  contents: read
+
+# ------------------------------------------------------------------------------------------------------------------------
+jobs:
+  # ----------------------------------------------------------------------------------------------------
+  validate-bicep:
+    name: Validate Bicep Templates
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Validate Bicep syntax
+        run: az bicep build --file infra/Bicep/main.bicep
+
+  # ----------------------------------------------------------------------------------------------------
+  deploy-infra:
+    name: Deploy Infrastructure
+    needs: validate-bicep
+    uses: ./.github/workflows/template-bicep-deploy.yml
+    with:
+      environmentName: ${{ inputs.deployEnvironment }}
+      resourceGroupName: rg-checklist-${{ inputs.deployEnvironment }}
+    secrets:
+      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      APP_NAME: ${{ secrets.APP_NAME }}
+      ENVCODE: ${{ inputs.deployEnvironment }}
+      RESOURCE_GROUP_LOCATION: ${{ secrets.RESOURCE_GROUP_LOCATION }}
+      INSTANCE_NUMBER: ${{ secrets.INSTANCE_NUMBER }}
+      SQL_DATABASE_NAME: ${{ secrets.SQL_DATABASE_NAME }}
+      SQLADMIN_LOGIN_USERID: ${{ secrets.SQLADMIN_LOGIN_USERID }}
+      SQLADMIN_LOGIN_USERSID: ${{ secrets.SQLADMIN_LOGIN_USERSID }}
+      SQLADMIN_LOGIN_TENANTID: ${{ secrets.SQLADMIN_LOGIN_TENANTID }}
+      KEYVAULT_OWNER_USERID: ${{ secrets.KEYVAULT_OWNER_USERID }}

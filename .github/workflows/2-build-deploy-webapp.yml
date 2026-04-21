@@ -1,8 +1,13 @@
-# ----------------------------------------------------------------------------------------------------
-# 2 - Build and Deploy Application (API + Web)
-# ----------------------------------------------------------------------------------------------------
-name: 2 - Build & Deploy App
+# ------------------------------------------------------------------------------------------------------------------------
+# 2 - Build and Deploy Web Application (API + Web)
+# ------------------------------------------------------------------------------------------------------------------------
+# FYI: This workflow builds the .NET solution and deploys API + Web to Azure.
+#   It triggers on pushes to main or manual dispatch.
+# ------------------------------------------------------------------------------------------------------------------------
+name: 2.build.deploy.webapp
+run-name: '2 - Build & Deploy Web App using ENV ${{ inputs.deployEnvironment }} by @${{ github.actor }}'
 
+# ------------------------------------------------------------------------------------------------------------------------
 on:
   push:
     branches: [main]
@@ -13,7 +18,7 @@ on:
       - 'checklist-squad.sln'
   workflow_dispatch:
     inputs:
-      environment:
+      deployEnvironment:
         description: 'Target environment'
         required: true
         default: 'dev'
@@ -23,26 +28,30 @@ on:
           - qa
           - prod
 
+# ------------------------------------------------------------------------------------------------------------------------
 permissions:
   id-token: write
   contents: read
 
+# ------------------------------------------------------------------------------------------------------------------------
 jobs:
+  # ----------------------------------------------------------------------------------------------------
   build:
     name: Build Application
-    uses: ./.github/workflows/template-dotnet-build.yml
+    uses: ./.github/workflows/template-webapp-build.yml
     with:
       dotnetVersion: '10.0.x'
       solutionFile: 'checklist-squad.sln'
       publishApi: true
       publishWeb: true
 
+  # ----------------------------------------------------------------------------------------------------
   deploy:
     name: Deploy to Azure
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    environment: ${{ inputs.environment || 'dev' }}
+    environment: ${{ inputs.deployEnvironment || 'dev' }}
 
     permissions:
       id-token: write
