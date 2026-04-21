@@ -5,3 +5,8 @@
 .squad/sessions/
 # Squad: SubSquad activation file (local to this machine)
 .squad-workstream
+
+# Local configuration files with secrets
+# Keep templates (appsettings.json) in repo, but ignore local overrides
+appsettings.*.json
+old-source/CheckList.Core/appsettings.*.json
