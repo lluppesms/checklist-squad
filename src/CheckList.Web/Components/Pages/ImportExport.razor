@@ -1,0 +1,268 @@
+@page "/import-export"
+@using Microsoft.JSInterop
+@using System.Text.Json
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Import/Export — Shared Checklist</PageTitle>
+
+<h2 class="page-title">
+    <i class="bi bi-arrow-down-up"></i> Import/Export
+</h2>
+
+@if (errorMessage is not null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle"></i> @errorMessage
+        <button type="button" class="btn-close" @onclick="() => errorMessage = null"></button>
+    </div>
+}
+
+@if (successMessage is not null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle"></i> @successMessage
+        <button type="button" class="btn-close" @onclick="() => successMessage = null"></button>
+    </div>
+}
+
+<div class="import-export-container">
+    <div class="export-section card mb-4">
+        <div class="card-body">
+            <h4 class="section-title">
+                <i class="bi bi-download"></i> Export
+            </h4>
+            <p class="text-muted">Export your templates and checklists as JSON files.</p>
+
+            <div class="export-actions">
+                <button class="btn btn-primary" @onclick="ExportAllTemplates" disabled="@exporting">
+                    @if (exporting)
+                    {
+                        <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                    }
+                    <i class="bi bi-file-earmark-arrow-down"></i> Export All Templates
+                </button>
+                <button class="btn btn-secondary" @onclick="ExportFull" disabled="@exporting">
+                    @if (exporting)
+                    {
+                        <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                    }
+                    <i class="bi bi-database-down"></i> Full Export (Templates + Checklists)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="import-section card">
+        <div class="card-body">
+            <h4 class="section-title">
+                <i class="bi bi-upload"></i> Import
+            </h4>
+            <p class="text-muted">Upload and import templates or full data from JSON files.</p>
+
+            <div class="file-upload mb-3">
+                <InputFile OnChange="HandleFileSelected" accept=".json" class="form-control" />
+                @if (selectedFile is not null)
+                {
+                    <div class="file-info mt-2">
+                        <i class="bi bi-file-earmark-text"></i>
+                        <span>@selectedFile.Name (@FormatFileSize(selectedFile.Size))</span>
+                    </div>
+                }
+            </div>
+
+            <div class="import-actions">
+                <button class="btn btn-primary" @onclick="ImportTemplate" disabled="@(importing || selectedFile is null)">
+                    @if (importing)
+                    {
+                        <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                    }
+                    <i class="bi bi-file-earmark-arrow-up"></i> Import Template
+                </button>
+                <button class="btn btn-secondary" @onclick="ImportFull" disabled="@(importing || selectedFile is null)">
+                    @if (importing)
+                    {
+                        <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                    }
+                    <i class="bi bi-database-up"></i> Full Import
+                </button>
+            </div>
+
+            @if (importResult is not null)
+            {
+                <div class="import-result mt-3">
+                    <strong>Import Result:</strong>
+                    <pre>@importResult</pre>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Inject] private ICheckListApiClient ApiClient { get; set; } = default!;
+    [Inject] private NavigationManager Navigation { get; set; } = default!;
+
+    private bool exporting;
+    private bool importing;
+    private string? errorMessage;
+    private string? successMessage;
+    private IBrowserFile? selectedFile;
+    private string? importResult;
+
+    private async Task ExportAllTemplates()
+    {
+        try
+        {
+            exporting = true;
+            errorMessage = null;
+            successMessage = null;
+
+            var exportData = await ApiClient.ExportAllTemplatesAsync();
+            var json = JsonSerializer.Serialize(exportData, new JsonSerializerOptions { WriteIndented = true });
+            var fileName = $"Templates_Export_{DateTime.Now:yyyyMMdd_HHmmss}.json";
+            await DownloadFile(fileName, json);
+
+            successMessage = $"Exported {exportData.Count} template(s) successfully.";
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to export templates: {ex.Message}";
+        }
+        finally
+        {
+            exporting = false;
+        }
+    }
+
+    private async Task ExportFull()
+    {
+        try
+        {
+            exporting = true;
+            errorMessage = null;
+            successMessage = null;
+
+            var exportData = await ApiClient.ExportFullAsync();
+            var json = JsonSerializer.Serialize(exportData, new JsonSerializerOptions { WriteIndented = true });
+            var fileName = $"Full_Export_{DateTime.Now:yyyyMMdd_HHmmss}.json";
+            await DownloadFile(fileName, json);
+
+            successMessage = $"Exported {exportData.Templates.Count} template(s) and {exportData.Checklists.Count} checklist(s) successfully.";
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to export full data: {ex.Message}";
+        }
+        finally
+        {
+            exporting = false;
+        }
+    }
+
+    private void HandleFileSelected(InputFileChangeEventArgs e)
+    {
+        selectedFile = e.File;
+        importResult = null;
+        errorMessage = null;
+        successMessage = null;
+    }
+
+    private async Task ImportTemplate()
+    {
+        if (selectedFile is null) return;
+
+        try
+        {
+            importing = true;
+            errorMessage = null;
+            successMessage = null;
+            importResult = null;
+
+            if (selectedFile.Size > 10 * 1024 * 1024)
+            {
+                errorMessage = "File size exceeds 10MB limit.";
+                return;
+            }
+
+            using var stream = selectedFile.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024);
+            var importDto = await JsonSerializer.DeserializeAsync<TemplateImportDto>(stream);
+
+            if (importDto is null)
+            {
+                errorMessage = "Invalid JSON format.";
+                return;
+            }
+
+            var result = await ApiClient.ImportTemplateAsync(importDto);
+            successMessage = $"Successfully imported template: {result.SetName}";
+            importResult = $"Template ID: {result.SetId}, Lists: {result.Lists.Count}";
+            selectedFile = null;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to import template: {ex.Message}";
+        }
+        finally
+        {
+            importing = false;
+        }
+    }
+
+    private async Task ImportFull()
+    {
+        if (selectedFile is null) return;
+
+        try
+        {
+            importing = true;
+            errorMessage = null;
+            successMessage = null;
+            importResult = null;
+
+            if (selectedFile.Size > 10 * 1024 * 1024)
+            {
+                errorMessage = "File size exceeds 10MB limit.";
+                return;
+            }
+
+            using var stream = selectedFile.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024);
+            var importDto = await JsonSerializer.DeserializeAsync<FullImportDto>(stream);
+
+            if (importDto is null)
+            {
+                errorMessage = "Invalid JSON format.";
+                return;
+            }
+
+            var result = await ApiClient.ImportFullAsync(importDto);
+            successMessage = "Successfully imported full data.";
+            importResult = JsonSerializer.Serialize(result, new JsonSerializerOptions { WriteIndented = true });
+            selectedFile = null;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to import full data: {ex.Message}";
+        }
+        finally
+        {
+            importing = false;
+        }
+    }
+
+    private async Task DownloadFile(string fileName, string content)
+    {
+        var bytes = System.Text.Encoding.UTF8.GetBytes(content);
+        var base64 = Convert.ToBase64String(bytes);
+        await JSRuntime.InvokeVoidAsync("downloadFileFromBase64", fileName, base64);
+    }
+
+    private static string FormatFileSize(long bytes)
+    {
+        if (bytes < 1024)
+            return $"{bytes} B";
+        else if (bytes < 1024 * 1024)
+            return $"{bytes / 1024.0:F1} KB";
+        else
+            return $"{bytes / (1024.0 * 1024.0):F1} MB";
+    }
+}

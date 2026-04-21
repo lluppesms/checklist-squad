@@ -8,6 +8,12 @@
     color: var(--accent-color);
 }
 
+.template-actions {
+    display: flex;
+    justify-content: flex-start;
+    gap: 0.5rem;
+}
+
 .template-grid {
     display: grid;
     grid-template-columns: 1fr;
@@ -80,3 +86,4 @@
     display: block;
     margin-bottom: 1rem;
 }
+

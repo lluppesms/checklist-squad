@@ -1,10 +1,19 @@
 @page "/templates"
+@using Microsoft.JSInterop
+@using System.Text.Json
+@inject IJSRuntime JSRuntime
 
 <PageTitle>Templates — Shared Checklist</PageTitle>
 
 <h2 class="page-title">
     <i class="bi bi-card-checklist"></i> Templates
 </h2>
+
+<div class="template-actions mb-3">
+    <button class="btn btn-primary" @onclick="CreateNewTemplate">
+        <i class="bi bi-plus-lg"></i> Create New Template
+    </button>
+</div>
 
 @if (loading)
 {
@@ -21,6 +30,9 @@ else if (templates.Count == 0)
     <div class="empty-state">
         <i class="bi bi-inbox"></i>
         <p>No templates available yet.</p>
+        <button class="btn btn-primary mt-2" @onclick="CreateNewTemplate">
+            <i class="bi bi-plus-lg"></i> Create Your First Template
+        </button>
     </div>
 }
 else
@@ -37,6 +49,20 @@ else
                     </div>
                 </div>
                 <div class="card-footer">
+                    <div class="btn-group w-100 mb-2">
+                        <button class="btn btn-sm btn-outline-primary"
+                                @onclick="() => EditTemplate(template.SetId)">
+                            <i class="bi bi-pencil"></i> Edit
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary"
+                                @onclick="() => ExportTemplate(template.SetId)">
+                            <i class="bi bi-download"></i> Export
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger"
+                                @onclick="() => ShowDeleteConfirm(template.SetId, template.SetName)">
+                            <i class="bi bi-trash"></i> Delete
+                        </button>
+                    </div>
                     <button class="btn btn-primary btn-sm w-100"
                             @onclick="() => ActivateTemplate(template.SetId)"
                             disabled="@activating">
@@ -52,6 +78,13 @@ else
     </div>
 }
 
+<ConfirmDialog IsVisible="@showDeleteDialog"
+               Title="Delete Template"
+               Message="@deleteMessage"
+               ConfirmText="Delete"
+               OnConfirm="ConfirmDelete"
+               OnCancel="CancelDelete" />
+
 @code {
     [Inject] private ICheckListApiClient ApiClient { get; set; } = default!;
     [Inject] private IUserIdentity UserIdentity { get; set; } = default!;
@@ -62,6 +95,9 @@ else
     private bool activating;
     private int? activatingId;
     private string? errorMessage;
+    private bool showDeleteDialog;
+    private int? deleteTargetId;
+    private string deleteMessage = "";
 
     protected override async Task OnInitializedAsync()
     {
@@ -77,6 +113,62 @@ else
         {
             loading = false;
         }
+    }
+
+    private void CreateNewTemplate()
+    {
+        Navigation.NavigateTo("/templates/edit");
+    }
+
+    private void EditTemplate(int setId)
+    {
+        Navigation.NavigateTo($"/templates/edit/{setId}");
+    }
+
+    private async Task ExportTemplate(int setId)
+    {
+        try
+        {
+            var exportData = await ApiClient.ExportTemplateAsync(setId);
+            var json = JsonSerializer.Serialize(exportData, new JsonSerializerOptions { WriteIndented = true });
+            var fileName = $"Template_{exportData.SetName.Replace(" ", "_")}_{DateTime.Now:yyyyMMdd_HHmmss}.json";
+            await DownloadFile(fileName, json);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to export template: {ex.Message}";
+        }
+    }
+
+    private void ShowDeleteConfirm(int setId, string setName)
+    {
+        deleteTargetId = setId;
+        deleteMessage = $"Are you sure you want to delete '{setName}'? This action cannot be undone.";
+        showDeleteDialog = true;
+    }
+
+    private async Task ConfirmDelete()
+    {
+        showDeleteDialog = false;
+        if (deleteTargetId.HasValue)
+        {
+            try
+            {
+                await ApiClient.DeleteTemplateSetAsync(deleteTargetId.Value);
+                templates = await ApiClient.GetTemplatesAsync();
+                deleteTargetId = null;
+            }
+            catch (Exception ex)
+            {
+                errorMessage = $"Failed to delete template: {ex.Message}";
+            }
+        }
+    }
+
+    private void CancelDelete()
+    {
+        showDeleteDialog = false;
+        deleteTargetId = null;
     }
 
     private async Task ActivateTemplate(int templateSetId)
@@ -102,5 +194,12 @@ else
             activating = false;
             activatingId = null;
         }
+    }
+
+    private async Task DownloadFile(string fileName, string content)
+    {
+        var bytes = System.Text.Encoding.UTF8.GetBytes(content);
+        var base64 = Convert.ToBase64String(bytes);
+        await JSRuntime.InvokeVoidAsync("downloadFileFromBase64", fileName, base64);
     }
 }

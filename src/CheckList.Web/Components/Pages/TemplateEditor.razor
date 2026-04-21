@@ -1,0 +1,566 @@
+@page "/templates/edit/{SetId:int?}"
+
+<PageTitle>@(isNewTemplate ? "Create Template" : "Edit Template") — Shared Checklist</PageTitle>
+
+<div class="editor-header">
+    <div class="header-title">
+        <h2>
+            <i class="bi bi-card-checklist"></i>
+            @(isNewTemplate ? "Create New Template" : "Edit Template")
+        </h2>
+    </div>
+    <div class="header-actions">
+        <button class="btn btn-outline-secondary" @onclick="Cancel">
+            <i class="bi bi-x-lg"></i> Cancel
+        </button>
+        <button class="btn btn-primary" @onclick="Save" disabled="@saving">
+            @if (saving)
+            {
+                <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+            }
+            <i class="bi bi-save"></i> Save
+        </button>
+    </div>
+</div>
+
+@if (loading)
+{
+    <LoadingSpinner Message="Loading template..." />
+}
+else if (errorMessage is not null)
+{
+    <div class="alert alert-danger" role="alert">
+        <i class="bi bi-exclamation-triangle"></i> @errorMessage
+    </div>
+}
+else
+{
+    <div class="template-editor">
+        <div class="set-details card mb-3">
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label">Template Name</label>
+                    <input type="text" class="form-control" @bind="setName" placeholder="Enter template name" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Description</label>
+                    <textarea class="form-control" rows="2" @bind="setDescription" placeholder="Enter description"></textarea>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Owner</label>
+                        <input type="text" class="form-control" @bind="ownerName" placeholder="Owner name" />
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Sort Order</label>
+                        <input type="number" class="form-control" @bind="sortOrder" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="lists-section">
+            <div class="section-header">
+                <h4><i class="bi bi-list-ul"></i> Lists</h4>
+                <button class="btn btn-sm btn-success" @onclick="AddList">
+                    <i class="bi bi-plus-lg"></i> Add List
+                </button>
+            </div>
+
+            @if (lists.Count == 0)
+            {
+                <div class="empty-placeholder">
+                    <i class="bi bi-inbox"></i>
+                    <p>No lists yet. Click "Add List" to create one.</p>
+                </div>
+            }
+            else
+            {
+                @foreach (var list in lists.OrderBy(l => l.SortOrder))
+                {
+                    <div class="list-card card mb-3">
+                        <div class="card-header">
+                            <div class="list-header-content">
+                                <div class="list-inputs">
+                                    <input type="text" class="form-control form-control-sm mb-1"
+                                           @bind="list.Name" placeholder="List name" />
+                                    <input type="text" class="form-control form-control-sm"
+                                           @bind="list.Description" placeholder="List description" />
+                                </div>
+                                <div class="list-controls">
+                                    <button class="btn btn-sm btn-outline-secondary"
+                                            @onclick="() => MoveListUp(list)"
+                                            disabled="@(list == lists.OrderBy(l => l.SortOrder).First())">
+                                        <i class="bi bi-arrow-up"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-secondary"
+                                            @onclick="() => MoveListDown(list)"
+                                            disabled="@(list == lists.OrderBy(l => l.SortOrder).Last())">
+                                        <i class="bi bi-arrow-down"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-danger"
+                                            @onclick="() => DeleteList(list)">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="categories-header mb-2">
+                                <strong>Categories</strong>
+                                <button class="btn btn-sm btn-outline-success" @onclick="() => AddCategory(list)">
+                                    <i class="bi bi-plus-lg"></i> Add Category
+                                </button>
+                            </div>
+
+                            @if (list.Categories.Count == 0)
+                            {
+                                <div class="empty-placeholder-sm">
+                                    <small class="text-muted">No categories</small>
+                                </div>
+                            }
+                            else
+                            {
+                                @foreach (var category in list.Categories.OrderBy(c => c.SortOrder))
+                                {
+                                    <div class="category-item mb-2">
+                                        <div class="category-content">
+                                            <div class="category-inputs">
+                                                <input type="text" class="form-control form-control-sm mb-1"
+                                                       @bind="category.Text" placeholder="Category text" />
+                                                <input type="text" class="form-control form-control-sm"
+                                                       @bind="category.Description" placeholder="Category description (optional)" />
+                                            </div>
+                                            <div class="category-controls">
+                                                <button class="btn btn-sm btn-outline-secondary"
+                                                        @onclick="() => MoveCategoryUp(list, category)"
+                                                        disabled="@(category == list.Categories.OrderBy(c => c.SortOrder).First())">
+                                                    <i class="bi bi-arrow-up"></i>
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-secondary"
+                                                        @onclick="() => MoveCategoryDown(list, category)"
+                                                        disabled="@(category == list.Categories.OrderBy(c => c.SortOrder).Last())">
+                                                    <i class="bi bi-arrow-down"></i>
+                                                </button>
+                                                <button class="btn btn-sm btn-danger"
+                                                        @onclick="() => DeleteCategory(list, category)">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div class="actions-section mt-2">
+                                            <div class="actions-header">
+                                                <small><strong>Actions</strong></small>
+                                                <button class="btn btn-sm btn-outline-success" @onclick="() => AddAction(category)">
+                                                    <i class="bi bi-plus-lg"></i>
+                                                </button>
+                                            </div>
+
+                                            @if (category.Actions.Count == 0)
+                                            {
+                                                <small class="text-muted">No actions</small>
+                                            }
+                                            else
+                                            {
+                                                <div class="actions-list">
+                                                    @foreach (var action in category.Actions.OrderBy(a => a.SortOrder))
+                                                    {
+                                                        <div class="action-item">
+                                                            <input type="text" class="form-control form-control-sm"
+                                                                   @bind="action.Text" placeholder="Action text" />
+                                                            <div class="action-controls">
+                                                                <button class="btn btn-sm btn-outline-secondary"
+                                                                        @onclick="() => MoveActionUp(category, action)"
+                                                                        disabled="@(action == category.Actions.OrderBy(a => a.SortOrder).First())">
+                                                                    <i class="bi bi-arrow-up"></i>
+                                                                </button>
+                                                                <button class="btn btn-sm btn-outline-secondary"
+                                                                        @onclick="() => MoveActionDown(category, action)"
+                                                                        disabled="@(action == category.Actions.OrderBy(a => a.SortOrder).Last())">
+                                                                    <i class="bi bi-arrow-down"></i>
+                                                                </button>
+                                                                <button class="btn btn-sm btn-danger"
+                                                                        @onclick="() => DeleteAction(category, action)">
+                                                                    <i class="bi bi-trash"></i>
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    }
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                            }
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public int? SetId { get; set; }
+    [Inject] private ICheckListApiClient ApiClient { get; set; } = default!;
+    [Inject] private IUserIdentity UserIdentity { get; set; } = default!;
+    [Inject] private NavigationManager Navigation { get; set; } = default!;
+
+    private bool isNewTemplate => !SetId.HasValue;
+    private bool loading = true;
+    private bool saving;
+    private string? errorMessage;
+
+    private string setName = "";
+    private string setDescription = "";
+    private string ownerName = "";
+    private int sortOrder = 50;
+    private List<ListModel> lists = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (UserIdentity.HasNickName)
+        {
+            ownerName = UserIdentity.NickName!;
+        }
+
+        if (SetId.HasValue)
+        {
+            try
+            {
+                var template = await ApiClient.GetTemplateAsync(SetId.Value);
+                if (template is not null)
+                {
+                    setName = template.SetName;
+                    setDescription = template.SetDscr;
+                    ownerName = template.OwnerName;
+                    sortOrder = template.SortOrder;
+
+                    lists = template.Lists.Select(l => new ListModel
+                    {
+                        Id = l.ListId,
+                        Name = l.ListName,
+                        Description = l.ListDscr,
+                        SortOrder = l.SortOrder,
+                        Categories = l.Categories.Select(c => new CategoryModel
+                        {
+                            Id = c.CategoryId,
+                            Text = c.CategoryText,
+                            Description = c.CategoryDscr,
+                            SortOrder = c.SortOrder,
+                            Actions = c.Actions.Select(a => new ActionModel
+                            {
+                                Id = a.ActionId,
+                                Text = a.ActionText,
+                                Description = a.ActionDscr,
+                                SortOrder = a.SortOrder
+                            }).ToList()
+                        }).ToList()
+                    }).ToList();
+                }
+            }
+            catch (Exception ex)
+            {
+                errorMessage = $"Failed to load template: {ex.Message}";
+            }
+        }
+
+        loading = false;
+    }
+
+    private void AddList()
+    {
+        var maxSort = lists.Count > 0 ? lists.Max(l => l.SortOrder) : 0;
+        lists.Add(new ListModel
+        {
+            Id = 0,
+            Name = "New List",
+            Description = "",
+            SortOrder = maxSort + 10,
+            Categories = []
+        });
+    }
+
+    private void DeleteList(ListModel list)
+    {
+        lists.Remove(list);
+    }
+
+    private void MoveListUp(ListModel list)
+    {
+        var sorted = lists.OrderBy(l => l.SortOrder).ToList();
+        var index = sorted.IndexOf(list);
+        if (index > 0)
+        {
+            var temp = list.SortOrder;
+            list.SortOrder = sorted[index - 1].SortOrder;
+            sorted[index - 1].SortOrder = temp;
+        }
+    }
+
+    private void MoveListDown(ListModel list)
+    {
+        var sorted = lists.OrderBy(l => l.SortOrder).ToList();
+        var index = sorted.IndexOf(list);
+        if (index < sorted.Count - 1)
+        {
+            var temp = list.SortOrder;
+            list.SortOrder = sorted[index + 1].SortOrder;
+            sorted[index + 1].SortOrder = temp;
+        }
+    }
+
+    private void AddCategory(ListModel list)
+    {
+        var maxSort = list.Categories.Count > 0 ? list.Categories.Max(c => c.SortOrder) : 0;
+        list.Categories.Add(new CategoryModel
+        {
+            Id = 0,
+            Text = "New Category",
+            Description = null,
+            SortOrder = maxSort + 10,
+            Actions = []
+        });
+    }
+
+    private void DeleteCategory(ListModel list, CategoryModel category)
+    {
+        list.Categories.Remove(category);
+    }
+
+    private void MoveCategoryUp(ListModel list, CategoryModel category)
+    {
+        var sorted = list.Categories.OrderBy(c => c.SortOrder).ToList();
+        var index = sorted.IndexOf(category);
+        if (index > 0)
+        {
+            var temp = category.SortOrder;
+            category.SortOrder = sorted[index - 1].SortOrder;
+            sorted[index - 1].SortOrder = temp;
+        }
+    }
+
+    private void MoveCategoryDown(ListModel list, CategoryModel category)
+    {
+        var sorted = list.Categories.OrderBy(c => c.SortOrder).ToList();
+        var index = sorted.IndexOf(category);
+        if (index < sorted.Count - 1)
+        {
+            var temp = category.SortOrder;
+            category.SortOrder = sorted[index + 1].SortOrder;
+            sorted[index + 1].SortOrder = temp;
+        }
+    }
+
+    private void AddAction(CategoryModel category)
+    {
+        var maxSort = category.Actions.Count > 0 ? category.Actions.Max(a => a.SortOrder) : 0;
+        category.Actions.Add(new ActionModel
+        {
+            Id = 0,
+            Text = "New Action",
+            Description = null,
+            SortOrder = maxSort + 10
+        });
+    }
+
+    private void DeleteAction(CategoryModel category, ActionModel action)
+    {
+        category.Actions.Remove(action);
+    }
+
+    private void MoveActionUp(CategoryModel category, ActionModel action)
+    {
+        var sorted = category.Actions.OrderBy(a => a.SortOrder).ToList();
+        var index = sorted.IndexOf(action);
+        if (index > 0)
+        {
+            var temp = action.SortOrder;
+            action.SortOrder = sorted[index - 1].SortOrder;
+            sorted[index - 1].SortOrder = temp;
+        }
+    }
+
+    private void MoveActionDown(CategoryModel category, ActionModel action)
+    {
+        var sorted = category.Actions.OrderBy(a => a.SortOrder).ToList();
+        var index = sorted.IndexOf(action);
+        if (index < sorted.Count - 1)
+        {
+            var temp = action.SortOrder;
+            action.SortOrder = sorted[index + 1].SortOrder;
+            sorted[index + 1].SortOrder = temp;
+        }
+    }
+
+    private async Task Save()
+    {
+        if (string.IsNullOrWhiteSpace(setName) || string.IsNullOrWhiteSpace(ownerName))
+        {
+            errorMessage = "Template name and owner are required.";
+            return;
+        }
+
+        try
+        {
+            saving = true;
+            errorMessage = null;
+
+            if (isNewTemplate)
+            {
+                var createRequest = new CreateTemplateSetRequest(setName, setDescription, ownerName, sortOrder);
+                var newTemplate = await ApiClient.CreateTemplateSetAsync(createRequest);
+
+                foreach (var list in lists)
+                {
+                    var listRequest = new CreateTemplateListRequest(list.Name, list.Description, list.SortOrder);
+                    var newList = await ApiClient.CreateTemplateListAsync(newTemplate.SetId, listRequest);
+
+                    foreach (var category in list.Categories)
+                    {
+                        var categoryRequest = new CreateTemplateCategoryRequest(category.Text, category.Description, category.SortOrder);
+                        var newCategory = await ApiClient.CreateTemplateCategoryAsync(newList.ListId, categoryRequest);
+
+                        foreach (var action in category.Actions)
+                        {
+                            var actionRequest = new CreateTemplateActionRequest(action.Text, action.Description, action.SortOrder);
+                            await ApiClient.CreateTemplateActionAsync(newCategory.CategoryId, actionRequest);
+                        }
+                    }
+                }
+
+                Navigation.NavigateTo("/templates");
+            }
+            else
+            {
+                var updateRequest = new UpdateTemplateSetRequest(setName, setDescription, ownerName, sortOrder, "Y");
+                await ApiClient.UpdateTemplateSetAsync(SetId!.Value, updateRequest);
+
+                var currentTemplate = await ApiClient.GetTemplateAsync(SetId.Value);
+                if (currentTemplate is not null)
+                {
+                    foreach (var existingList in currentTemplate.Lists)
+                    {
+                        var matchingList = lists.FirstOrDefault(l => l.Id == existingList.ListId);
+                        if (matchingList is null)
+                        {
+                            await ApiClient.DeleteTemplateListAsync(existingList.ListId);
+                        }
+                    }
+
+                    foreach (var list in lists)
+                    {
+                        if (list.Id == 0)
+                        {
+                            var listRequest = new CreateTemplateListRequest(list.Name, list.Description, list.SortOrder);
+                            var newList = await ApiClient.CreateTemplateListAsync(SetId.Value, listRequest);
+                            list.Id = newList.ListId;
+                        }
+                        else
+                        {
+                            var listRequest = new UpdateTemplateListRequest(list.Name, list.Description, list.SortOrder, "Y");
+                            await ApiClient.UpdateTemplateListAsync(list.Id, listRequest);
+                        }
+
+                        var existingList = currentTemplate.Lists.FirstOrDefault(l => l.ListId == list.Id);
+                        if (existingList is not null)
+                        {
+                            foreach (var existingCategory in existingList.Categories)
+                            {
+                                var matchingCategory = list.Categories.FirstOrDefault(c => c.Id == existingCategory.CategoryId);
+                                if (matchingCategory is null)
+                                {
+                                    await ApiClient.DeleteTemplateCategoryAsync(existingCategory.CategoryId);
+                                }
+                            }
+                        }
+
+                        foreach (var category in list.Categories)
+                        {
+                            if (category.Id == 0)
+                            {
+                                var categoryRequest = new CreateTemplateCategoryRequest(category.Text, category.Description, category.SortOrder);
+                                var newCategory = await ApiClient.CreateTemplateCategoryAsync(list.Id, categoryRequest);
+                                category.Id = newCategory.CategoryId;
+                            }
+                            else
+                            {
+                                var categoryRequest = new UpdateTemplateCategoryRequest(category.Text, category.Description, category.SortOrder, "Y");
+                                await ApiClient.UpdateTemplateCategoryAsync(category.Id, categoryRequest);
+                            }
+
+                            var existingCategory = existingList?.Categories.FirstOrDefault(c => c.CategoryId == category.Id);
+                            if (existingCategory is not null)
+                            {
+                                foreach (var existingAction in existingCategory.Actions)
+                                {
+                                    var matchingAction = category.Actions.FirstOrDefault(a => a.Id == existingAction.ActionId);
+                                    if (matchingAction is null)
+                                    {
+                                        await ApiClient.DeleteTemplateActionAsync(existingAction.ActionId);
+                                    }
+                                }
+                            }
+
+                            foreach (var action in category.Actions)
+                            {
+                                if (action.Id == 0)
+                                {
+                                    var actionRequest = new CreateTemplateActionRequest(action.Text, action.Description, action.SortOrder);
+                                    await ApiClient.CreateTemplateActionAsync(category.Id, actionRequest);
+                                }
+                                else
+                                {
+                                    var actionRequest = new UpdateTemplateActionRequest(action.Text, action.Description, action.SortOrder);
+                                    await ApiClient.UpdateTemplateActionAsync(action.Id, actionRequest);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Navigation.NavigateTo("/templates");
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to save template: {ex.Message}";
+        }
+        finally
+        {
+            saving = false;
+        }
+    }
+
+    private void Cancel()
+    {
+        Navigation.NavigateTo("/templates");
+    }
+
+    private class ListModel
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = "";
+        public string Description { get; set; } = "";
+        public int SortOrder { get; set; }
+        public List<CategoryModel> Categories { get; set; } = [];
+    }
+
+    private class CategoryModel
+    {
+        public int Id { get; set; }
+        public string Text { get; set; } = "";
+        public string? Description { get; set; }
+        public int SortOrder { get; set; }
+        public List<ActionModel> Actions { get; set; } = [];
+    }
+
+    private class ActionModel
+    {
+        public int Id { get; set; }
+        public string? Text { get; set; }
+        public string? Description { get; set; }
+        public int SortOrder { get; set; }
+    }
+}

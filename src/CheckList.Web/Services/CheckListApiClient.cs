@@ -48,4 +48,131 @@ public class CheckListApiClient(HttpClient httpClient) : ICheckListApiClient
         var response = await httpClient.DeleteAsync($"api/checklists/{setId}");
         response.EnsureSuccessStatusCode();
     }
+
+    // Template CRUD
+    public async Task<TemplateSetDto> CreateTemplateSetAsync(CreateTemplateSetRequest request)
+    {
+        var response = await httpClient.PostAsJsonAsync("api/templates", request);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<TemplateSetDto>()
+            ?? throw new InvalidOperationException("Failed to create template set");
+    }
+
+    public async Task<TemplateSetDto> UpdateTemplateSetAsync(int setId, UpdateTemplateSetRequest request)
+    {
+        var response = await httpClient.PutAsJsonAsync($"api/templates/{setId}", request);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<TemplateSetDto>()
+            ?? throw new InvalidOperationException("Failed to update template set");
+    }
+
+    public async Task DeleteTemplateSetAsync(int setId)
+    {
+        var response = await httpClient.DeleteAsync($"api/templates/{setId}");
+        response.EnsureSuccessStatusCode();
+    }
+
+    // Template List CRUD
+    public async Task<TemplateListDto> CreateTemplateListAsync(int setId, CreateTemplateListRequest request)
+    {
+        var response = await httpClient.PostAsJsonAsync($"api/templates/{setId}/lists", request);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<TemplateListDto>()
+            ?? throw new InvalidOperationException("Failed to create template list");
+    }
+
+    public async Task<TemplateListDto> UpdateTemplateListAsync(int listId, UpdateTemplateListRequest request)
+    {
+        var response = await httpClient.PutAsJsonAsync($"api/templates/lists/{listId}", request);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<TemplateListDto>()
+            ?? throw new InvalidOperationException("Failed to update template list");
+    }
+
+    public async Task DeleteTemplateListAsync(int listId)
+    {
+        var response = await httpClient.DeleteAsync($"api/templates/lists/{listId}");
+        response.EnsureSuccessStatusCode();
+    }
+
+    // Template Category CRUD
+    public async Task<TemplateCategoryDto> CreateTemplateCategoryAsync(int listId, CreateTemplateCategoryRequest request)
+    {
+        var response = await httpClient.PostAsJsonAsync($"api/templates/lists/{listId}/categories", request);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<TemplateCategoryDto>()
+            ?? throw new InvalidOperationException("Failed to create template category");
+    }
+
+    public async Task<TemplateCategoryDto> UpdateTemplateCategoryAsync(int categoryId, UpdateTemplateCategoryRequest request)
+    {
+        var response = await httpClient.PutAsJsonAsync($"api/templates/categories/{categoryId}", request);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<TemplateCategoryDto>()
+            ?? throw new InvalidOperationException("Failed to update template category");
+    }
+
+    public async Task DeleteTemplateCategoryAsync(int categoryId)
+    {
+        var response = await httpClient.DeleteAsync($"api/templates/categories/{categoryId}");
+        response.EnsureSuccessStatusCode();
+    }
+
+    // Template Action CRUD
+    public async Task<TemplateActionDto> CreateTemplateActionAsync(int categoryId, CreateTemplateActionRequest request)
+    {
+        var response = await httpClient.PostAsJsonAsync($"api/templates/categories/{categoryId}/actions", request);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<TemplateActionDto>()
+            ?? throw new InvalidOperationException("Failed to create template action");
+    }
+
+    public async Task<TemplateActionDto> UpdateTemplateActionAsync(int actionId, UpdateTemplateActionRequest request)
+    {
+        var response = await httpClient.PutAsJsonAsync($"api/templates/actions/{actionId}", request);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<TemplateActionDto>()
+            ?? throw new InvalidOperationException("Failed to update template action");
+    }
+
+    public async Task DeleteTemplateActionAsync(int actionId)
+    {
+        var response = await httpClient.DeleteAsync($"api/templates/actions/{actionId}");
+        response.EnsureSuccessStatusCode();
+    }
+
+    // Import/Export
+    public async Task<TemplateExportDto> ExportTemplateAsync(int setId)
+    {
+        return await httpClient.GetFromJsonAsync<TemplateExportDto>($"api/templates/{setId}/export")
+            ?? throw new InvalidOperationException("Failed to export template");
+    }
+
+    public async Task<List<TemplateExportDto>> ExportAllTemplatesAsync()
+    {
+        var result = await httpClient.GetFromJsonAsync<List<TemplateExportDto>>("api/templates/export");
+        return result ?? [];
+    }
+
+    public async Task<TemplateSetDto> ImportTemplateAsync(TemplateImportDto importDto)
+    {
+        var response = await httpClient.PostAsJsonAsync("api/templates/import", importDto);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<TemplateSetDto>()
+            ?? throw new InvalidOperationException("Failed to import template");
+    }
+
+    public async Task<FullExportDto> ExportFullAsync()
+    {
+        return await httpClient.GetFromJsonAsync<FullExportDto>("api/export/full")
+            ?? throw new InvalidOperationException("Failed to export full data");
+    }
+
+    public async Task<object> ImportFullAsync(FullImportDto importDto)
+    {
+        var response = await httpClient.PostAsJsonAsync("api/import/full", importDto);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<object>()
+            ?? throw new InvalidOperationException("Failed to import full data");
+    }
 }
