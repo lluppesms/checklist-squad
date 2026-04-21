@@ -18,56 +18,24 @@ projects:
   # Web Application (Blazor)
   web:
     shortName: 'web'
-    rootDirectory: 'src/web/Website'
-    projectName: 'DadABase.Web'
-    testDirectory: 'src/web/Tests'
-    testProjectName: 'DadABase.Tests'
+    rootDirectory: 'src/CheckList.Web'
+    projectName: 'CheckList.Web'
+    testDirectory: 'src/CheckList.Tests'
+    testProjectName: 'CheckList.Tests'
 
-  # Azure Function App
-  function:
-    shortName: 'func'
-    rootDirectory: 'src/function/Function'
-    projectName: 'DadABase.Function'
-    testDirectory: 'src/function/Tests'
-    testProjectName: 'DadABase.Function.Tests'
-
-  # Console Application
-  console:
-    shortName: 'console'
-    rootDirectory: 'src/console'
-    projectName: 'dadabase.net10.console'
-    testDirectory: ''
-    testProjectName: ''
-
-  # MCP (Model Context Protocol) Server
-  mcp:
-    shortName: 'mcp'
-    rootDirectory: 'src/mcp/DadJokeMCP'
-    projectName: 'DadJokeMCP'
-    testDirectory: ''
-    testProjectName: ''
-
-  # MCP SSE Server
-  mcpsse:
-    shortName: 'mcpsse'
-    rootDirectory: 'src/mcp/DadJokeMCPSSE'
-    projectName: 'DadJokeMCPSSE'
-    testDirectory: ''
-    testProjectName: ''
-
-  # Joke Analyzer
-  analyzer:
-    shortName: 'analyzer'
-    rootDirectory: 'src/analyzer'
-    projectName: 'JokeAnalyzer'
+  # API Application
+  api:
+    shortName: 'api'
+    rootDirectory: 'src/CheckList.Api'
+    projectName: 'CheckList.Api'
     testDirectory: ''
     testProjectName: ''
 
   # SQL Database Project
   sql:
     shortName: 'sql'
-    rootDirectory: 'src/sql.database'
-    projectName: 'sql.database'
-    solutionName: 'sql.database'
+    rootDirectory: 'src/CheckList.Database'
+    projectName: 'CheckList.Database'
+    solutionName: 'CheckList.Database'
     testDirectory: ''
     testProjectName: ''
