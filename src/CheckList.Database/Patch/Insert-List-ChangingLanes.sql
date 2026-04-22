@@ -2,6 +2,7 @@
 
 DECLARE 
   @OwnerName nvarchar(50) = 'lyle@luppes.com',
+	@SetName nvarchar(50),
 	@Set2Id int,
 	@List2Id int,
 	@List3Id int,
@@ -10,8 +11,9 @@ DECLARE
 	@Category11Id int,
 	@Category12Id int,
 	@Category13Id int,
-	@Category14Id int,
-	@SetName nvarchar(50) = 'Changing Lanes Check Lists'
+	@Category14Id int
+
+SET	@SetName = 'Changing Lanes Check Lists'
 
 DELETE FROM [dbo].[TemplateList] Where SetName = @SetName
 	

@@ -2,13 +2,15 @@
 
 DECLARE 
   @OwnerName nvarchar(50) = 'lyle@luppes.com',
+	@SetName nvarchar(50),
 	@Set1Id int,
 	@List1Id int,
 	@Category1Id int,
 	@Category2Id int,
 	@Category3Id int,
-	@Category4Id int,
-	@SetName nvarchar(50) = 'RV Goddess - Setup Tasks'
+	@Category4Id int
+
+SET	@SetName = 'RV Goddess - Setup Tasks'
 
 DELETE FROM [dbo].[TemplateSet] Where SetName = @SetName
 
