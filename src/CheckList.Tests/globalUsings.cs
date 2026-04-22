@@ -1,0 +1,13 @@
+global using Microsoft.VisualStudio.TestTools.UnitTesting;
+global using Moq;
+global using Microsoft.EntityFrameworkCore;
+global using Microsoft.AspNetCore.SignalR;
+global using Microsoft.AspNetCore.Mvc;
+global using CheckList.Web.Data;
+global using CheckList.Web.Data.Entities;
+global using CheckList.Web.Data.Repositories;
+global using CheckList.Web.Models;
+global using CheckList.Web.Models.Mapping;
+global using CheckList.Web.Services;
+global using CheckList.Web.Hubs;
+global using CheckList.Web.Controllers;

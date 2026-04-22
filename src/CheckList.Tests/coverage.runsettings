@@ -57,11 +57,16 @@
           -->
           <ExcludeByFile>
             **/Program.cs,
+            **/Components/Pages/**,
+            **/Components/Shared/**,
+            **/Components/Layout/**,
+            **/Components/**/*.razor.cs,
             **/Website/Pages/**,
             **/Website/Shared/**,
             **/Website/Components/**,
             **/Website/Repositories/AIHelper.cs,
             **/Website/Models/Application/BuildInfoService.cs,
+            **/Extensions.cs,
             **/Migrations/**,
             **/*.cshtml.g.cs,
             **/*.razor.g.cs,
