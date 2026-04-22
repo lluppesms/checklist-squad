@@ -1,68 +1,46 @@
-# ------------------------------------------------------------------------------------------------------------------------
-# 6 - PR Scan & Build: Validate code quality on pull requests
-# ------------------------------------------------------------------------------------------------------------------------
-# FYI: This workflow runs on pull requests targeting main.
-#   It builds the solution, runs tests, and validates Bicep templates.
-# ------------------------------------------------------------------------------------------------------------------------
 name: 6.pr.scan.build
-run-name: '6 - PR Scan & Build'
+run-name: '6. PR Scan & Build'
 
-# ------------------------------------------------------------------------------------------------------------------------
-on:
+on: 
   pull_request:
-    branches: [main]
-    paths:
-      - 'src/**'
-      - 'checklist-squad.sln'
+  workflow_dispatch:
 
-# ------------------------------------------------------------------------------------------------------------------------
 permissions:
-  contents: read
-  pull-requests: read
+  id-token: write
+  contents: write
+  actions: read
+  pages: write
+  security-events: write
+  checks: write
+  issues: write
+  pull-requests: write
+  packages: read
 
-# ------------------------------------------------------------------------------------------------------------------------
 jobs:
-  # ----------------------------------------------------------------------------------------------------
-  build-and-test:
-    name: Build & Test
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
+  load-config:
+    name: Load Project Config
+    uses: ./.github/workflows/template-load-config.yml
+    secrets: inherit
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+  # NOTE: scan-code job omitted - template-scan-code.yml needs to be created
+  # scan-code:
+  #   name: Scan Source Code
+  #   uses: ./.github/workflows/template-scan-code.yml
+  #   secrets: inherit
+  #   with:
+  #     runMSDevSecOpsScan: true
+  #     runGHASScan: false
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4.3.1
-        with:
-          dotnet-version: '10.0.x'
-
-      - name: Restore dependencies
-        run: dotnet restore checklist-squad.sln
-
-      - name: Build solution
-        run: dotnet build checklist-squad.sln --configuration Release --no-restore
-
-      - name: Run tests
-        run: dotnet test checklist-squad.sln --configuration Release --no-build --verbosity normal --logger "trx;LogFileName=test-results.trx"
-
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: test-results
-          path: '**/test-results.trx'
-          retention-days: 5
-
-  # ----------------------------------------------------------------------------------------------------
-  validate-bicep:
-    name: Validate Bicep
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-
-      - name: Validate Bicep syntax
-        run: az bicep build --file infra/Bicep/main.bicep
+  build-app:
+    name: Build WebApp
+    uses: ./.github/workflows/template-webapp-build.yml
+    needs: [load-config]
+    secrets: inherit
+    with:
+      envCode: 'dev'
+      rootDirectory: '${{ needs.load-config.outputs.web_rootDirectory }}'
+      projectName: '${{ needs.load-config.outputs.web_projectName }}'
+      testDirectory: '${{ needs.load-config.outputs.web_testDirectory }}'
+      testProjectName: '${{ needs.load-config.outputs.web_testProjectName }}'
+      testApplication: true
+      listFilesAfterBuild: true

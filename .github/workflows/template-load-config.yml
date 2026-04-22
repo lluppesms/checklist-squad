@@ -1,0 +1,77 @@
+name: z_template_load_config
+run-name: Load Project Config
+
+on:
+  workflow_call:
+    outputs:
+      web_shortName:
+        description: 'Web project short name'
+        value: ${{ jobs.load.outputs.web_shortName }}
+      web_rootDirectory:
+        description: 'Web project root directory'
+        value: ${{ jobs.load.outputs.web_rootDirectory }}
+      web_projectName:
+        description: 'Web project name'
+        value: ${{ jobs.load.outputs.web_projectName }}
+      web_testDirectory:
+        description: 'Web test directory'
+        value: ${{ jobs.load.outputs.web_testDirectory }}
+      web_testProjectName:
+        description: 'Web test project name'
+        value: ${{ jobs.load.outputs.web_testProjectName }}
+      api_shortName:
+        description: 'API project short name'
+        value: ${{ jobs.load.outputs.api_shortName }}
+      api_rootDirectory:
+        description: 'API project root directory'
+        value: ${{ jobs.load.outputs.api_rootDirectory }}
+      api_projectName:
+        description: 'API project name'
+        value: ${{ jobs.load.outputs.api_projectName }}
+      sql_shortName:
+        value: ${{ jobs.load.outputs.sql_shortName }}
+      sql_rootDirectory:
+        value: ${{ jobs.load.outputs.sql_rootDirectory }}
+      sql_projectName:
+        value: ${{ jobs.load.outputs.sql_projectName }}
+      sql_solutionName:
+        value: ${{ jobs.load.outputs.sql_solutionName }}
+      sql_testDirectory:
+        value: ${{ jobs.load.outputs.sql_testDirectory }}
+      sql_testProjectName:
+        value: ${{ jobs.load.outputs.sql_testProjectName }}
+      projectKeys:
+        value: ${{ jobs.load.outputs.projectKeys }}
+
+jobs:
+  load:
+    name: Load Project Config Settings
+    runs-on: ubuntu-latest
+    outputs:
+      web_shortName: ${{ steps.config.outputs.web_shortName }}
+      web_rootDirectory: ${{ steps.config.outputs.web_rootDirectory }}
+      web_projectName: ${{ steps.config.outputs.web_projectName }}
+      web_testDirectory: ${{ steps.config.outputs.web_testDirectory }}
+      web_testProjectName: ${{ steps.config.outputs.web_testProjectName }}
+      api_shortName: ${{ steps.config.outputs.api_shortName }}
+      api_rootDirectory: ${{ steps.config.outputs.api_rootDirectory }}
+      api_projectName: ${{ steps.config.outputs.api_projectName }}
+      sql_shortName: ${{ steps.config.outputs.sql_shortName }}
+      sql_rootDirectory: ${{ steps.config.outputs.sql_rootDirectory }}
+      sql_projectName: ${{ steps.config.outputs.sql_projectName }}
+      sql_solutionName: ${{ steps.config.outputs.sql_solutionName }}
+      sql_testDirectory: ${{ steps.config.outputs.sql_testDirectory }}
+      sql_testProjectName: ${{ steps.config.outputs.sql_testProjectName }}
+      projectKeys: ${{ steps.config.outputs.projectKeys }}
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            .github/config
+            .github/actions
+
+      - name: Load all project configurations
+        id: config
+        uses: ./.github/actions/load-project-config

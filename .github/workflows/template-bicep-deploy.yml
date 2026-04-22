@@ -1,109 +1,204 @@
-# ------------------------------------------------------------------------------------------------------------------------
-# Reusable workflow: Bicep infrastructure deployment
-# ------------------------------------------------------------------------------------------------------------------------
-# FYI: This template deploys Bicep infrastructure to Azure using OIDC authentication.
-#   It validates the template before deploying.
-# ------------------------------------------------------------------------------------------------------------------------
-name: z_template_bicep_deploy
-
-# ------------------------------------------------------------------------------------------------------------------------
+name: z_template_deploy_infra
+run-name: Deploy Bicep
 on:
   workflow_call:
     inputs:
-      environmentName:
+      envCode:
         required: true
         type: string
-        description: 'Target environment (dev, qa, prod)'
-      resourceGroupName:
-        required: true
-        type: string
-        description: 'Azure Resource Group name'
-      bicepPath:
+      templatePath: 
         required: false
         type: string
-        default: 'infra/Bicep/main.bicep'
-      bicepParamPath:
+        default: 'infra/Bicep/'
+      templateFile: 
         required: false
         type: string
-        default: 'infra/Bicep/main.bicepparam'
-    secrets:
-      AZURE_CLIENT_ID:
-        required: true
-      AZURE_TENANT_ID:
-        required: true
-      AZURE_SUBSCRIPTION_ID:
-        required: true
-      APP_NAME:
-        required: true
-      ENVCODE:
-        required: true
-      RESOURCE_GROUP_LOCATION:
-        required: true
-      INSTANCE_NUMBER:
-        required: true
-      SQL_DATABASE_NAME:
-        required: true
-      SQLADMIN_LOGIN_USERID:
-        required: true
-      SQLADMIN_LOGIN_USERSID:
-        required: true
-      SQLADMIN_LOGIN_TENANTID:
-        required: true
-      KEYVAULT_OWNER_USERID:
-        required: true
+        default: 'main.bicep'
+      parameterFile: 
+        required: false
+        type: string
+        default: ''
+      parameterFileReplaceTokens: 
+        required: false
+        type: string
+        default: 'false'
+      deploymentType:
+        required: false
+        type: string
+        default: 'webapp'
+      runCreateInfra:
+        required: false
+        default: true
+        type: boolean
+      deployInResourceGroup:
+        required: false
+        default: true
+        type: boolean
+      createResourceGroup:
+        type: boolean
+        default: false
+      requestorName:
+        type: string
+        default: 'UNKNOWN'
+      bicepDeploymentMode:
+        required: false
+        type: string
+        default: 'create'
 
-# ------------------------------------------------------------------------------------------------------------------------
 jobs:
-  # ----------------------------------------------------------------------------------------------------
-  deploy-bicep:
-    name: Deploy Bicep - ${{ inputs.environmentName }}
+  deploy:
+    name: Deploy Bicep (${{ inputs.bicepDeploymentMode }})
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-    environment: ${{ inputs.environmentName }}
-
+    environment:
+      name: ${{ inputs.envCode }}
     permissions:
-      id-token: write
-      contents: read
+      id-token: write    
+      contents: read     
+      actions: read    
+      pages: write  
+    
+    env:
+      envCode: ${{ inputs.envCode }}
+      generatedAppEnvName: ${{ inputs.envCode == 'prod' && vars.APP_NAME || format('{0}-{1}-{2}', vars.APP_NAME, inputs.envCode, vars.INSTANCE_NUMBER) }}
+      generatedResourceGroupName: ${{ vars.RESOURCE_GROUP_NAME || format('{0}-{1}-{2}', vars.RESOURCE_GROUP_PREFIX, inputs.envCode, vars.INSTANCE_NUMBER) }}
+      DEPLOYMENT_TYPE: ${{ inputs.deploymentType }}
+      createResourceGroup: ${{ inputs.createResourceGroup }}
+      requestorName: ${{ inputs.requestorName }}
+
+    outputs:
+      UI_CONTAINER_APP_FQDN: ${{ steps.deploy-bicep-rg.outputs.UI_CONTAINER_APP_FQDN }}
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+    - name: Checkout Code
+      if: ${{ inputs.runCreateInfra }}
+      uses: actions/checkout@v4
 
-      - name: Replace tokens in parameter file
-        uses: cschleiden/replace-tokens@0cc44ed8a69a04a6768d2fc10005e2ce5a61e088 # v1.3
-        with:
-          files: '${{ inputs.bicepParamPath }}'
-        env:
-          APP_NAME: ${{ secrets.APP_NAME }}
-          ENVCODE: ${{ secrets.ENVCODE }}
-          RESOURCE_GROUP_LOCATION: ${{ secrets.RESOURCE_GROUP_LOCATION }}
-          INSTANCE_NUMBER: ${{ secrets.INSTANCE_NUMBER }}
-          SQL_DATABASE_NAME: ${{ secrets.SQL_DATABASE_NAME }}
-          SQLADMIN_LOGIN_USERID: ${{ secrets.SQLADMIN_LOGIN_USERID }}
-          SQLADMIN_LOGIN_USERSID: ${{ secrets.SQLADMIN_LOGIN_USERSID }}
-          SQLADMIN_LOGIN_TENANTID: ${{ secrets.SQLADMIN_LOGIN_TENANTID }}
-          KEYVAULT_OWNER_USERID: ${{ secrets.KEYVAULT_OWNER_USERID }}
+    - name: Get the current date
+      if: ${{ inputs.runCreateInfra }}
+      id: get-date
+      run: echo "DATE_TIME_STAMP=$(date +'%Y%m%d%H%M')" >> $GITHUB_OUTPUT
 
-      - name: Azure Login
-        uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5 # v2.3.0
-        with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+    - name: Display Variables and Files
+      if: ${{ inputs.runCreateInfra }}
+      run: |-
+        echo "env.generatedAppEnvName=${{ env.generatedAppEnvName }}"
+        echo "inputs.envCode=${{ inputs.envCode }}"
+        echo "env.generatedResourceGroupName=${{ env.generatedResourceGroupName }}"
+        echo "templateFilePath=${{ inputs.templatePath }}${{ inputs.templateFile }}"
+        echo "parameterFilePath=${{ inputs.templatePath }}${{ inputs.parameterFile }}"
+        echo "bicepDeploymentMode=${{ inputs.bicepDeploymentMode }}"
+        echo "vars.INSTANCE_NUMBER=${{ vars.INSTANCE_NUMBER }}"
+        echo "vars.RESOURCE_GROUP_PREFIX=${{ vars.RESOURCE_GROUP_PREFIX }}"
+        echo "vars.RESOURCE_GROUP_LOCATION=${{ vars.RESOURCE_GROUP_LOCATION }}"
+        echo "location=${{ vars.RESOURCE_GROUP_LOCATION }}"
+        echo "envCode=${{ env.envCode }}"
+        echo "templatePath=${{ inputs.templatePath }}"
+        echo "templateFile=${{ inputs.templateFile }}"
+        echo "parameterFile=${{ inputs.parameterFile }}"
+        echo "parameterFileReplaceTokens=${{ inputs.parameterFileReplaceTokens }}"
+        echo "---------------------------------"
+        echo "##[group]All Variables:"
+        echo "Environment:"
+        echo "${{ toJSON(env) }}"
+        echo "Variables:"
+        echo "${{ toJSON(vars) }}"
+        echo "Secrets:"
+        echo "${{ toJSON(secrets) }}"
+        echo "Inputs:"
+        echo '${{ toJSON(inputs) }}'
+        echo "##[endgroup]"
+        echo "---------------------------------"
+        echo "##[group]Directory of ${{ github.workspace  }}"
+        tree -R ${{ github.workspace  }}
+        echo "##[endgroup]"
+      continue-on-error: true
 
-      - name: Validate Bicep
-        uses: azure/arm-deploy@a1361c2c2cd2e944fee2fdb1fb5e9e4c5e1e1807 # v2.0.0
-        with:
-          resourceGroupName: ${{ inputs.resourceGroupName }}
-          template: ${{ inputs.bicepPath }}
-          parameters: ${{ inputs.bicepParamPath }}
-          deploymentMode: Validate
+    - name: Replace Tokens
+      if: ${{ inputs.runCreateInfra && inputs.parameterFileReplaceTokens == 'true' }}
+      uses: qetza/replacetokens-action@v1
+      with:
+        sources: '${{ inputs.templatePath }}${{ inputs.parameterFile }}; !local/ => ${{ inputs.parameterFile }}'
+        variables: '[${{ toJSON(env) }},${{ toJSON(vars) }},${{ toJSON(secrets) }}]'
 
-      - name: Deploy Bicep
-        uses: azure/arm-deploy@a1361c2c2cd2e944fee2fdb1fb5e9e4c5e1e1807 # v2.0.0
-        with:
-          resourceGroupName: ${{ inputs.resourceGroupName }}
-          template: ${{ inputs.bicepPath }}
-          parameters: ${{ inputs.bicepParamPath }}
-          deploymentMode: Incremental
-          failOnStdErr: false
+    - name: Display Param File
+      if: ${{ inputs.runCreateInfra }}
+      run: |-
+        echo "##[group]Contents of ${{ inputs.templatePath }}${{ inputs.parameterFile }}"
+        cat ${{ inputs.templatePath }}${{ inputs.parameterFile }}
+        echo "##[endgroup]"
+      continue-on-error: true
+      
+    - name: Azure Login (Reusable Action)
+      if: ${{ inputs.runCreateInfra }}
+      uses: ./.github/actions/login-action
+      with:
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+    - name: Create Resource Group
+      if: ${{ inputs.runCreateInfra && inputs.deployInResourceGroup && inputs.createResourceGroup }}
+      run: az group create --name ${{ env.generatedResourceGroupName }} --location ${{ vars.RESOURCE_GROUP_LOCATION }} --tags Environment=${{ inputs.envCode }}
+
+    - name: What-If Analysis (RG)
+      if: ${{ inputs.runCreateInfra && inputs.deployInResourceGroup && inputs.bicepDeploymentMode == 'whatIf' }}
+      id: whatif-analysis-rg
+      run: |
+        echo "Running what-if analysis..."
+        az deployment group what-if \
+          --name ${{ inputs.templateFile }}-whatif-rg-${{ vars.RESOURCE_GROUP_LOCATION }}-${{ steps.get-date.outputs.DATE_TIME_STAMP}} \
+          --resource-group "${{ env.generatedResourceGroupName }}" \
+          --template-file "${{ inputs.templatePath }}${{ inputs.templateFile }}" \
+          --parameters "${{ inputs.templatePath }}${{ inputs.parameterFile }}" \
+          --no-prompt true
+
+    - name: Deploy ${{ inputs.deploymentType }} Azure Resources
+      uses: azure/bicep-deploy@v2
+      if: ${{ inputs.runCreateInfra && inputs.deployInResourceGroup && inputs.bicepDeploymentMode != 'whatIf' }} 
+      id: deploy-bicep-rg
+      with:
+        scope: resourceGroup
+        name: ${{ inputs.templateFile }}-rg-${{ vars.RESOURCE_GROUP_LOCATION }}-${{ steps.get-date.outputs.DATE_TIME_STAMP}}
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        resource-group-name: ${{ env.generatedResourceGroupName }}
+        template-file: ${{ inputs.templatePath }}${{ inputs.templateFile }}
+        parameters-file: ${{ inputs.templatePath }}${{ inputs.parameterFile }}
+        type: deployment
+        operation: ${{ inputs.bicepDeploymentMode }}
+
+    - name: Deploy ${{ inputs.deploymentType }} Azure Resources (SUB)
+      uses: azure/bicep-deploy@v2
+      if: ${{ inputs.runCreateInfra && !inputs.deployInResourceGroup && inputs.bicepDeploymentMode != 'whatIf' }}
+      id: deploy-bicep-sub
+      with:
+        scope: subscription
+        location: ${{ vars.RESOURCE_GROUP_LOCATION }}
+        name: ${{ inputs.templateFile }}-sub-${{ vars.RESOURCE_GROUP_LOCATION }}-${{ steps.get-date.outputs.DATE_TIME_STAMP}}
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        template-file: ${{ inputs.templatePath }}${{ inputs.templateFile }}
+        parameters-file: ${{ inputs.templatePath }}${{ inputs.parameterFile }}
+        type: deployment
+        operation: ${{ inputs.bicepDeploymentMode }}
+
+    - name: Display Output
+      if: ${{ inputs.runCreateInfra }}
+      run: |-
+        echo "=== Deployment Outputs ==="
+        echo "##[group]Resource Group Deployment Outputs"
+        echo '${{ toJSON(steps.deploy-bicep-rg.outputs) }}'
+        echo "##[endgroup]"
+        echo "##[group]Subscription Deployment Outputs"
+        echo '${{ toJSON(steps.deploy-bicep-sub.outputs) }}'
+        echo "##[endgroup]"
+      continue-on-error: true
+
+    - name: Write summary
+      if: ${{ inputs.runCreateInfra }}
+      env:
+        SUMMARY: |
+          # Deployment summary
+          - Resource Group: ${{ steps.deploy-bicep-rg.outputs.RESOURCE_GROUP_NAME || steps.deploy-bicep-sub.outputs.RESOURCE_GROUP_NAME }}
+          - Environment: ${{ inputs.envCode }}
+          - Application URL: [https://${{ steps.deploy-bicep-rg.outputs.HOST_NAME || steps.deploy-bicep-sub.outputs.HOST_NAME }}](https://${{ steps.deploy-bicep-rg.outputs.HOST_NAME || steps.deploy-bicep-sub.outputs.HOST_NAME }})
+      run: echo "$SUMMARY" >> $GITHUB_STEP_SUMMARY
+      continue-on-error: true

@@ -1,66 +1,72 @@
-# ------------------------------------------------------------------------------------------------------------------------
-# 1 - Deploy Bicep Infrastructure
-# ------------------------------------------------------------------------------------------------------------------------
-# FYI: This workflow requires the following secrets to be set in the GitHub repository:
-#   AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID, APP_NAME, RESOURCE_GROUP_LOCATION,
-#   INSTANCE_NUMBER, SQL_DATABASE_NAME, SQLADMIN_LOGIN_USERID, SQLADMIN_LOGIN_USERSID,
-#   SQLADMIN_LOGIN_TENANTID, KEYVAULT_OWNER_USERID
-# ------------------------------------------------------------------------------------------------------------------------
 name: 1.deploy.bicep
-run-name: '1 - Deploy Bicep using ENV ${{ inputs.deployEnvironment }} by @${{ github.actor }}'
+run-name: '1 - Deploy Bicep: ${{ inputs.bicepDeploymentMode }} ${{ inputs.deploymentType }} using ENV ${{ inputs.deployEnvironment }} ${{vars.INSTANCE_NUMBER}} by @${{ github.actor }}'
 
-# ------------------------------------------------------------------------------------------------------------------------
-on:
+on: 
   workflow_dispatch:
     inputs:
       deployEnvironment:
-        description: 'Target environment'
+        description: Environment
         required: true
-        default: 'dev'
+        default: 'dev' 
+        type: environment
+      bicepDeploymentMode:
+        description: Bicep Mode
+        default: create
         type: choice
         options:
-          - dev
-          - qa
-          - prod
+          - create
+          - whatIf
+      deploymentType:
+        description: Deployment Type
+        type: choice
+        default: webapp
+        options:
+          - webapp
+          - containerapp
+          - functionapp
+          - all
+      createResourceGroup:
+        description: Create Resource Group?
+        type: boolean
+        default: true
+      runSecurityScan:
+        description: Run Security Scan
+        type: boolean
+        default: false
 
-# ------------------------------------------------------------------------------------------------------------------------
 permissions:
   id-token: write
-  contents: read
+  contents: write
+  actions: read
+  pages: write
+  security-events: write
+  checks: write
+  issues: read
+  pull-requests: read
+  packages: read
 
-# ------------------------------------------------------------------------------------------------------------------------
 jobs:
-  # ----------------------------------------------------------------------------------------------------
-  validate-bicep:
-    name: Validate Bicep Templates
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
+  # NOTE: scan-code job omitted - template-scan-code.yml needs to be created
+  # scan-code:
+  #   name: Scan Source Code
+  #   uses: ./.github/workflows/template-scan-code.yml
+  #   secrets: inherit
+  #   if: inputs.runSecurityScan
+  #   with:
+  #     runMSDevSecOpsScan: ${{ inputs.runSecurityScan }}
+  #     runGHASScan: false
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-
-      - name: Validate Bicep syntax
-        run: az bicep build --file infra/Bicep/main.bicep
-
-  # ----------------------------------------------------------------------------------------------------
-  deploy-infra:
-    name: Deploy Infrastructure
-    needs: validate-bicep
+  Deploy_Bicep:
+    name: Deploy ${{ inputs.deployEnvironment }} Bicep (${{ inputs.bicepDeploymentMode }})
     uses: ./.github/workflows/template-bicep-deploy.yml
+    secrets: inherit
     with:
-      environmentName: ${{ inputs.deployEnvironment }}
-      resourceGroupName: rg-checklist-${{ inputs.deployEnvironment }}
-    secrets:
-      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      APP_NAME: ${{ secrets.APP_NAME }}
-      ENVCODE: ${{ inputs.deployEnvironment }}
-      RESOURCE_GROUP_LOCATION: ${{ secrets.RESOURCE_GROUP_LOCATION }}
-      INSTANCE_NUMBER: ${{ secrets.INSTANCE_NUMBER }}
-      SQL_DATABASE_NAME: ${{ secrets.SQL_DATABASE_NAME }}
-      SQLADMIN_LOGIN_USERID: ${{ secrets.SQLADMIN_LOGIN_USERID }}
-      SQLADMIN_LOGIN_USERSID: ${{ secrets.SQLADMIN_LOGIN_USERSID }}
-      SQLADMIN_LOGIN_TENANTID: ${{ secrets.SQLADMIN_LOGIN_TENANTID }}
-      KEYVAULT_OWNER_USERID: ${{ secrets.KEYVAULT_OWNER_USERID }}
+      envCode: ${{ inputs.deployEnvironment }}
+      templatePath: './infra/Bicep/'
+      templateFile: 'main.bicep'
+      parameterFile: 'main.bicepparam'
+      parameterFileReplaceTokens: 'true'
+      deploymentType: ${{ inputs.deploymentType }}
+      requestorName: ${{ github.actor }}
+      createResourceGroup: ${{ inputs.createResourceGroup }}
+      bicepDeploymentMode: ${{ inputs.bicepDeploymentMode }}
