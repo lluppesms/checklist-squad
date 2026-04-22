@@ -65,6 +65,35 @@
     flex: 1;
 }
 
+.checklist-name-group {
+    margin-bottom: 1rem;
+}
+
+.checklist-name-label {
+    display: block;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    font-weight: 500;
+    margin-bottom: 0.375rem;
+}
+
+.checklist-name-input {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 0.375rem;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.checklist-name-input:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 2px rgba(var(--accent-rgb, 13, 110, 253), 0.25);
+}
+
 .selection-hint {
     color: var(--text-secondary);
     font-size: 0.9rem;

@@ -79,7 +79,7 @@ public sealed class CheckListServiceTests
         {
             SetId = 10, SetName = "Active", SetDscr = "D", OwnerName = "O", ActiveInd = "Y", SortOrder = 1
         };
-        _checkRepo.Setup(r => r.ActivateFromTemplateAsync(1, "Owner", null)).ReturnsAsync(checkSet);
+        _checkRepo.Setup(r => r.ActivateFromTemplateAsync(1, "Owner", null, null)).ReturnsAsync(checkSet);
 
         var result = await _service.ActivateCheckSetAsync(1, "Owner");
 
@@ -93,11 +93,11 @@ public sealed class CheckListServiceTests
     {
         var ids = new List<int> { 1, 2 };
         var checkSet = new CheckSet { SetId = 5, SetName = "X", OwnerName = "O", ActiveInd = "Y" };
-        _checkRepo.Setup(r => r.ActivateFromTemplateAsync(1, "O", ids)).ReturnsAsync(checkSet);
+        _checkRepo.Setup(r => r.ActivateFromTemplateAsync(1, "O", ids, null)).ReturnsAsync(checkSet);
 
         await _service.ActivateCheckSetAsync(1, "O", ids);
 
-        _checkRepo.Verify(r => r.ActivateFromTemplateAsync(1, "O", ids), Times.Once);
+        _checkRepo.Verify(r => r.ActivateFromTemplateAsync(1, "O", ids, null), Times.Once);
     }
 
     // GetActiveCheckSetsAsync

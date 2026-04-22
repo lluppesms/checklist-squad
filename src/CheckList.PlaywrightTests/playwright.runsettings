@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RunSettings>
+  <Playwright>
+    <BrowserName>chromium</BrowserName>
+    <LaunchOptions>
+      <Headless>true</Headless>
+    </LaunchOptions>
+    <ExpectTimeout>10000</ExpectTimeout>
+  </Playwright>
+  <TestRunParameters>
+    <Parameter name="APP_URL" value="https://lsq-checklist1-dev.azurewebsites.net" />
+  </TestRunParameters>
+</RunSettings>

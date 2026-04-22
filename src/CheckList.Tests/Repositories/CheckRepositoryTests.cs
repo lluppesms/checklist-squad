@@ -204,6 +204,36 @@ public sealed class CheckRepositoryTests
     }
 
     [TestMethod]
+    public async Task ActivateFromTemplateAsync_UsesCustomName_WhenProvided()
+    {
+        var template = DbContextHelper.SeedTemplateSet(_db);
+
+        var result = await _repo.ActivateFromTemplateAsync(template.SetId, "Camper", null, "My Custom Checklist");
+
+        Assert.AreEqual("My Custom Checklist", result.SetName);
+    }
+
+    [TestMethod]
+    public async Task ActivateFromTemplateAsync_UsesAutoName_WhenCustomNameIsNull()
+    {
+        var template = DbContextHelper.SeedTemplateSet(_db);
+
+        var result = await _repo.ActivateFromTemplateAsync(template.SetId, "Camper", null, null);
+
+        Assert.IsTrue(result.SetName.Contains("Camp Setup"));
+    }
+
+    [TestMethod]
+    public async Task ActivateFromTemplateAsync_UsesAutoName_WhenCustomNameIsWhitespace()
+    {
+        var template = DbContextHelper.SeedTemplateSet(_db);
+
+        var result = await _repo.ActivateFromTemplateAsync(template.SetId, "Camper", null, "   ");
+
+        Assert.IsTrue(result.SetName.Contains("Camp Setup"));
+    }
+
+    [TestMethod]
     public async Task ActivateFromTemplateAsync_PersistsToDatabase()
     {
         var template = DbContextHelper.SeedTemplateSet(_db);

@@ -1,0 +1,172 @@
+.about-container {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+/* ── Hero ─────────────────────────────────────────── */
+
+.hero-section {
+    text-align: center;
+    padding: 1.5rem 0 1.5rem;
+}
+
+.hero-image-wrapper {
+    margin-bottom: 1.25rem;
+    border-radius: 1rem;
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+}
+
+.hero-image {
+    width: 100%;
+    height: auto;
+    display: block;
+    max-height: 280px;
+    object-fit: cover;
+}
+
+.hero-title {
+    color: var(--text-primary);
+    font-size: 1.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.hero-title i {
+    color: var(--accent-color);
+}
+
+.hero-description {
+    color: var(--text-secondary);
+    font-size: 1rem;
+    line-height: 1.6;
+}
+
+/* ── About Cards ──────────────────────────────────── */
+
+.about-card {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 0.75rem;
+    padding: 1.25rem;
+    margin-bottom: 1.25rem;
+}
+
+.about-card h2 {
+    font-size: 1.2rem;
+    color: var(--text-primary);
+    margin: 0 0 0.75rem;
+}
+
+.about-card h2 i {
+    margin-right: 0.35rem;
+}
+
+.about-card p {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    line-height: 1.6;
+    margin: 0;
+}
+
+.what-card {
+    border-left: 4px solid var(--sky-blue);
+    background-image: linear-gradient(135deg, var(--sky-blue-subtle), transparent);
+}
+
+.what-card h2 i {
+    color: var(--sky-blue);
+}
+
+.tech-card {
+    border-left: 4px solid var(--earth-brown);
+    background-image: linear-gradient(135deg, var(--earth-brown-subtle), transparent);
+}
+
+.tech-card h2 i {
+    color: var(--earth-brown);
+}
+
+.camp-card {
+    border-left: 4px solid var(--accent-color);
+    background-image: linear-gradient(135deg, var(--forest-green-subtle), transparent);
+}
+
+.camp-card h2 i {
+    color: var(--accent-color);
+}
+
+/* ── Tech List ────────────────────────────────────── */
+
+.tech-list {
+    list-style: none;
+    padding: 0;
+    margin: 0.75rem 0 0;
+}
+
+.tech-list li {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    padding: 0.4rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.tech-list li i {
+    color: var(--earth-brown);
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+/* ── Feature Grid ─────────────────────────────────── */
+
+.features-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+}
+
+.feature-card {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-top: 4px solid var(--accent-color);
+    border-radius: 0.75rem;
+    padding: 1.25rem;
+    text-align: center;
+    transition: box-shadow 0.15s, transform 0.15s;
+    background-image: linear-gradient(135deg, var(--card-gradient-start), var(--card-gradient-end));
+}
+
+.feature-card:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+}
+
+.feature-card > i {
+    font-size: 2rem;
+    color: var(--accent-color);
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+.feature-card h3 {
+    font-size: 1rem;
+    color: var(--text-primary);
+    margin: 0 0 0.35rem;
+}
+
+.feature-card p {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    line-height: 1.5;
+    margin: 0;
+}
+
+/* ── Responsive ───────────────────────────────────── */
+
+@media (min-width: 576px) {
+    .features-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}

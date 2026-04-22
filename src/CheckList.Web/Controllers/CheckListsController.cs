@@ -16,7 +16,7 @@ public class CheckListsController(
     {
         try
         {
-            var checkSet = await checkRepo.ActivateFromTemplateAsync(templateSetId, request.OwnerName, request.SelectedListIds);
+            var checkSet = await checkRepo.ActivateFromTemplateAsync(templateSetId, request.OwnerName, request.SelectedListIds, request.CustomName);
             await hubContext.Clients.All.CheckSetActivated(checkSet.SetId, checkSet.SetName);
             return CreatedAtAction(nameof(GetById), new { setId = checkSet.SetId }, checkSet.ToDto());
         }

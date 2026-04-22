@@ -30,7 +30,7 @@ public sealed class CheckListsControllerTests
         {
             SetId = 1, SetName = "Active", OwnerName = "O", ActiveInd = "Y"
         };
-        _checkRepo.Setup(r => r.ActivateFromTemplateAsync(1, "Owner", null)).ReturnsAsync(checkSet);
+        _checkRepo.Setup(r => r.ActivateFromTemplateAsync(1, "Owner", null, null)).ReturnsAsync(checkSet);
 
         var result = await _controller.Activate(1, new ActivateCheckSetRequest("Owner"));
 
@@ -41,7 +41,7 @@ public sealed class CheckListsControllerTests
     public async Task Activate_BroadcastsSignalR()
     {
         var checkSet = new CheckSet { SetId = 5, SetName = "Test", OwnerName = "O", ActiveInd = "Y" };
-        _checkRepo.Setup(r => r.ActivateFromTemplateAsync(1, "O", null)).ReturnsAsync(checkSet);
+        _checkRepo.Setup(r => r.ActivateFromTemplateAsync(1, "O", null, null)).ReturnsAsync(checkSet);
 
         await _controller.Activate(1, new ActivateCheckSetRequest("O"));
 
@@ -51,7 +51,7 @@ public sealed class CheckListsControllerTests
     [TestMethod]
     public async Task Activate_ReturnsNotFound_WhenTemplateNotFound()
     {
-        _checkRepo.Setup(r => r.ActivateFromTemplateAsync(99, "O", null))
+        _checkRepo.Setup(r => r.ActivateFromTemplateAsync(99, "O", null, null))
             .ThrowsAsync(new KeyNotFoundException("Not found"));
 
         var result = await _controller.Activate(99, new ActivateCheckSetRequest("O"));

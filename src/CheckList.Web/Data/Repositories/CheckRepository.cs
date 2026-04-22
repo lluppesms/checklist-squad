@@ -41,7 +41,7 @@ public class CheckRepository(CheckListDbContext db) : ICheckRepository
         return action;
     }
 
-    public async Task<CheckSet> ActivateFromTemplateAsync(int templateSetId, string ownerName, List<int>? selectedListIds = null)
+    public async Task<CheckSet> ActivateFromTemplateAsync(int templateSetId, string ownerName, List<int>? selectedListIds = null, string? customName = null)
     {
         var template = await db.TemplateSets
             .Include(s => s.TemplateLists.OrderBy(l => l.SortOrder))
@@ -61,13 +61,14 @@ public class CheckRepository(CheckListDbContext db) : ICheckRepository
         }
 
         var now = DateTime.UtcNow;
-        var localDate = now.ToLocalTime();
-        var dateSuffix = localDate.ToString("ddd, MMM d");
+        var setName = !string.IsNullOrWhiteSpace(customName)
+            ? customName
+            : $"{template.SetName} — {now.ToLocalTime():ddd, MMM d}";
 
         var checkSet = new CheckSet
         {
             TemplateSetId = template.SetId,
-            SetName = $"{template.SetName} — {dateSuffix}",
+            SetName = setName,
             SetDscr = template.SetDscr,
             OwnerName = ownerName,
             ActiveInd = "Y",

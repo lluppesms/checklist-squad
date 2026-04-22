@@ -54,3 +54,28 @@ Added list selection dialog when activating templates so users can choose which 
 - Disabled activation button when no lists selected (prevents empty activation)
 - Clear visual feedback on list hover and selection state
 
+### 2026-07-27: RV Outdoors Theme Refresh
+Replaced the bland default Bootstrap blue theme with a warm, nature-inspired RV/campground palette:
+- **Palette source**: `wwwroot/images/RV-Checklist.jpg` — cartoon RV at lakeside campground
+- **Primary accent**: Forest green `#4A8C5C` (was `#0d6efd`), dark: `#6dba80`
+- **Secondary accent**: Sky blue `#6CB4D9`, earthy brown `#8B6F47`
+- **Navbar/sidebar**: Dark charcoal `#3A3A3A` with cream `#F5F0E8` text
+- **Card pattern**: Colored left borders (green=checklists, blue=active, brown=templates), subtle gradient backgrounds, hover lift
+- **Progress bars**: Forest green, not blue
+- **Typography**: Georgia serif for headings, Segoe UI for body
+- **Extended CSS variables**: `--sky-blue`, `--forest-green`, `--earth-brown`, `--cream`, `--charcoal`, `--navbar-bg`, `--sidebar-bg`, `--sidebar-active-bg`, `--card-accent-border`, `--card-gradient-start/end`, plus `-hover` and `-subtle` variants for each color
+- **Home page hero**: `RV-Checklist.jpg` in rounded container with shadow, camping-themed welcome messages
+- **Empty states**: Dashed borders, outdoor icons (compass, signpost), friendly RV copy
+- **Dark theme**: Full parallel palette with appropriate brightness shifts
+- **Rule**: All colors via CSS vars only — zero hardcoded hex in component CSS files
+
+### 2026-07-27: About Page
+Created `/about` page with camping-themed content:
+- **Files**: `About.razor` + `About.razor.css` in `Components/Pages/`
+- **Sections**: Hero (reuses RV-Checklist.jpg), "What Is This?", 4-card feature grid, tech stack, closing CTA
+- **Card color coding**: Sky-blue border for "What Is This?", earth-brown for tech stack, forest-green for CTA — matches existing card-border convention
+- **Feature grid**: 1-col on mobile, 2-col at 576px+ breakpoint
+- **Navigation**: Added "About" with `bi-info-circle` to both NavMenu (desktop sidebar) and MainLayout bottom-nav (mobile)
+- **Zero hardcoded colors**: All CSS uses vars from app.css
+- **Pattern**: Mirrors Home page hero structure (image-wrapper, title, description) for visual consistency
+

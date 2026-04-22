@@ -222,7 +222,7 @@ else
         }
     }
 
-    private async Task ConfirmActivateSelectedLists(List<int> selectedListIds)
+    private async Task ConfirmActivateSelectedLists((string Name, List<int> ListIds) confirmation)
     {
         showListSelectionDialog = false;
         if (!selectedTemplateId.HasValue || !UserIdentity.HasNickName) return;
@@ -235,7 +235,8 @@ else
             var checkSet = await ApiClient.ActivateCheckSetAsync(
                 selectedTemplateId.Value, 
                 UserIdentity.NickName!, 
-                selectedListIds);
+                confirmation.ListIds,
+                confirmation.Name);
             
             if (checkSet is not null)
             {

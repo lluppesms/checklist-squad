@@ -9,6 +9,17 @@
                 <button class="btn-close" @onclick="Cancel" aria-label="Close"></button>
             </div>
             <div class="dialog-body">
+                <div class="checklist-name-group">
+                    <label class="checklist-name-label" for="checklistName">Checklist name</label>
+                    <input id="checklistName"
+                           type="text"
+                           class="checklist-name-input"
+                           @bind="checklistName"
+                           @bind:event="oninput"
+                           maxlength="200"
+                           aria-label="Checklist name" />
+                </div>
+
                 <p class="selection-hint">Select which lists to activate:</p>
                 
                 <div class="selection-controls">
@@ -52,21 +63,22 @@
     [Parameter] public bool IsVisible { get; set; }
     [Parameter] public string TemplateName { get; set; } = "";
     [Parameter] public List<TemplateListDto> Lists { get; set; } = [];
-    [Parameter] public EventCallback<List<int>> OnConfirm { get; set; }
+    [Parameter] public EventCallback<(string Name, List<int> ListIds)> OnConfirm { get; set; }
     [Parameter] public EventCallback OnCancel { get; set; }
 
     private HashSet<int> selectedListIds = [];
+    private string checklistName = "";
     private bool allSelected;
     private int selectedCount => selectedListIds.Count;
     private int totalCount => Lists.Count;
 
     protected override void OnParametersSet()
     {
-        // Initialize with all lists selected
         if (IsVisible && selectedListIds.Count == 0)
         {
             selectedListIds = Lists.Select(l => l.ListId).ToHashSet();
             allSelected = true;
+            checklistName = $"{DateTime.Now:ddd MMM d} {TemplateName}";
         }
     }
 
@@ -99,13 +111,18 @@
 
     private async Task Confirm()
     {
-        await OnConfirm.InvokeAsync(selectedListIds.ToList());
+        var name = string.IsNullOrWhiteSpace(checklistName)
+            ? $"{DateTime.Now:ddd MMM d} {TemplateName}"
+            : checklistName.Trim();
+        await OnConfirm.InvokeAsync((name, selectedListIds.ToList()));
         selectedListIds.Clear();
+        checklistName = "";
     }
 
     private async Task Cancel()
     {
         selectedListIds.Clear();
+        checklistName = "";
         await OnCancel.InvokeAsync();
     }
 }
