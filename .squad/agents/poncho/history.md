@@ -79,3 +79,13 @@ Created `/about` page with camping-themed content:
 - **Zero hardcoded colors**: All CSS uses vars from app.css
 - **Pattern**: Mirrors Home page hero structure (image-wrapper, title, description) for visual consistency
 
+### 2026-04-22: Editable Checklist Name on Template Activation
+Added editable name field to ListSelectionDialog:
+- Text input defaults to `"{DateTime.Now:ddd MMM d} {templateName}"`
+- `OnConfirm` callback now returns `(string Name, List<int> ListIds)` tuple instead of just `List<int>`
+- Full stack wired: dialog → service → controller → repository
+- `ActivateCheckSetRequest` extended with optional `CustomName` field (backward compatible)
+- Repository falls back to auto-generated name when customName is null/whitespace
+- CSS for name input uses only CSS variables — no hardcoded colors
+- 3 new tests added for name customization scenarios (147 total now passing)
+

@@ -39,3 +39,20 @@
 - Import/Export DTOs now use proper JsonPropertyName attributes from the Api canonical versions
 - All namespaces updated from `CheckList.Api.*` to `CheckList.Web.*`
 - `ICheckListApiClient` interface kept for Blazor page compatibility, implementation swapped to direct repo calls
+
+### 2026-04-22 - Editable Checklist Name on Template Activation
+- ListSelectionDialog.razor now includes a text input for the checklist name, defaulting to `"{DateTime.Now:ddd MMM d} {templateName}"`
+- Changed `OnConfirm` callback from `EventCallback<List<int>>` to `EventCallback<(string Name, List<int> ListIds)>` (value tuple)
+- `customName` parameter added through the full stack: ICheckListApiClient → CheckListService → ICheckRepository → CheckRepository → Controller
+- `ActivateCheckSetRequest` record extended with optional `CustomName` field (backward compatible)
+- Repository uses customName when non-empty, otherwise falls back to existing auto-generated format
+- CSS for name input uses only CSS variables (--text-primary, --bg-card, --border-color, --accent-color) — no hardcoded colors
+- 3 new tests added (147 total, up from 144): custom name used, null fallback, whitespace fallback
+
+### 2026-04-22 - RV Outdoors Theme & About Page (Poncho)
+Frontend team completed theme refresh and About page:
+- Entire Bootstrap palette replaced with warm RV/campground colors: forest green primary, sky blue secondary, earth brown accents
+- All colors now via CSS variables in app.css — supports dark/light themes automatically
+- New `/about` page with hero, feature cards, tech stack, and CTA sections
+- "About" link added to sidebar and mobile bottom nav
+- Card color convention applied: sky-blue = info, earth-brown = technical, forest-green = CTA

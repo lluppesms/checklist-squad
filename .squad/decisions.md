@@ -107,6 +107,55 @@ Unit test coverage baseline established:
 - Shared `DbContextHelper` provides in-memory DbContext with seed data
 - Test frameworks: MSTest 4.0.1, Moq 4.20.72, EF Core InMemory 10.0.6
 
+---
+
+### About Page — Layout & Navigation Placement
+**Author:** Poncho (Frontend Dev)  
+**Date:** 2026-04-22  
+**Status:** Implemented
+
+Created `/about` route with hero section reusing `RV-Checklist.jpg`, feature cards, and tech stack list:
+- Added "About" as final item in both desktop sidebar (NavMenu) and mobile bottom-nav (MainLayout)
+- Used `bi-info-circle` icon — standard "about/info" affordance
+- Card border colors follow existing convention: sky-blue = informational, earth-brown = technical, forest-green = CTA/positive
+
+**Impact:** Mobile bottom nav now has 4 items (Home, Templates, Checklists, About). If more pages are added, may need to reconsider overflow or "More" menu. No new dependencies or services — purely static content.
+
+---
+
+### RV Outdoors Theme Palette
+**Author:** Poncho (Frontend Dev)  
+**Date:** 2026-04-22  
+**Status:** Implemented
+
+Replaced default Bootstrap blue palette with warm, nature-inspired RV/campground theme derived from `RV-Checklist.jpg`:
+- Primary accent: Forest green `#4A8C5C` (replaces `#0d6efd`)
+- Secondary: Sky blue `#6CB4D9`, earthy brown `#8B6F47`
+- Navbar/sidebar: Dark charcoal `#3A3A3A`
+- All colors defined as CSS variables in `app.css` — both light and dark themes
+- Extended variable set: `--sky-blue`, `--forest-green`, `--earth-brown`, `--cream`, `--charcoal`, plus `-hover` and `-subtle` variants
+- Card accent pattern: colored left borders indicate card type (green=checklists, blue=active, brown=templates)
+- Typography: Georgia serif for headings, Segoe UI for body
+
+**Impact:** Any new components or pages should use these CSS variables. Never hardcode hex/rgb in component CSS files. Use `--accent-color` for primary actions, `--sky-blue` for informational elements, `--earth-brown` for template-related elements.
+
+---
+
+### Editable Checklist Name on Template Activation
+**Author:** Mac (Backend Dev)  
+**Date:** 2026-04-22  
+**Status:** Implemented
+
+Added editable name field to ListSelectionDialog so users can customize the checklist name before activation:
+- Default format: `"{Date:ddd MMM d} {templateName}"` (e.g., "Tue Apr 22 RV Setup Checklist")
+- `OnConfirm` callback changed from `EventCallback<List<int>>` to `EventCallback<(string Name, List<int> ListIds)>`
+- `customName` parameter added through full stack (dialog → service → repo → controller)
+- `ActivateCheckSetRequest` record extended with optional `CustomName` (backward compatible for API callers)
+- Repository falls back to auto-generated name when customName is null/whitespace
+- 3 new unit tests added (147 total passing)
+
+**Trade-offs:** Value tuple used for callback instead of a dedicated record type — simpler for a two-field payload, but if more activation options are added later, consider refactoring to a typed record.
+
 ## Governance
 
 - All meaningful changes require team consensus
