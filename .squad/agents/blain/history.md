@@ -33,6 +33,22 @@
 - **Files created:** `template-load-config.yml`, `template-webapp-deploy.yml`, `template-dacpac-build.yml`, `template-dacpac-deploy.yml`
 - **Not yet created:** `template-scan-code.yml` (security scanning) and `template-smoke-test.yml` (Playwright tests) — commented out in workflows for future implementation
 
+### 2025-07-25: Full Pipeline Rewrite Pass 2 — Closing Golden Code Gaps
+- **Completed all previously deferred work** from the initial golden code alignment
+- **GitHub Actions — 5 edits + 3 new files:**
+  - Uncommented `scan-code` jobs in workflows 1, 2, and 6 (previously TODO'd)
+  - Added `run-smoke-test` job to workflow 2 (bicep-build-deploy-webapp)
+  - Created `template-scan-code.yml` — MS DevSecOps + CodeQL GHAS scanning (exact golden copy)
+  - Created `template-smoke-test.yml` — Playwright smoke tests (exact golden copy)
+  - Created `7-scan-code.yml` — scheduled monthly security scan workflow
+  - Updated `template-load-config.yml` with all project types from golden (function, console, mcp, mcpsse, analyzer) — replaces old api-only outputs
+- **Azure DevOps — 2 new files + 1 edit:**
+  - Created `7-scan-code.yml` — scheduled Wednesday security scan pipeline
+  - Created `jobs/playwright-job.yml` — Playwright test job (was referenced by `bicep-and-webapp-stages.yml` but missing)
+  - Added containerapp/functionapp/all options to `1-deploy-bicep.yml` deploymentType parameter
+- **Key insight:** The `api_*` outputs were removed from template-load-config.yml since Mac is merging API into Web — the golden code's pattern (web, function, console, mcp, sql) is the right model
+- **All scan-code and smoke-test functionality is now wired up** and no longer commented out
+
 ### 2025-07-25: Azure DevOps Pipeline Rewrite to Match dadabase.demo Golden Code
 - **Complete restructure** from flat pipelines to the golden code's 3-tier template hierarchy: Main Pipelines → Stages → Jobs → Steps
 - **Rewrote 4 main pipelines** and **created 17 new template files** across jobs/, stages/, steps/, and vars/ directories
