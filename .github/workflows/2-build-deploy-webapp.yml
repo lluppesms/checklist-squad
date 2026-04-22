@@ -66,15 +66,14 @@ jobs:
     uses: ./.github/workflows/template-load-config.yml
     secrets: inherit
 
-  # NOTE: scan-code job omitted - template-scan-code.yml needs to be created
-  # scan-code:
-  #   name: Scan Source Code
-  #   uses: ./.github/workflows/template-scan-code.yml
-  #   secrets: inherit
-  #   if: inputs.runSecurityScan
-  #   with:
-  #     runMSDevSecOpsScan: ${{ inputs.runSecurityScan }}
-  #     runGHASScan: ${{ inputs.runSecurityScan }}
+  scan-code:
+    name: Scan Source Code
+    uses: ./.github/workflows/template-scan-code.yml
+    secrets: inherit
+    if: inputs.runSecurityScan
+    with:
+      runMSDevSecOpsScan: ${{ inputs.runSecurityScan }}
+      runGHASScan: ${{ inputs.runSecurityScan }}
 
   create-infra:
     name: Create Infra ${{ inputs.deployEnvironment }}
@@ -115,3 +114,15 @@ jobs:
     secrets: inherit
     with:
       envCode: ${{ inputs.deployEnvironment }}
+
+# ------------------------------------------------------------------------------------------------------------------------
+  run-smoke-test:
+    name: Smoke Test ${{ inputs.deployEnvironment }}
+    uses: ./.github/workflows/template-smoke-test.yml
+    if: inputs.runSmokeTest
+    needs: deploy-web-app
+    secrets: inherit
+    with:
+      envCode: ${{ inputs.deployEnvironment }}
+      testPath: 'playwright/ui-tests'
+      testType: 'ui'

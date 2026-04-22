@@ -46,15 +46,14 @@ permissions:
   packages: read
 
 jobs:
-  # NOTE: scan-code job omitted - template-scan-code.yml needs to be created
-  # scan-code:
-  #   name: Scan Source Code
-  #   uses: ./.github/workflows/template-scan-code.yml
-  #   secrets: inherit
-  #   if: inputs.runSecurityScan
-  #   with:
-  #     runMSDevSecOpsScan: ${{ inputs.runSecurityScan }}
-  #     runGHASScan: false
+  scan-code:
+    name: Scan Source Code
+    uses: ./.github/workflows/template-scan-code.yml
+    secrets: inherit
+    if: inputs.runSecurityScan
+    with:
+      runMSDevSecOpsScan: ${{ inputs.runSecurityScan }}
+      runGHASScan: false
 
   Deploy_Bicep:
     name: Deploy ${{ inputs.deployEnvironment }} Bicep (${{ inputs.bicepDeploymentMode }})

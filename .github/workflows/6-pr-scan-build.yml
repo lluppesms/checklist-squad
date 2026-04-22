@@ -22,19 +22,19 @@ jobs:
     uses: ./.github/workflows/template-load-config.yml
     secrets: inherit
 
-  # NOTE: scan-code job omitted - template-scan-code.yml needs to be created
-  # scan-code:
-  #   name: Scan Source Code
-  #   uses: ./.github/workflows/template-scan-code.yml
-  #   secrets: inherit
-  #   with:
-  #     runMSDevSecOpsScan: true
-  #     runGHASScan: false
+  scan-code:
+    name: Scan Source Code
+    uses: ./.github/workflows/template-scan-code.yml
+    secrets: inherit
+    with:
+      runMSDevSecOpsScan: true
+      runGHASScan: false
 
+# ------------------------------------------------------------------------------------------------------------------------
   build-app:
     name: Build WebApp
     uses: ./.github/workflows/template-webapp-build.yml
-    needs: [load-config]
+    needs: [load-config, scan-code]
     secrets: inherit
     with:
       envCode: 'dev'

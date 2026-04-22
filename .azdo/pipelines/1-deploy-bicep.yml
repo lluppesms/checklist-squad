@@ -34,6 +34,9 @@ parameters:
     type: string
     values:
       - webapp
+      - containerapp
+      - functionapp
+      - all
     default: webapp
   - name: runMSDevSecOpsScan
     displayName: Run MS DevSecOps Scan
