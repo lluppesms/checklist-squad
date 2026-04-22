@@ -9,4 +9,8 @@
   <ItemGroup>
     <PostDeploy Include="dbo\Post.Deployment.sql" />
   </ItemGroup>
+  <ItemGroup>
+    <Build Remove="Patch\**\*.sql" />
+    <None Include="Patch\**\*.sql" />
+  </ItemGroup>
 </Project>

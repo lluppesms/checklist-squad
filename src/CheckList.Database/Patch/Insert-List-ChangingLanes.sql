@@ -16,7 +16,7 @@ DECLARE
 SET	@SetName = 'Changing Lanes Check Lists'
 
 DELETE FROM [dbo].[TemplateList] Where SetName = @SetName
-	
+
 Insert into [dbo].[TemplateList](SetName, OwnerName) Values (@SetName, @OwnerName)
 	SET @Set2Id = SCOPE_IDENTITY()
 

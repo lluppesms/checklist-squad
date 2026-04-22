@@ -17,12 +17,12 @@ DECLARE
 	@Category6Id int,
 	@Category7Id int
 
+
+DELETE FROM [dbo].[TemplateSet] Where SetName IN ('Lyle''s Check Lists', 'Changing Lanes Check Lists', 'RV Goddess - Setup Tasks')
+
 -- ----------------------------------------------------------------------
 SET @Set1Name = 'Lyle''s Check Lists'
 -- ----------------------------------------------------------------------
-
-DELETE FROM [dbo].[TemplateSet] Where SetName = @Set1Name
-
 Insert into [dbo].[TemplateSet] (SetName, OwnerName) Values (@Set1Name, 'LLUPPES')
 	SET @Set1Id = SCOPE_IDENTITY()
 
@@ -40,7 +40,6 @@ Insert into [dbo].[TemplateAction](ActionText, ActionDscr, ListId, CategoryId, S
   ('Check Truck tires (inflation, general inspection)', null, @List1Id, @Category1Id, 60),
   ('Top-off RV batteries', null, @List1Id, @Category1Id, 70),
   ('Plan route and fuel (gas station locations, rest stops, get address in phone for GPS)', null, @List1Id, @Category1Id, 80)
-
   
 Insert into [dbo].[TemplateList](ListName, ListDscr, SortOrder, SetId) Values ('2-Hitching', 'Do these these when you are hitching up to go somewhere', 20, @Set1Id)
 	SET @List2Id = SCOPE_IDENTITY()
@@ -232,9 +231,6 @@ Insert into [dbo].[TemplateAction](ActionText, ActionDscr, ListId, CategoryId, S
 -- ----------------------------------------------------------------------
 SET	@SetName = 'Changing Lanes Check Lists'
 -- ----------------------------------------------------------------------
-
-DELETE FROM [dbo].[TemplateList] Where SetName = @SetName
-	
 Insert into [dbo].[TemplateList](SetName, OwnerName) Values (@SetName, @OwnerName)
 	SET @Set2Id = SCOPE_IDENTITY()
 
@@ -353,8 +349,6 @@ Insert into [dbo].[TemplateAction](ActionText, ActionDscr,  CategoryId, SortOrde
 -- ----------------------------------------------------------------------
 SET	@SetName = 'RV Goddess - Setup Tasks'
 -- ----------------------------------------------------------------------
-DELETE FROM [dbo].[TemplateSet] Where SetName = @SetName
-
 Insert into [dbo].[TemplateSet](SetName, OwnerName) Values (@SetName, @OwnerName)
 	SET @Set1Id = SCOPE_IDENTITY()
 Insert into [dbo].[TemplateList](ListName, SetId) Values ('Departure List', @Set1Id)
