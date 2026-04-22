@@ -1,0 +1,75 @@
+# ----------------------------------------------------------------------------------------------------
+# Code Scanning Template
+# ----------------------------------------------------------------------------------------------------
+# GitHub Advanced Security For Azure DevOps
+# To enable this, you must enable GHAzDO for this repository in your Azure DevOps Project
+# ----------------------------------------------------------------------------------------------------
+parameters:
+- name: environmentName
+  default: 'DEV'
+- name: runMSDevSecOpsScan
+  default: 'false'
+- name: runGHASScan
+  default: 'false'
+
+# ------------------------------------------------------------------------------------------------------------------------
+jobs:
+- deployment: InitializeScan
+  displayName: Initialize Scan
+  environment: ${{ parameters.environmentName }}
+
+- job: ScanCode
+  displayName: Scan Code
+
+  variables:
+    - name: environmentName
+      value: ${{ parameters.environmentName }}
+    - template: ../vars/var-common.yml
+
+  steps:
+  - task: Bash@3
+    displayName: 'Display Variables'
+    inputs:
+      targetType: 'inline'
+      script: |
+        echo "runMSDevSecOpsScan=${{ parameters.runMSDevSecOpsScan }}"
+        echo "runGHASScan=${{ parameters.runGHASScan }}"
+        echo "##[group]Display All Environment Variables:"
+        printenv | sort
+        echo "##[endgroup]"
+    continueOnError: true
+
+  # ------------------------------------------------------------------------------------------------------------------------
+  # Microsoft DevSecOps Scan
+  # See: https://marketplace.visualstudio.com/items?itemName=ms-securitydevops.microsoft-security-devops-azdevops
+  # ------------------------------------------------------------------------------------------------------------------------
+  - ${{ if eq(lower(parameters.runMSDevSecOpsScan), 'true') }}:
+    - task: MicrosoftSecurityDevOps@1
+      displayName: 'Run Microsoft Security DevOps'
+      continueOnError: true
+
+  # ------------------------------------------------------------------------------------------------------------------------
+  # GitHub Advanced Security Scanning
+  # ------------------------------------------------------------------------------------------------------------------------
+  - ${{ if eq(lower(parameters.runGHASScan), 'true') }}:
+    - task: AdvancedSecurity-Codeql-Init@1
+      displayName: GHAS - Initialize CodeQL
+      inputs:
+        languages: 'csharp'
+
+    - template: ../steps/scan-code-compile-steps.yml
+
+    - task: AdvancedSecurity-Codeql-Autobuild@1
+      displayName: GHAS - AutoBuild
+      continueOnError: true
+
+    - task: AdvancedSecurity-Codeql-Analyze@1
+      displayName: GHAS - Perform CodeQL Analysis
+
+    - task: AdvancedSecurity-Dependency-Scanning@1
+      displayName: GHAS - Dependency Scanning
+      continueOnError: true
+
+    - task: AdvancedSecurity-Publish@1
+      displayName: GHAS - Publish Results
+      continueOnError: true

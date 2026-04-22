@@ -1,0 +1,72 @@
+# ----------------------------------------------------------------------------------------------------
+# Template to build a SQL Dacpac File
+# ----------------------------------------------------------------------------------------------------
+parameters: 
+- name: environmentName
+  default:  'DEV'
+- name: appFolderName
+  default: ''
+- name: appSolutionName
+  default: ''
+- name: appProjectName
+  default: ''
+- name: artifactName
+  default: 'dacpac'
+
+# ------------------------------------------------------------------------------------------------------------------------
+jobs:
+- deployment: Build${{ parameters.environmentName }}Schema
+  displayName: Initialize ${{ parameters.environmentName }} Build Schema
+  environment: ${{ parameters.environmentName }}
+
+- job: BuildDB${{ parameters.environmentName }}Schema
+  displayName: Build ${{ parameters.environmentName }} Schema
+  variables:
+    - name: environmentNameUpper
+      value: ${{ upper(parameters.environmentName) }}
+    - name: environmentNameLower
+      value: ${{ lower(parameters.environmentName) }}
+    - name: buildPlatform
+      value: 'Any CPU'
+    - name: buildConfiguration
+      value: 'Release'
+
+  steps:
+  - task: CmdLine@2
+    inputs:
+      script: |
+        echo "serviceConnectionName=$(serviceConnectionName)"
+        echo "environmentNameUpper=$(environmentNameUpper)"
+        echo "environmentNameLower=$(environmentNameLower)"
+        echo "appFolderName=${{ parameters.appFolderName }}"
+        echo "appSolutionName=${{ parameters.appSolutionName }}"
+        echo "appProjectName=${{ parameters.appProjectName }}"
+        echo "artifactName=${{ parameters.artifactName }}"
+        echo "Directory of pipeline workspace:"
+        tree -L 4 $(Pipeline.Workspace)
+    displayName: 'Display Variables and Tree'
+    continueOnError: true
+
+  - task: NuGetToolInstaller@1
+    displayName: 'Setup NuGet'
+
+  - task: NuGetCommand@2
+    displayName: 'Restore NuGet Packages'
+    inputs:
+      restoreSolution: '${{ parameters.appFolderName }}/${{ parameters.appProjectName }}.sqlproj'
+      command: 'restore'
+
+  - task: VSBuild@1
+    displayName: Build DacPac
+    inputs:
+      solution: '${{ parameters.appFolderName }}/${{ parameters.appProjectName }}.sqlproj'
+      platform: '$(buildPlatform)'
+      configuration: '$(buildConfiguration)'
+      msbuildArgs: /p:DropObjectsNotInSource=False
+
+  - task: PublishBuildArtifacts@1
+    displayName: Save DacPac Artifact
+    inputs:
+      PathtoPublish: '$(Pipeline.Workspace)\s\${{ parameters.appFolderName }}\bin\Any CPU\Release\${{ parameters.appProjectName }}.dacpac'
+      ArtifactName: '${{ parameters.artifactName }}'
+      publishLocation: 'Container'

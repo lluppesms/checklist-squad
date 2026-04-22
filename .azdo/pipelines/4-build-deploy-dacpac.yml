@@ -1,98 +1,70 @@
 # ------------------------------------------------------------------------------------------------------------------------
-# Pipeline to build and deploy SQL DACPAC
-# ------------------------------------------------------------------------------------------------------------------------
-# See readme file for info about the contents of the variable group
+# Pipeline to build and deploy Database Objects Only to existing resources
+# See readme file for info about variable group "CheckList.Demo"
 # ------------------------------------------------------------------------------------------------------------------------
 name: $(date:yyyy).$(date:MM).$(date:dd)$(rev:.r) ${{ parameters.deployToEnvironment }}
+pool:
+  vmImage: windows-latest # dacpac restore only runs on Windows...
 
-trigger: none
-# trigger:
-#   branches:
-#     include:
-#       - main
-#   paths:
-#     include:
-#       - src/CheckList.Database/**
+# ----------------------------------------------------------------------------------------------------
+trigger:
+  # since this repo has both AzDO and GHA pipelines, nothing is run automatically...
+  - none
+  # batch: true
+  # branches:
+  #   include:
+  #     - main
+  # paths:
+  #   include:
+  #     - 'src\CheckList.Database/*'
+  #   exclude: 
+  #     - '**/*.yml'
+  #     - '**/*.yaml'
+  #     - '**/*.bicep'
+  #     - '**/*.md'
 
 # ----------------------------------------------------------------------------------------------------
 parameters:
   - name: deployToEnvironment
     displayName: Deploy To
     type: string
-    default: 'DEV'
     values:
       - DEV
       - QA
       - PROD
+      - DEV-QA-PROD
+    default: DEV
+  - name: loginAccountType
+    displayName: Login Type
+    type: string
+    values:
+      - SVC_PRINCIPAL
+      - LOCAL_SQL
+    default: SVC_PRINCIPAL
 
 # ----------------------------------------------------------------------------------------------------
 variables:
-  - group: checklist-common
-  - group: checklist-${{ parameters.deployToEnvironment }}
+  - group: CheckList.Demo
   - template: vars/var-common.yml
+  - template: vars/var-service-connections.yml
 
 # ----------------------------------------------------------------------------------------------------
 stages:
-  - stage: Build
-    displayName: 'Build DACPAC'
-    jobs:
-      - job: BuildDacpac
-        displayName: 'Build DACPAC'
-        pool:
-          vmImage: 'ubuntu-latest'
-        timeoutInMinutes: 10
-        steps:
-          - checkout: self
+- ${{ if ne(parameters.deployToEnvironment, 'DEV-QA-PROD') }}:
+  - template: stages/dacpac-deploy-stages.yml
+    parameters:
+      environments: ['DEV']
+      singleEnvironment: 'true'
+      appFolderName: $(sqlAppFolderName)
+      appSolutionName: $(sqlAppSolutionName)
+      appProjectName: $(sqlAppProjectName)
+      loginAccountType: ${{ parameters.loginAccountType }}
 
-          - task: UseDotNet@2
-            displayName: 'Setup .NET SDK'
-            inputs:
-              packageType: 'sdk'
-              version: '$(dotnetVersion)'
-
-          - task: DotNetCoreCLI@2
-            displayName: 'Build DACPAC project'
-            inputs:
-              command: 'build'
-              projects: '$(dacpacProjectFile)'
-              arguments: '--configuration Release'
-
-          - task: PublishBuildArtifacts@1
-            displayName: 'Publish DACPAC artifact'
-            inputs:
-              PathtoPublish: '$(dacpacProjectPath)/bin/Release/'
-              ArtifactName: 'dacpac-package'
-
-  # ----------------------------------------------------------------------------------------------------
-  - stage: Deploy
-    displayName: 'Deploy DACPAC'
-    dependsOn: Build
-    condition: succeeded()
-    jobs:
-      - deployment: DeployDacpac
-        displayName: 'Deploy DACPAC - ${{ parameters.deployToEnvironment }}'
-        pool:
-          vmImage: 'ubuntu-latest'
-        timeoutInMinutes: 15
-        environment: '${{ parameters.deployToEnvironment }}'
-        strategy:
-          runOnce:
-            deploy:
-              steps:
-                - task: DownloadBuildArtifacts@1
-                  displayName: 'Download DACPAC artifact'
-                  inputs:
-                    buildType: 'current'
-                    downloadType: 'single'
-                    artifactName: 'dacpac-package'
-                    downloadPath: '$(System.ArtifactsDirectory)'
-
-                - task: SqlAzureDacpacDeployment@1
-                  displayName: 'Deploy DACPAC to Azure SQL'
-                  inputs:
-                    azureSubscription: '$(serviceConnection)'
-                    AuthenticationType: 'connectionString'
-                    ConnectionString: '$(sqlConnectionString)'
-                    deployType: 'DacpacTask'
-                    DeploymentAction: 'Publish'
-                    DacpacFile: '$(System.ArtifactsDirectory)/dacpac-package/CheckList.Database.dacpac'
+- ${{ if eq(parameters.deployToEnvironment, 'DEV-QA-PROD') }}:
+  - template: stages/dacpac-deploy-stages.yml
+    parameters:
+      environments: ['DEV','QA','PROD']
+      appFolderName: $(sqlAppFolderName)
+      appSolutionName: $(sqlAppSolutionName)
+      appProjectName: $(sqlAppProjectName)
+      loginAccountType: ${{ parameters.loginAccountType }}

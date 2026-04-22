@@ -1,80 +1,71 @@
 # ------------------------------------------------------------------------------------------------------------------------
-# Pipeline to deploy Bicep Infrastructure
-# ------------------------------------------------------------------------------------------------------------------------
+# Pipeline to deploy Azure Resources Only
 # See readme file for info about the contents of the variable group
 # ------------------------------------------------------------------------------------------------------------------------
-name: $(date:yyyy).$(date:MM).$(date:dd)$(rev:.r) ${{ parameters.deployToEnvironment }}
-
-trigger: none
-# trigger:
-#   branches:
-#     include:
-#       - main
-#   paths:
-#     include:
-#       - infra/Bicep/**
+name: $(date:yyyy).$(date:MM).$(date:dd)$(rev:.r) ${{ parameters.deployToEnvironment }}-${{ parameters.deploymentType }} 
+pool:
+  vmImage: ubuntu-latest
+trigger:
+  # since this repo has both AzDO and GHA pipelines, nothing is run automatically...
+  - none
+  # batch: true
+  # branches:
+  #   include:
+  #     - main
+  # paths:
+  #   include: 
+  #     - '**/*.yml'
+  #     - '**/*.yaml'
+  #     - '**/*.bicep'
 
 # ----------------------------------------------------------------------------------------------------
 parameters:
   - name: deployToEnvironment
     displayName: Deploy To
     type: string
-    default: 'DEV'
     values:
       - DEV
       - QA
       - PROD
+      - DEV-QA-PROD
+    default: DEV
+  - name: deploymentType
+    displayName: Deployment Type
+    type: string
+    values:
+      - webapp
+    default: webapp
+  - name: runMSDevSecOpsScan
+    displayName: Run MS DevSecOps Scan
+    type: boolean
+    default: true
+  - name: runGHASScan
+    displayName: Run GHAS Scan
+    type: boolean
+    default: false
 
 # ----------------------------------------------------------------------------------------------------
 variables:
-  - group: checklist-common
-  - group: checklist-${{ parameters.deployToEnvironment }}
-  - template: vars/var-common.yml
-  - name: resourceGroupName
-    value: 'rg-checklist-${{ parameters.deployToEnvironment }}'
+  - group: CheckList.Demo
+  - template: vars/var-service-connections.yml
 
 # ----------------------------------------------------------------------------------------------------
 stages:
-  - stage: ValidateBicep
-    displayName: 'Validate Bicep'
-    jobs:
-      - job: Validate
-        displayName: 'Validate Bicep Templates'
-        pool:
-          vmImage: 'ubuntu-latest'
-        timeoutInMinutes: 10
-        steps:
-          - checkout: self
+- ${{ if ne(parameters.deployToEnvironment, 'DEV-QA-PROD') }}:
+  - template: stages/bicep-only-stages.yml
+    parameters:
+      environments: ['${{ parameters.deployToEnvironment }}']
+      #singleEnvironment: 'true'
+      parseBicepOutputs: true
+      runMSDevSecOpsScan: ${{ parameters.runMSDevSecOpsScan }}
+      runGHASScan: ${{ parameters.runGHASScan }}
+      deploymentType: ${{ parameters.deploymentType }}
 
-          - task: AzureCLI@2
-            displayName: 'Validate Bicep syntax'
-            inputs:
-              azureSubscription: '$(serviceConnection)'
-              scriptType: 'bash'
-              scriptLocation: 'inlineScript'
-              inlineScript: |
-                az bicep build --file $(bicepPath)
-
-  # ----------------------------------------------------------------------------------------------------
-  - stage: DeployInfra
-    displayName: 'Deploy Infrastructure'
-    dependsOn: ValidateBicep
-    condition: succeeded()
-    jobs:
-      - deployment: DeployBicep
-        displayName: 'Deploy Bicep - ${{ parameters.deployToEnvironment }}'
-        pool:
-          vmImage: 'ubuntu-latest'
-        timeoutInMinutes: 30
-        environment: '${{ parameters.deployToEnvironment }}'
-        strategy:
-          runOnce:
-            deploy:
-              steps:
-                - checkout: self
-
-                - template: steps/bicep-deploy-steps.yml
-                  parameters:
-                    environmentName: '${{ parameters.deployToEnvironment }}'
-                    resourceGroupName: '$(resourceGroupName)'
-                    serviceConnection: '$(serviceConnection)'
+- ${{ if eq(parameters.deployToEnvironment, 'DEV-QA-PROD') }}:
+  - template: stages/bicep-only-stages.yml
+    parameters:
+      environments: ['DEV','QA','PROD']
+      parseBicepOutputs: true
+      runMSDevSecOpsScan: ${{ parameters.runMSDevSecOpsScan }}
+      runGHASScan: ${{ parameters.runGHASScan }}
+      deploymentType: ${{ parameters.deploymentType }}

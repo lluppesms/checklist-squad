@@ -1,77 +1,30 @@
-# ------------------------------------------------------------------------------------------------------------------------
-# Pipeline for PR Validation: Scan and Build
-# ------------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------
+# Pipeline to scan/build an app upon Pull Request
+# ----------------------------------------------------------------------------------------------------
 name: $(date:yyyy).$(date:MM).$(date:dd)$(rev:.r)
+pool:
+  vmImage: ubuntu-latest
 
-trigger: none
-
-pr:
-  branches:
-    include:
-      - main
-  paths:
-    include:
-      - src/**
-      - checklist-squad.sln
+# ----------------------------------------------------------------------------------------------------
+# FYI -> Set a required branch policy to run this on every check to main 
+# ----------------------------------------------------------------------------------------------------
+trigger:
+  - none
+# pr:
+# - main
 
 # ----------------------------------------------------------------------------------------------------
 variables:
-  - template: vars/var-common.yml
+  - group: CheckList.Demo
+  - template: vars/var-service-connections.yml
 
 # ----------------------------------------------------------------------------------------------------
 stages:
-  - stage: Validate
-    displayName: 'PR Validation'
-    jobs:
-      - job: BuildAndTest
-        displayName: 'Build & Test'
-        pool:
-          vmImage: 'ubuntu-latest'
-        timeoutInMinutes: 15
-        steps:
-          - checkout: self
+- template: stages/scan-code-stages.yml
+  parameters:
+    runMSDevSecOpsScan: true
+    runGHASScan: false
 
-          - task: UseDotNet@2
-            displayName: 'Setup .NET SDK'
-            inputs:
-              packageType: 'sdk'
-              version: '$(dotnetVersion)'
-
-          - task: DotNetCoreCLI@2
-            displayName: 'Restore dependencies'
-            inputs:
-              command: 'restore'
-              projects: '$(solutionFile)'
-
-          - task: DotNetCoreCLI@2
-            displayName: 'Build solution'
-            inputs:
-              command: 'build'
-              projects: '$(solutionFile)'
-              arguments: '--configuration Release --no-restore'
-
-          - task: DotNetCoreCLI@2
-            displayName: 'Run tests'
-            inputs:
-              command: 'test'
-              projects: '$(solutionFile)'
-              arguments: '--configuration Release --no-build --verbosity normal'
-              publishTestResults: true
-
-      # ----------------------------------------------------------------------------------------------------
-      - job: ValidateBicep
-        displayName: 'Validate Bicep'
-        pool:
-          vmImage: 'ubuntu-latest'
-        timeoutInMinutes: 5
-        steps:
-          - checkout: self
-
-          - task: AzureCLI@2
-            displayName: 'Validate Bicep syntax'
-            inputs:
-              azureSubscription: '$(serviceConnection)'
-              scriptType: 'bash'
-              scriptLocation: 'inlineScript'
-              inlineScript: |
-                az bicep build --file $(bicepPath)
+- template: stages/webapp-build-stages.yml
+  parameters:
+    runUnitTests: true

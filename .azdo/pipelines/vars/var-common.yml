@@ -1,22 +1,60 @@
-# ------------------------------------------------------------------------------------------------------------------------
-# Shared variables for CI/CD pipelines
-# ------------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------
+# Variables common to all environments
+# ----------------------------------------------------------------------------------------------------
 variables:
-  - name: appName
-    value: 'checklist'
-  - name: solutionFile
+  # - name: appName
+  #   value: 'this is unique to you - define in a variable group or on the pipeline variables!'
+  # - name: serviceConnectionName
+  #   value: 'this is unique to you - define in a variable group or on the pipeline variables!'
+
+  - name: resourceGroupPrefix
+    value: 'rg-checklist-azdo'
+  - name: applicationTitle
+    value: 'Checklist App'
+
+  - name: webSiteSku 
+    value: 'B1'
+  - name: storageSku 
+    value: 'Standard_LRS'
+
+  - name: webAppFolderName
+    value: 'src/'
+  - name: webAppSolutionName
     value: 'checklist-squad.sln'
-  - name: apiProjectPath
-    value: 'src/CheckList.Api'
-  - name: webProjectPath
-    value: 'src/CheckList.Web'
-  - name: dacpacProjectPath
-    value: 'src/CheckList.Database'
-  - name: dacpacProjectFile
-    value: 'src/CheckList.Database/CheckList.Database.sqlproj'
-  - name: dotnetVersion
-    value: '10.0.x'
-  - name: bicepPath
-    value: 'infra/Bicep/main.bicep'
-  - name: bicepParamPath
-    value: 'infra/Bicep/main.bicepparam'
+
+  - name: webAppProjectFolderName
+    value: 'CheckList.Web'
+  - name: webAppProjectName
+    value: 'CheckList.Web'
+  - name: webAppProjectExtension
+    value: 'csproj'
+
+  - name: webTestFolderName 
+    value: 'CheckList.Tests'
+  - name: webTestProjectName
+    value: 'CheckList.Tests'
+
+  # SQL Deploy must run on Windows
+  - name: sqlAppFolderName
+    value: 'src\CheckList.Database\'
+  - name: sqlAppSolutionName
+    value: 'CheckList.Database'
+  - name: sqlAppProjectName
+    value: 'CheckList.Database'
+
+  - name: buildPlatform
+    value: 'Any CPU'
+  - name: buildConfiguration
+    value: 'Release'
+  - name: runtime 
+    value: 'win-x64'
+
+  - name: playwrightBasicTestType
+    value: 'basic'
+  - name: playwrightBasicTestPath
+    value: 'playwright/basic-tests'
+
+  - name: workingDirectoryInfra
+    value: '/infra/Bicep'
+  - name: workingDirectoryIgnore
+    value: '/Docs'

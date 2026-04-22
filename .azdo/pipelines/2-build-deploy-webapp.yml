@@ -1,87 +1,82 @@
 # ------------------------------------------------------------------------------------------------------------------------
-# Pipeline to build and deploy Application (API + Web)
-# ------------------------------------------------------------------------------------------------------------------------
+# Pipeline to build and deploy Azure Resources and Application
 # See readme file for info about the contents of the variable group
 # ------------------------------------------------------------------------------------------------------------------------
 name: $(date:yyyy).$(date:MM).$(date:dd)$(rev:.r) ${{ parameters.deployToEnvironment }}
-
-trigger: none
-# trigger:
-#   branches:
-#     include:
-#       - main
-#   paths:
-#     include:
-#       - src/CheckList.Api/**
-#       - src/CheckList.Web/**
-#       - src/CheckList.ServiceDefaults/**
-#       - checklist-squad.sln
+pool:
+  vmImage: ubuntu-latest
+trigger:
+  # since this repo has both AzDO and GHA pipelines, nothing is run automatically...
+  - none
+  # batch: true
+  # branches:
+  #   include:
+  #     - main
+  #   exclude:
+  #     - '**/*.md'
+  # paths:
+  #   include:
+  #     - 'src/CheckList.Web/**'
 
 # ----------------------------------------------------------------------------------------------------
 parameters:
   - name: deployToEnvironment
     displayName: Deploy To
     type: string
-    default: 'DEV'
     values:
       - DEV
       - QA
       - PROD
+      - DEV-QA-PROD
+    default: DEV
+  - name: deployBicep
+    displayName: Deploy Bicep
+    type: boolean
+    default: false
+  - name: runUnitTests
+    displayName: Run Unit Tests
+    type: boolean
+    default: true
+  - name: runSmokeTest
+    displayName: Run Playwright Smoke Test
+    type: boolean
+    default: true
+  - name: runMSDevSecOpsScan
+    displayName: Run MS DevSecOps Scan
+    type: boolean
+    default: true
+  - name: runGHASScan
+    displayName: Run GHAS Scan
+    type: boolean
+    default: false
 
 # ----------------------------------------------------------------------------------------------------
 variables:
-  - group: checklist-common
-  - group: checklist-${{ parameters.deployToEnvironment }}
-  - template: vars/var-common.yml
+  - group: CheckList.Demo
+  - template: vars/var-service-connections.yml
 
 # ----------------------------------------------------------------------------------------------------
 stages:
-  - stage: Build
-    displayName: 'Build Application'
-    jobs:
-      - job: BuildApp
-        displayName: 'Build & Publish'
-        pool:
-          vmImage: 'ubuntu-latest'
-        timeoutInMinutes: 15
-        steps:
-          - checkout: self
+- ${{ if ne(parameters.deployToEnvironment, 'DEV-QA-PROD') }}:
+  - template: stages/bicep-and-webapp-stages.yml
+    parameters:
+      environments: ['${{ parameters.deployToEnvironment }}']
+      deployBicep: ${{ parameters.deployBicep }}
+      parseBicepOutputs: true
+      runSmokeTest: ${{ parameters.runSmokeTest }}
+      runMSDevSecOpsScan: ${{ parameters.runMSDevSecOpsScan }}
+      runGHASScan: ${{ parameters.runGHASScan }}
+      runUnitTests: ${{ parameters.runUnitTests }}
+      deploymentType: 'webapp'
 
-          - template: steps/webapp-build-steps.yml
-            parameters:
-              dotnetVersion: '$(dotnetVersion)'
-              solutionFile: '$(solutionFile)'
-              publishApi: true
-              publishWeb: true
-
-  # ----------------------------------------------------------------------------------------------------
-  - stage: Deploy
-    displayName: 'Deploy to Azure'
-    dependsOn: Build
-    condition: succeeded()
-    jobs:
-      - deployment: DeployApp
-        displayName: 'Deploy App - ${{ parameters.deployToEnvironment }}'
-        pool:
-          vmImage: 'ubuntu-latest'
-        timeoutInMinutes: 15
-        environment: '${{ parameters.deployToEnvironment }}'
-        strategy:
-          runOnce:
-            deploy:
-              steps:
-                - task: DownloadBuildArtifacts@1
-                  displayName: 'Download Web artifact'
-                  inputs:
-                    buildType: 'current'
-                    downloadType: 'single'
-                    artifactName: 'web-package'
-                    downloadPath: '$(System.ArtifactsDirectory)'
-
-                - task: AzureWebApp@1
-                  displayName: 'Deploy to App Service'
-                  inputs:
-                    azureSubscription: '$(serviceConnection)'
-                    appType: 'webAppLinux'
-                    appName: '$(webAppName)'
-                    package: '$(System.ArtifactsDirectory)/web-package/**/*.zip'
+- ${{ if eq(parameters.deployToEnvironment, 'DEV-QA-PROD') }}:
+  - template: stages/bicep-and-webapp-stages.yml
+    parameters:
+      environments: ['DEV','QA','PROD']
+      deployBicep: ${{ parameters.deployBicep }}
+      parseBicepOutputs: true
+      runSmokeTest: ${{ parameters.runSmokeTest }}
+      runMSDevSecOpsScan: ${{ parameters.runMSDevSecOpsScan }}
+      runGHASScan: ${{ parameters.runGHASScan }}
+      runUnitTests: ${{ parameters.runUnitTests }}
+      deploymentType: 'webapp'
