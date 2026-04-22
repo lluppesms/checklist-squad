@@ -16,9 +16,13 @@
 - **Repository pattern:** Controllers talk directly to repositories (ICheckRepository, ITemplateRepository) + IHubContext for SignalR. The service layer (CheckListService) wraps repos + hub for Blazor component use.
 - **Key testing patterns:** Repositories tested with EF Core InMemory provider. Services/controllers tested with Moq. SignalR hub tested by mocking IHubCallerClients + IGroupManager.
 - **Coverage baseline:** 144 tests, 94.5% line / 92% branch on testable code (excluding Blazor UI, Extensions.cs, Program.cs).
+- **Playwright smoke tests:** `src/CheckList.PlaywrightTests/` — separate project using Microsoft.Playwright 1.59.0 + MSTest 4.0.2. 35 tests across 7 test files targeting the live dev site. Chromium headless, sequential execution (Workers=1) to avoid overwhelming the dev server.
+- **Blazor Server + Playwright gotchas:** (1) `FillAsync` doesn't trigger Blazor `@bind:event="oninput"` — use `PressSequentiallyAsync` instead. (2) Blazor Server prerender loads HTML instantly but SignalR circuit takes seconds — must wait for circuit before interacting. (3) Nickname entry needs retry loop because circuit may not be ready when overlay appears. (4) Session-scoped state (nickname) doesn't persist across browser contexts.
+- **Playwright test base URL:** Configurable via `APP_URL` env var, defaults to `https://lsq-checklist1-dev.azurewebsites.net/`.
+- **Playwright test structure:** `SmokeTests/SmokeTestBase.cs` manages browser lifecycle per-test and provides `NavigateAndWaitForBlazor()` with Blazor circuit detection + nickname dismissal.
 
 ## Recent Updates
 
-📌 **2026-04-22:** Unit test suite completed by Hawkins — 144 MSTest tests, 94.5% line / 92% branch coverage, 10 test files. All tests green, build clean.
+📌 **2026-04-22:** Playwright smoke test suite created by Hawkins — 35 tests, all green against live dev site. Covers home page, navigation, checklists, templates, import/export, responsive layout, and SignalR connectivity.
 
 📌 Team initialized on 2026-04-21
