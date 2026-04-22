@@ -37,6 +37,11 @@ on:
         required: false
         type: string
         default: ''
+      sqlCmdVariables:
+        required: false
+        type: string
+        default: ''
+        description: 'Comma-separated SQLCMD variables (e.g. "AppIdentityName=myapp-dev")'
 
 # ------------------------------------------------------------------------------------------------------------------------
 jobs:
@@ -75,6 +80,7 @@ jobs:
           Write-Host "Login Type: ${{ inputs.loginAccountType }}"
           Write-Host "Resource Group: ${{ inputs.resourceGroupName }}"
           Write-Host "Database Copy Name: ${{ inputs.databaseCopyName }}"
+          Write-Host "SQLCMD Variables: ${{ inputs.sqlCmdVariables }}"
 
       - name: List Input Files
         shell: pwsh
@@ -110,12 +116,23 @@ jobs:
           }
           Import-Module SqlServer
           
-          Invoke-Sqlcmd -ServerInstance "${{ env.fqdnServerName }}" `
-            -Database "${{ vars.SQL_DATABASE_NAME }}" `
-            -Username "${{ secrets.SQL_ADMIN_USER }}" `
-            -Password "${{ secrets.SQL_ADMIN_PASSWORD }}" `
-            -InputFile "$sqlFile" `
-            -Verbose
+          $sqlParams = @{
+            ServerInstance = "${{ env.fqdnServerName }}"
+            Database       = "${{ vars.SQL_DATABASE_NAME }}"
+            Username       = "${{ secrets.SQL_ADMIN_USER }}"
+            Password       = "${{ secrets.SQL_ADMIN_PASSWORD }}"
+            InputFile      = "$sqlFile"
+            Verbose        = $true
+          }
+          
+          # Add SQLCMD variables if provided
+          $sqlCmdVars = "${{ inputs.sqlCmdVariables }}"
+          if ($sqlCmdVars -ne '') {
+            $varArray = $sqlCmdVars -split ',' | ForEach-Object { $_.Trim() }
+            $sqlParams.Variable = $varArray
+          }
+          
+          Invoke-Sqlcmd @sqlParams
 
       # ------------------------------------------------------------------------------------------------------------------------
       # Run SQL Script with Service Principal Access Token
@@ -136,11 +153,22 @@ jobs:
           }
           Import-Module SqlServer
           
-          Invoke-Sqlcmd -ServerInstance "${{ env.fqdnServerName }}" `
-            -Database "${{ vars.SQL_DATABASE_NAME }}" `
-            -AccessToken $accessToken `
-            -InputFile "$sqlFile" `
-            -Verbose
+          $sqlParams = @{
+            ServerInstance = "${{ env.fqdnServerName }}"
+            Database       = "${{ vars.SQL_DATABASE_NAME }}"
+            AccessToken    = $accessToken
+            InputFile      = "$sqlFile"
+            Verbose        = $true
+          }
+          
+          # Add SQLCMD variables if provided
+          $sqlCmdVars = "${{ inputs.sqlCmdVariables }}"
+          if ($sqlCmdVars -ne '') {
+            $varArray = $sqlCmdVars -split ',' | ForEach-Object { $_.Trim() }
+            $sqlParams.Variable = $varArray
+          }
+          
+          Invoke-Sqlcmd @sqlParams
 
       # ------------------------------------------------------------------------------------------------------------------------
       # Run Database Copy with Service Principal

@@ -96,3 +96,19 @@
 - **Files kept as-is:** `modules/monitor/monitor.bicep`, `modules/signalr/signalr.bicep` (project-specific, already correct)
 - **Golden features NOT adopted (dadabase-specific, not needed for checklist app):** container modules, function modules, storage modules, OpenAI settings, AAD auth settings, user-assigned managed identity, role assignments module
 - **New pipeline variables required:** `EXISTING_SERVICEPLAN_NAME`, `EXISTING_SERVICEPLAN_RESOURCE_GROUP_NAME`, `EXISTING_SQLSERVER_NAME`, `EXISTING_SQLSERVER_RESOURCE_GROUP_NAME`, `WEBSITE_SKU` — set empty strings for fresh deployments
+
+### 2025-07-26: Automated SQL Managed Identity Grants (Post-DACPAC)
+- **Problem:** After every first deployment, user had to manually log into Azure SQL and run CREATE USER/ALTER ROLE commands to grant the App Service managed identity database access
+- **Solution:** Automated via the golden code's `5-run-sql-script.yml` + `template-run-sql.yml` pattern
+- **Golden code pattern followed:**
+  - SQL patch scripts live in `src/CheckList.Database/Patch/`
+  - `template-run-sql.yml` reusable workflow: gets Azure AD access token via `az account get-access-token`, runs `Invoke-Sqlcmd` with `-AccessToken` (service principal) or `-Username/-Password` (local SQL)
+  - `5-run-sql-script.yml` standalone dispatch workflow for running patch scripts manually
+  - Post-DACPAC job in `4-build-deploy-dacpac.yml` that runs the identity grant script automatically after schema deployment
+  - AzDO 3-tier template hierarchy: `stages/run-sql-stages.yml` → `jobs/run-sql-job.yml` → `steps/run-sql-steps.yml`
+- **Extension over golden code:** Added `sqlCmdVariables` parameter to pass SQLCMD variables (e.g., `AppIdentityName=lsq-checklist1-dev`) so the identity name is parameterized, not hardcoded
+- **SQL script is idempotent:** Checks `sys.database_principals` and `sys.database_role_members` before creating user or adding role memberships
+- **Identity name pattern:** `$(APP_NAME)$(INSTANCE_NUMBER)-$(envCode)` — matches the Bicep `webSiteName` output which equals the system-assigned managed identity name
+- **Files created:** `src/CheckList.Database/Patch/Add-App-User-Rights.sql`, `.github/workflows/5-run-sql-script.yml`, `.azdo/pipelines/5-run-sql-script.yml`, `.azdo/pipelines/stages/run-sql-stages.yml`, `.azdo/pipelines/jobs/run-sql-job.yml`, `.azdo/pipelines/steps/run-sql-steps.yml`
+- **Files modified:** `.github/workflows/template-run-sql.yml` (added `sqlCmdVariables` input), `.github/workflows/4-build-deploy-dacpac.yml` (added `grant-identity` job), `.azdo/pipelines/stages/dacpac-deploy-stages.yml` (added `Grant Identity` stage)
+- **New pipeline variables required:** `APP_NAME` — the app name prefix (e.g., `lsq-checklist`) used to compose the managed identity name. Must be set as a GHA repo/environment variable and an AzDO variable group variable.

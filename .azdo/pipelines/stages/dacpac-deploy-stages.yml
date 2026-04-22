@@ -43,3 +43,18 @@ stages:
         artifactName: 'dacpac'
         appProjectName: ${{ parameters.appProjectName }}
         loginAccountType: ${{ parameters.loginAccountType }}
+
+  # Grant App Service Managed Identity access to the database after DACPAC deploy
+  - stage: Grant${{ environmentName }}Identity
+    displayName: Grant ${{ environmentName }} Identity
+    dependsOn: Deploy${{ environmentName }}Schema
+    jobs:
+    - template: ../jobs/run-sql-job.yml
+      parameters:
+        environmentName: ${{ environmentName }}
+        sqlFolderName: 'src\CheckList.Database\Patch\'
+        sqlFileName: 'Add-App-User-Rights.sql'
+        runInDatabase: $(SQL_DATABASE_NAME)
+        loginAccountType: ${{ parameters.loginAccountType }}
+        sqlCmdVariables:
+          - 'AppIdentityName=$(APP_NAME)$(INSTANCE_NUMBER)-${{ lower(environmentName) }}'

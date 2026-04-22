@@ -75,6 +75,24 @@ jobs:
     secrets: inherit
 
   # ----------------------------------------------------------------------------------------------------
+  # Grant App Service Managed Identity Access to Database
+  # ----------------------------------------------------------------------------------------------------
+  grant-identity:
+    name: Grant managed identity
+    uses: ./.github/workflows/template-run-sql.yml
+    needs: [load-config, deploy]
+    if: ${{ inputs.dacpacAction == 'build-deploy' }}
+    permissions:
+      id-token: write  
+    with:
+      envCode: ${{ inputs.deployEnvironment }}
+      sqlFolderName: '${{ needs.load-config.outputs.sql_rootDirectory }}/Patch'
+      sqlFileName: 'Add-App-User-Rights.sql'
+      loginAccountType: ${{ inputs.loginAccountType }}
+      sqlCmdVariables: 'AppIdentityName=${{ vars.APP_NAME }}${{ vars.INSTANCE_NUMBER }}-${{ inputs.deployEnvironment }}'
+    secrets: inherit
+
+  # ----------------------------------------------------------------------------------------------------
   # Deploy Default Data
   # ----------------------------------------------------------------------------------------------------
   run-sql:
