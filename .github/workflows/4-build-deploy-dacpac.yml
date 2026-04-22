@@ -1,3 +1,6 @@
+# ------------------------------------------------------------------------------------------------------------------------
+# GHA Workflow to build and deploy SQL Database Objects (DACPAC)
+# ------------------------------------------------------------------------------------------------------------------------
 name: 4.build.deploy.dacpac
 run-name: '4. Build and Deploy DACPAC using ENV ${{ inputs.deployEnvironment }} ${{vars.INSTANCE_NUMBER}} by @${{ github.actor }}'
 on:
@@ -28,12 +31,19 @@ on:
         type: boolean
         default: true
 
+# ------------------------------------------------------------------------------------------------------------------------
 jobs:
+  # ----------------------------------------------------------------------------------------------------
+  # Load Project Configuration
+  # ----------------------------------------------------------------------------------------------------
   load-config:
     name: Load Project Config
     uses: ./.github/workflows/template-load-config.yml
     secrets: inherit
 
+  # ----------------------------------------------------------------------------------------------------
+  # Build DACPAC
+  # ----------------------------------------------------------------------------------------------------
   build:
     name: Build
     uses: ./.github/workflows/template-dacpac-build.yml
@@ -47,6 +57,9 @@ jobs:
       listFilesAfterBuild: true
     secrets: inherit
 
+  # ----------------------------------------------------------------------------------------------------
+  # Deploy DACPAC
+  # ----------------------------------------------------------------------------------------------------
   deploy:
     name: 'Deploy Database ${{vars.INSTANCE_NUMBER}}'
     needs: [load-config, build]
@@ -59,4 +72,21 @@ jobs:
       artifactName: 'dacpac'
       appProjectName: ${{ needs.load-config.outputs.sql_projectName }}
       loginAccountType: ${{ inputs.loginAccountType }}
+    secrets: inherit
+
+  # ----------------------------------------------------------------------------------------------------
+  # Deploy Default Data
+  # ----------------------------------------------------------------------------------------------------
+  run-sql:
+    name: Deploy default data
+    uses: ./.github/workflows/template-run-sql.yml
+    needs: [load-config, deploy]
+    if: ${{ inputs.createDefaultData }}
+    permissions:
+      id-token: write  
+    with:
+      envCode: ${{ inputs.deployEnvironment }}
+      sqlFolderName: '${{ needs.load-config.outputs.sql_rootDirectory }}/Patch'
+      sqlFileName: 'InsertDefaultData.sql'
+      loginAccountType: 'SVC_PRINCIPAL'
     secrets: inherit

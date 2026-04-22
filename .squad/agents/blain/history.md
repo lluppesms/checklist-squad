@@ -76,3 +76,23 @@
 - **Files rewritten:** `1-deploy-bicep.yml`, `2-build-deploy-webapp.yml`, `4-build-deploy-dacpac.yml`, `6-pr-scan-build.yml`, `vars/var-common.yml`, `steps/bicep-deploy-steps.yml`
 - **Files created:** `stages/bicep-only-stages.yml`, `stages/bicep-and-webapp-stages.yml`, `stages/dacpac-deploy-stages.yml`, `stages/scan-code-stages.yml`, `stages/webapp-build-stages.yml`, `jobs/bicep-deploy-job.yml`, `jobs/webapp-build-job.yml`, `jobs/webapp-deploy-job.yml`, `jobs/dacpac-build-job.yml`, `jobs/dacpac-deploy-job.yml`, `jobs/scan-code-job.yml`, `steps/dacpac-deploy-steps.yml`, `steps/scan-code-compile-steps.yml`, `vars/var-service-connections.yml`, `vars/var-dev.yml`, `vars/var-qa.yml`, `vars/var-prod.yml`
 - **Files removed:** `steps/webapp-build-steps.yml` (replaced by jobs/webapp-build-job.yml)
+
+### 2025-07-26: Bicep Infrastructure Alignment with dadabase.demo Golden Code
+- **Rewrote 8 Bicep files** and **created 1 new module** to match golden code patterns exactly
+- **Key golden code patterns adopted for Bicep:**
+  - Existing App Service Plan support via separate `websiteserviceplan.bicep` module (golden pattern: `existingServicePlanName` + `existingServicePlanResourceGroupName`)
+  - Existing SQL Server support via `deployNewServer` conditional pattern (golden: `existingSqlServerName` + `existingSqlServerResourceGroupName`)
+  - `websiteOnly` param to skip SQL resources entirely (golden pattern)
+  - `webSiteSku` param with `@allowed` constraint for flexible plan sizing (golden: F1-S3 range)
+  - `webAppKind` param for linux/windows choice (golden pattern)
+  - `runDateTime` param with `utcNow()` and `deploymentSuffix` for deployment tracking (golden pattern)
+  - `LastDeployed` tag in commonTags (golden pattern)
+  - Webapp module restructured: references existing plan via `existing` keyword, uses `customAppSettings` merge pattern with `union()` (golden pattern)
+  - Key Vault enhanced: `adminUserObjectIds` array, `keyVaultOwnerIpAddress` IP rules, `useRBAC` toggle, `enablePurgeProtection`, metric logging (golden features)
+  - Resource abbreviations aligned with golden: `appsvc` (was `asp`), `vault` (was `kv`)
+  - All conditional deployments wrapped in `if (deployNewServer)` or `if (!websiteOnly)` (golden pattern)
+- **Files changed:** `main.bicep`, `main.bicepparam`, `main.parameters.json`, `resourcenames.bicep`, `data/resourceAbbreviations.json`, `modules/database/sqlserver.bicep`, `modules/security/keyvault.bicep`, `modules/webapp/webapp.bicep`
+- **Files created:** `modules/webapp/websiteserviceplan.bicep`
+- **Files kept as-is:** `modules/monitor/monitor.bicep`, `modules/signalr/signalr.bicep` (project-specific, already correct)
+- **Golden features NOT adopted (dadabase-specific, not needed for checklist app):** container modules, function modules, storage modules, OpenAI settings, AAD auth settings, user-assigned managed identity, role assignments module
+- **New pipeline variables required:** `EXISTING_SERVICEPLAN_NAME`, `EXISTING_SERVICEPLAN_RESOURCE_GROUP_NAME`, `EXISTING_SQLSERVER_NAME`, `EXISTING_SQLSERVER_RESOURCE_GROUP_NAME`, `WEBSITE_SKU` — set empty strings for fresh deployments

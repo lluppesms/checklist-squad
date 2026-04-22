@@ -1,3 +1,16 @@
+# ------------------------------------------------------------------------------------------------------------------------
+# GHA Reusable Called Workflow to deploy a SQL DACPAC file to Azure SQL Database
+# ------------------------------------------------------------------------------------------------------------------------
+# You need to set up secrets in the GitHub Secrets Repository before running these workflows.
+#   See readme.md for details
+# ------------------------------------------------------------------------------------------------------------------------
+# Prerequisites:
+# Unless you are using a local user/password, you must find the service principal name that is running
+# your pipeline and execute these commands in the Azure SQL Database to grant access:
+#   CREATE USER yourSP FROM EXTERNAL PROVIDER
+#   ALTER ROLE db_owner ADD MEMBER yourSP
+# See also https://learn.microsoft.com/en-us/azure/azure-sql/database/authentication-aad-configure
+# ------------------------------------------------------------------------------------------------------------------------
 name: z_template_dacpac_deploy
 run-name: Deploy DACPAC
 on:
@@ -18,6 +31,7 @@ on:
         type: string
         default: 'SVC_PRINCIPAL'
 
+# ------------------------------------------------------------------------------------------------------------------------
 jobs:
   deploy:
     name: Deploy DACPAC
@@ -59,6 +73,8 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
+      # Deploy using Service Principal (Entra ID authentication)
+      # For details on how to authenticate, see: https://github.com/Azure/sql-action/blob/master/CONNECTION.md#azure-active-directory-managed-identity-authentication
       - name: Deploy DACPAC - Service Principal
         if: inputs.loginAccountType == 'SVC_PRINCIPAL'
         uses: azure/sql-action@v2.3
@@ -67,6 +83,7 @@ jobs:
           path: './dacpac/${{ inputs.appProjectName }}.dacpac'
           action: 'publish'
 
+      # Deploy using SQL Local User (SQL Authentication)
       - name: Deploy DACPAC - Local SQL User
         if: inputs.loginAccountType == 'LOCAL_SQL'
         uses: azure/sql-action@v2.3

@@ -65,6 +65,13 @@ gh secret set --env <ENV-NAME> AZURE_TENANT_ID -b <GUID-Entra-tenant-where-SP-li
 gh secret set --env <ENV-NAME> AZURE_CLIENT_ID -b <GUID-application/client-Id>
 ```
 
+These two secrets are optional if you want to grant an administrator access to the Key Vault and ACR and SQL database.  
+
+```bash
+gh secret set ADMIN_IP_ADDRESS 192.168.1.1
+gh secret set ADMIN_PRINCIPAL_ID <yourGuid>
+```
+
 ---
 
 ## Bicep Configuration Values

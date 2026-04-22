@@ -1,3 +1,8 @@
+# ------------------------------------------------------------------------------------------------------------------------
+# GHA Workflow to scan and build WebApp on Pull Request - no app or bicep deploy
+# ------------------------------------------------------------------------------------------------------------------------
+# FYI: You need to set up some secrets before running this workflows - see CreateGitHubSecrets.md for details.
+# ------------------------------------------------------------------------------------------------------------------------
 name: 6.pr.scan.build
 run-name: '6. PR Scan & Build'
 
@@ -5,6 +10,7 @@ on:
   pull_request:
   workflow_dispatch:
 
+# ------------------------------------------------------------------------------------------------------------------------
 permissions:
   id-token: write
   contents: write
@@ -16,6 +22,7 @@ permissions:
   pull-requests: write
   packages: read
 
+# ------------------------------------------------------------------------------------------------------------------------
 jobs:
   load-config:
     name: Load Project Config

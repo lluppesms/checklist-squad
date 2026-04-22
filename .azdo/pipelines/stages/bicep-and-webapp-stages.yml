@@ -23,7 +23,7 @@ parameters:
   default: false
 - name: deploymentType
   type: string
-  default: 'webapp'
+  default: 'webapp' # 'webapp' | 'containerapp' | 'functionapp' | 'all'
 
 # ----------------------------------------------------------------------------------------------------
 stages:

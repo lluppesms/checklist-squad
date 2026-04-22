@@ -1,3 +1,11 @@
+# ------------------------------------------------------------------------------------------------------------------------
+# GHA Reusable Called Workflow to build a Web App
+# ------------------------------------------------------------------------------------------------------------------------
+# You need to set up secrets in the GitHub Secrets Repository before running these workflows.
+#   See readme.md for details
+# ------------------------------------------------------------------------------------------------------------------------
+# You may also need to updates permissions for this template to work - see note below
+# ------------------------------------------------------------------------------------------------------------------------
 name: z_template_webapp_build
 run-name: Build WebApp
 on:
@@ -27,9 +35,11 @@ on:
         type: boolean
         default: false
   
+# ------------------------------------------------------------------------------------------------------------------------
 jobs:
   build:
     name: Build
+    # Note: Publish test results action only works on Linux build servers...
     runs-on: ubuntu-latest
     environment:
       name: ${{ inputs.envCode }}
@@ -39,12 +49,18 @@ jobs:
       artifactName: webapp
       AZURE_WEBAPP_PACKAGE_PATH: ./output
 
+    # Note: Publish test results action needs permission to write a check
+    # You may have to change the default settings for the repo for this to work. You may get the error:
+    #   The nested job 'Build' is requesting 'checks: write, issues: read, pull-requests: read', but is only allowed 'checks: none, issues: none, pull-requests: none'.
+    # Go to Repo Settings -> Actions -> General -> Workflow permissions -> Check: Read and Write Permissions
+    # The Comment on PR needs to permissions to update issues and pull requests
     permissions:
       contents: write
       issues: write
       checks: write
       pull-requests: write
 
+    # ------------------------------------------------------------------------------------------------------------------------
     steps:
     - name: Checkout Code
       uses: actions/checkout@v4
@@ -62,6 +78,7 @@ jobs:
         echo "testApplication=${{ inputs.testApplication }}"
         echo "GITHUB_CONTEXT=$GITHUB_CONTEXT"
         echo "JOB_CONTEXT=$JOB_CONTEXT"
+
         echo "---------------------------------"
         echo "##[group]All Variables:"
         echo "${{ toJSON(env) }}"

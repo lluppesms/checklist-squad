@@ -82,6 +82,9 @@ jobs:
         targetFolder: '$(Pipeline.Workspace)'
 
   # ----------------------------------------------------------------------------------------------------
+  # /end - if a Pipeline Resource...
+  # ----------------------------------------------------------------------------------------------------
+
   - task: CmdLine@2
     displayName: 'Display Variables and Tree'
     inputs:

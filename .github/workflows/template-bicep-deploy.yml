@@ -1,3 +1,8 @@
+# ------------------------------------------------------------------------------------------------------------------------
+# Reusable Workflow: Deploy Azure Resources Only
+# ------------------------------------------------------------------------------------------------------------------------
+# FYI: You need to set up some secrets before running this workflows - see CreateGitHubSecrets.md for details.
+# ------------------------------------------------------------------------------------------------------------------------
 name: z_template_deploy_infra
 run-name: Deploy Bicep
 on:
@@ -45,6 +50,7 @@ on:
         type: string
         default: 'create'
 
+# ------------------------------------------------------------------------------------------------------------------------
 jobs:
   deploy:
     name: Deploy Bicep (${{ inputs.bicepDeploymentMode }})
@@ -57,6 +63,9 @@ jobs:
       actions: read    
       pages: write  
     
+    # ------------------------------------------------------------------------------------------------------------------------
+    # Variables
+    # ------------------------------------------------------------------------------------------------------------------------
     env:
       envCode: ${{ inputs.envCode }}
       generatedAppEnvName: ${{ inputs.envCode == 'prod' && vars.APP_NAME || format('{0}-{1}-{2}', vars.APP_NAME, inputs.envCode, vars.INSTANCE_NUMBER) }}
@@ -65,9 +74,15 @@ jobs:
       createResourceGroup: ${{ inputs.createResourceGroup }}
       requestorName: ${{ inputs.requestorName }}
 
+    # ------------------------------------------------------------------------------------------------------------------------
+    # Outputs
+    # ------------------------------------------------------------------------------------------------------------------------
     outputs:
       UI_CONTAINER_APP_FQDN: ${{ steps.deploy-bicep-rg.outputs.UI_CONTAINER_APP_FQDN }}
 
+    # ------------------------------------------------------------------------------------------------------------------------
+    # Actions
+    # ------------------------------------------------------------------------------------------------------------------------
     steps:
     - name: Checkout Code
       if: ${{ inputs.runCreateInfra }}
@@ -152,6 +167,9 @@ jobs:
           --parameters "${{ inputs.templatePath }}${{ inputs.parameterFile }}" \
           --no-prompt true
 
+    # The azure/arm-deploy action is being deprecated, replaced by azure/bicep-deploy
+    # See: https://github.com/Azure/arm-deploy (old) vs https://github.com/azure/bicep-deploy (new)
+    # Note: 'failOnStdErr' is not supported in bicep-deploy... will that be an issue in GHA where warnings are treated as errors???
     - name: Deploy ${{ inputs.deploymentType }} Azure Resources
       uses: azure/bicep-deploy@v2
       if: ${{ inputs.runCreateInfra && inputs.deployInResourceGroup && inputs.bicepDeploymentMode != 'whatIf' }} 
@@ -164,7 +182,7 @@ jobs:
         template-file: ${{ inputs.templatePath }}${{ inputs.templateFile }}
         parameters-file: ${{ inputs.templatePath }}${{ inputs.parameterFile }}
         type: deployment
-        operation: ${{ inputs.bicepDeploymentMode }}
+        operation: ${{ inputs.bicepDeploymentMode }} # Must be: create | validate | whatIf
 
     - name: Deploy ${{ inputs.deploymentType }} Azure Resources (SUB)
       uses: azure/bicep-deploy@v2
@@ -178,7 +196,7 @@ jobs:
         template-file: ${{ inputs.templatePath }}${{ inputs.templateFile }}
         parameters-file: ${{ inputs.templatePath }}${{ inputs.parameterFile }}
         type: deployment
-        operation: ${{ inputs.bicepDeploymentMode }}
+        operation: ${{ inputs.bicepDeploymentMode }} # Must be: create | validate | whatIf
 
     - name: Display Output
       if: ${{ inputs.runCreateInfra }}

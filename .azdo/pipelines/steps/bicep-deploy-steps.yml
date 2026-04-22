@@ -19,6 +19,11 @@ steps:
       scriptLocation: inlineScript
       inlineScript: az group create --name $(resourceGroupName) --location $(RESOURCE_GROUP_LOCATION) --tags LastDeployed=$(runDateTime) Application=$(APP_NAME) Environment=$(environmentName)
 
+  # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  # TODO: Switch this to the NEW BicepDeploy@0 task that deploys Bicep directly without compiling to ARM template first.  |
+  # Public preview March 16 2026, GA ~April 16 2026                                                                       |
+  # See https://github.com/microsoft/azure-pipelines-tasks/tree/master/Tasks/BicepDeployV0                                |
+  # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   - task: AzureResourceManagerTemplateDeployment@3
     displayName: 'Publish $(environmentName) Bicep Resources'
     name: deployBicep
@@ -37,6 +42,8 @@ steps:
   # ------------------------------------------------------------------------------------------------------------------------
   # If parseBicepOutputs is set to true, this task will parse the output variables from the Bicep deployment and set them as
   # pipeline variables and the name of each NEW pipeline variable will be "bicepOutputs-<outputVariableName>"
+  # See: https://learn.microsoft.com/en-us/azure/devops/pipelines/tasks/reference/azure-resource-manager-template-deployment-v3
+  # And: https://stackoverflow.com/questions/76236059/how-to-access-deploymentoutputs-from-azureresourcemanagertemplatedeployment
   # ------------------------------------------------------------------------------------------------------------------------
   - ${{ if parameters.parseBicepOutputs }}:
     - task: PowerShell@2
@@ -45,7 +52,7 @@ steps:
       continueOnError: true
       inputs:
         targetType: inline
-        pwsh: true
+        pwsh: true  # This task uses PowerShell Core for Linux agents and Windows PowerShell for Windows agents. On Windows agents, set the pwsh parm to true to use PowerShell Core instead.
         script: |
           Write-Output "input variable data: $(bicepOutputs)"
           $armOutputObj = '$(bicepOutputs)' | ConvertFrom-Json

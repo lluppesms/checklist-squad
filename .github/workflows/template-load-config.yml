@@ -1,3 +1,25 @@
+# ------------------------------------------------------------------------------------------------------------------------
+# GHA Reusable Workflow to Load All Project Configurations
+# ------------------------------------------------------------------------------------------------------------------------
+# Usage in calling workflow:
+#   jobs:
+#     load-config:
+#       uses: ./.github/workflows/template-load-config.yml
+#     
+#     build-web:
+#       needs: load-config
+#       uses: ./.github/workflows/template-webapp-build.yml
+#       with:
+#         rootDirectory: ${{ needs.load-config.outputs.web_rootDirectory }}
+#         projectName: ${{ needs.load-config.outputs.web_projectName }}
+#
+#     build-function:
+#       needs: load-config
+#       uses: ./.github/workflows/template-function-build.yml
+#       with:
+#         rootDirectory: ${{ needs.load-config.outputs.function_rootDirectory }}
+#         projectName: ${{ needs.load-config.outputs.function_projectName }}
+# ------------------------------------------------------------------------------------------------------------------------
 name: z_template_load_config
 run-name: Load Project Config
 

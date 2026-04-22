@@ -1,3 +1,9 @@
+# ------------------------------------------------------------------------------------------------------------------------
+# GHA Reusable Called Workflow to deploy an already built WebApp
+# ------------------------------------------------------------------------------------------------------------------------
+# You need to set up secrets in the GitHub Secrets Repository before running these workflows.
+#   See readme.md for details
+# ------------------------------------------------------------------------------------------------------------------------
 name: z_template_webapp_deploy
 run-name: Deploy WebApp
 on:
@@ -11,6 +17,7 @@ on:
         type: boolean
         default: true
   
+# ------------------------------------------------------------------------------------------------------------------------
 jobs:
   deploy:
     name: Deploy
