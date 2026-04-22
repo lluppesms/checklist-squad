@@ -1,12 +1,15 @@
 using CheckList.Web.Data.Repositories;
+using CheckList.Web.Hubs;
 using CheckList.Web.Models;
 using CheckList.Web.Models.Mapping;
+using Microsoft.AspNetCore.SignalR;
 
 namespace CheckList.Web.Services;
 
 public class CheckListService(
     ITemplateRepository templateRepo,
-    ICheckRepository checkRepo) : ICheckListApiClient
+    ICheckRepository checkRepo,
+    IHubContext<CheckListHub, ICheckListHubClient> hubContext) : ICheckListApiClient
 {
     private const string DefaultUserName = "System";
 
@@ -25,6 +28,7 @@ public class CheckListService(
     public async Task<CheckSetDto?> ActivateCheckSetAsync(int templateSetId, string ownerName, List<int>? selectedListIds = null)
     {
         var checkSet = await checkRepo.ActivateFromTemplateAsync(templateSetId, ownerName, selectedListIds);
+        await hubContext.Clients.All.CheckSetActivated(checkSet.SetId, checkSet.SetName);
         return checkSet.ToDto();
     }
 
@@ -43,12 +47,14 @@ public class CheckListService(
     public async Task<CheckActionDto?> ToggleActionAsync(int actionId, string userName)
     {
         var action = await checkRepo.ToggleActionAsync(actionId, userName);
+        await hubContext.Clients.All.ActionToggled(action.ActionId, action.CompleteInd, userName, action.ChangeDateTime);
         return action.ToDto();
     }
 
     public async Task DeleteCheckSetAsync(int setId)
     {
         await checkRepo.DeleteSetAsync(setId);
+        await hubContext.Clients.All.CheckSetDeleted(setId);
     }
 
     // Template CRUD
