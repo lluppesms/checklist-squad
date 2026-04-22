@@ -37,5 +37,5 @@ public interface ICheckListApiClient
     Task<List<TemplateExportDto>> ExportAllTemplatesAsync();
     Task<TemplateSetDto> ImportTemplateAsync(TemplateImportDto importDto);
     Task<FullExportDto> ExportFullAsync();
-    Task<object> ImportFullAsync(FullImportDto importDto);
+    Task<(int templateCount, int checklistCount)> ImportFullAsync(FullImportDto importDto);
 }

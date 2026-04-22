@@ -1,4 +1,4 @@
-namespace CheckList.Api.Data;
+namespace CheckList.Web.Data;
 
 public class CheckListDbContext : DbContext
 {

@@ -1,8 +1,9 @@
-namespace CheckList.Api.Controllers;
+namespace CheckList.Web.Controllers;
 
-using CheckList.Api.Hubs;
-using CheckList.Api.Models.DTOs;
-using CheckList.Api.Models.Mapping;
+using CheckList.Web.Data.Repositories;
+using CheckList.Web.Hubs;
+using CheckList.Web.Models;
+using CheckList.Web.Models.Mapping;
 
 [ApiController]
 [Route("api/[controller]")]

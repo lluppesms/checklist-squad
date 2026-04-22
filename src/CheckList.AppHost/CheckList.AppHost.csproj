@@ -1,7 +1,6 @@
 <Project Sdk="Aspire.AppHost.Sdk/13.2.1">
 
   <ItemGroup>
-    <ProjectReference Include="..\CheckList.Api\CheckList.Api.csproj" />
     <ProjectReference Include="..\CheckList.Web\CheckList.Web.csproj" />
   </ItemGroup>
 

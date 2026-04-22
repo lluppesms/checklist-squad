@@ -1,11 +1,11 @@
-namespace CheckList.Api.Models.Entities;
+namespace CheckList.Web.Data.Entities;
 
-public class TemplateList
+public class TemplateSet
 {
-    public int ListId { get; set; }
     public int SetId { get; set; }
-    public string ListName { get; set; } = string.Empty;
-    public string ListDscr { get; set; } = string.Empty;
+    public string SetName { get; set; } = string.Empty;
+    public string SetDscr { get; set; } = string.Empty;
+    public string OwnerName { get; set; } = string.Empty;
     public string ActiveInd { get; set; } = "Y";
     public int SortOrder { get; set; } = 50;
     public DateTime CreateDateTime { get; set; }
@@ -14,6 +14,6 @@ public class TemplateList
     public string ChangeUserName { get; set; } = "UNKNOWN";
 
     // Navigation
-    public TemplateSet Set { get; set; } = null!;
-    public ICollection<TemplateCategory> TemplateCategories { get; set; } = [];
+    public ICollection<TemplateList> TemplateLists { get; set; } = [];
+    public ICollection<CheckSet> CheckSets { get; set; } = [];
 }

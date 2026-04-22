@@ -140,7 +140,6 @@ else if (checkSet is not null)
     [Inject] private ICheckListApiClient ApiClient { get; set; } = default!;
     [Inject] private IUserIdentity UserIdentity { get; set; } = default!;
     [Inject] private NavigationManager Navigation { get; set; } = default!;
-    [Inject] private IHttpClientFactory HttpClientFactory { get; set; } = default!;
 
     private CheckSetDto? checkSet;
     private bool loading = true;
@@ -198,9 +197,7 @@ else if (checkSet is not null)
     {
         try
         {
-            var apiClient = HttpClientFactory.CreateClient("CheckListApi");
-            var apiBaseUrl = apiClient.BaseAddress!;
-            var hubUrl = new Uri(apiBaseUrl, "/hubs/checklist");
+            var hubUrl = Navigation.ToAbsoluteUri("/hubs/checklist");
             hubConnection = new HubConnectionBuilder()
                 .WithUrl(hubUrl)
                 .WithAutomaticReconnect()

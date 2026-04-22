@@ -1,4 +1,4 @@
-namespace CheckList.Api.Models.Entities;
+namespace CheckList.Web.Data.Entities;
 
 public class CheckSet
 {

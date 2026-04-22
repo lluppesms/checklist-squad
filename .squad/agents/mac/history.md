@@ -28,3 +28,14 @@
 - Returns ArgumentException (BadRequest) if provided list IDs don't match any lists in the template
 - Maintains full backward compatibility - existing API calls without SelectedListIds continue to work unchanged
 - Enables use cases like skipping yearly maintenance lists on daily activation runs
+
+### Merged CheckList.Api into CheckList.Web (Single-App Architecture)
+- Consolidated the separate API project into the Blazor Server app — now one deployable unit
+- Moved Data (DbContext, Entities, Repositories), Controllers, Hubs, and DTOs from Api to Web
+- Replaced HTTP-based `CheckListApiClient` with direct `CheckListService` that calls repositories in-process
+- SignalR hub now hosted by the Web app itself — CheckListView connects to local `/hubs/checklist`
+- Controllers still serve the same REST API surface for any external callers
+- Updated Aspire AppHost to only wire CheckList.Web (no more CheckList.Api reference)
+- Import/Export DTOs now use proper JsonPropertyName attributes from the Api canonical versions
+- All namespaces updated from `CheckList.Api.*` to `CheckList.Web.*`
+- `ICheckListApiClient` interface kept for Blazor page compatibility, implementation swapped to direct repo calls

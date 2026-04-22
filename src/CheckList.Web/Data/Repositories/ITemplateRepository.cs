@@ -1,6 +1,6 @@
-namespace CheckList.Api.Repositories;
+namespace CheckList.Web.Data.Repositories;
 
-using CheckList.Api.Models.DTOs;
+using CheckList.Web.Models;
 
 public interface ITemplateRepository
 {

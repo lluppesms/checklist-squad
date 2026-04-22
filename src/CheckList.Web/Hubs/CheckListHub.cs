@@ -1,4 +1,4 @@
-namespace CheckList.Api.Hubs;
+namespace CheckList.Web.Hubs;
 
 public class CheckListHub : Hub<ICheckListHubClient>
 {

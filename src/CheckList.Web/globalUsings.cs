@@ -1,2 +1,9 @@
 global using System.Text.Json;
 global using System.Text.Json.Serialization;
+global using Microsoft.AspNetCore.Mvc;
+global using Microsoft.AspNetCore.SignalR;
+global using Microsoft.EntityFrameworkCore;
+global using CheckList.Web.Data;
+global using CheckList.Web.Data.Entities;
+global using CheckList.Web.Data.Repositories;
+global using CheckList.Web.Models;

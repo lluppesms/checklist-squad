@@ -1,13 +1,12 @@
-namespace CheckList.Api.Models.Entities;
+namespace CheckList.Web.Data.Entities;
 
-public class CheckAction
+public class TemplateCategory
 {
-    public int ActionId { get; set; }
     public int CategoryId { get; set; }
     public int ListId { get; set; }
-    public string ActionText { get; set; } = string.Empty;
-    public string? ActionDscr { get; set; }
-    public string CompleteInd { get; set; } = "N";
+    public string CategoryText { get; set; } = string.Empty;
+    public string? CategoryDscr { get; set; }
+    public string ActiveInd { get; set; } = "Y";
     public int SortOrder { get; set; } = 50;
     public DateTime CreateDateTime { get; set; }
     public string CreateUserName { get; set; } = "UNKNOWN";
@@ -15,5 +14,6 @@ public class CheckAction
     public string ChangeUserName { get; set; } = "UNKNOWN";
 
     // Navigation
-    public CheckCategory Category { get; set; } = null!;
+    public TemplateList List { get; set; } = null!;
+    public ICollection<TemplateAction> TemplateActions { get; set; } = [];
 }

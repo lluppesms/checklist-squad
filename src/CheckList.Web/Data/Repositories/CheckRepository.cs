@@ -1,4 +1,4 @@
-namespace CheckList.Api.Repositories;
+namespace CheckList.Web.Data.Repositories;
 
 public class CheckRepository(CheckListDbContext db) : ICheckRepository
 {

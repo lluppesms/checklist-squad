@@ -1,178 +1,147 @@
-using System.Net.Http.Json;
+using CheckList.Web.Data.Repositories;
 using CheckList.Web.Models;
+using CheckList.Web.Models.Mapping;
 
 namespace CheckList.Web.Services;
 
-public class CheckListApiClient(HttpClient httpClient) : ICheckListApiClient
+public class CheckListService(
+    ITemplateRepository templateRepo,
+    ICheckRepository checkRepo) : ICheckListApiClient
 {
+    private const string DefaultUserName = "System";
+
     public async Task<List<TemplateSetSummaryDto>> GetTemplatesAsync()
     {
-        var result = await httpClient.GetFromJsonAsync<List<TemplateSetSummaryDto>>("api/templates");
-        return result ?? [];
+        var sets = await templateRepo.GetAllSetsAsync();
+        return sets.Select(s => s.ToSummaryDto()).ToList();
     }
 
     public async Task<TemplateSetDto?> GetTemplateAsync(int setId)
     {
-        return await httpClient.GetFromJsonAsync<TemplateSetDto>($"api/templates/{setId}");
+        var set = await templateRepo.GetSetWithHierarchyAsync(setId);
+        return set?.ToDto();
     }
 
     public async Task<CheckSetDto?> ActivateCheckSetAsync(int templateSetId, string ownerName, List<int>? selectedListIds = null)
     {
-        var request = new ActivateCheckSetRequest(ownerName, selectedListIds);
-        var response = await httpClient.PostAsJsonAsync($"api/checklists/activate/{templateSetId}", request);
-        response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<CheckSetDto>();
+        var checkSet = await checkRepo.ActivateFromTemplateAsync(templateSetId, ownerName, selectedListIds);
+        return checkSet.ToDto();
     }
 
     public async Task<List<CheckSetSummaryDto>> GetActiveCheckSetsAsync()
     {
-        var result = await httpClient.GetFromJsonAsync<List<CheckSetSummaryDto>>("api/checklists");
-        return result ?? [];
+        var sets = await checkRepo.GetAllActiveSetsAsync();
+        return sets.Select(s => s.ToSummaryDto()).ToList();
     }
 
     public async Task<CheckSetDto?> GetCheckSetAsync(int setId)
     {
-        return await httpClient.GetFromJsonAsync<CheckSetDto>($"api/checklists/{setId}");
+        var set = await checkRepo.GetSetWithHierarchyAsync(setId);
+        return set?.ToDto();
     }
 
     public async Task<CheckActionDto?> ToggleActionAsync(int actionId, string userName)
     {
-        var request = new ToggleActionRequest(userName);
-        var response = await httpClient.PutAsJsonAsync($"api/checklists/actions/{actionId}/toggle", request);
-        response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<CheckActionDto>();
+        var action = await checkRepo.ToggleActionAsync(actionId, userName);
+        return action.ToDto();
     }
 
     public async Task DeleteCheckSetAsync(int setId)
     {
-        var response = await httpClient.DeleteAsync($"api/checklists/{setId}");
-        response.EnsureSuccessStatusCode();
+        await checkRepo.DeleteSetAsync(setId);
     }
 
     // Template CRUD
     public async Task<TemplateSetDto> CreateTemplateSetAsync(CreateTemplateSetRequest request)
     {
-        var response = await httpClient.PostAsJsonAsync("api/templates", request);
-        response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<TemplateSetDto>()
-            ?? throw new InvalidOperationException("Failed to create template set");
+        return await templateRepo.CreateSetAsync(request, DefaultUserName);
     }
 
     public async Task<TemplateSetDto> UpdateTemplateSetAsync(int setId, UpdateTemplateSetRequest request)
     {
-        var response = await httpClient.PutAsJsonAsync($"api/templates/{setId}", request);
-        response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<TemplateSetDto>()
-            ?? throw new InvalidOperationException("Failed to update template set");
+        return await templateRepo.UpdateSetAsync(setId, request, DefaultUserName)
+            ?? throw new InvalidOperationException($"Template set {setId} not found");
     }
 
     public async Task DeleteTemplateSetAsync(int setId)
     {
-        var response = await httpClient.DeleteAsync($"api/templates/{setId}");
-        response.EnsureSuccessStatusCode();
+        await templateRepo.DeleteSetAsync(setId);
     }
 
     // Template List CRUD
     public async Task<TemplateListDto> CreateTemplateListAsync(int setId, CreateTemplateListRequest request)
     {
-        var response = await httpClient.PostAsJsonAsync($"api/templates/{setId}/lists", request);
-        response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<TemplateListDto>()
-            ?? throw new InvalidOperationException("Failed to create template list");
+        return await templateRepo.CreateListAsync(setId, request, DefaultUserName);
     }
 
     public async Task<TemplateListDto> UpdateTemplateListAsync(int listId, UpdateTemplateListRequest request)
     {
-        var response = await httpClient.PutAsJsonAsync($"api/templates/lists/{listId}", request);
-        response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<TemplateListDto>()
-            ?? throw new InvalidOperationException("Failed to update template list");
+        return await templateRepo.UpdateListAsync(listId, request, DefaultUserName)
+            ?? throw new InvalidOperationException($"Template list {listId} not found");
     }
 
     public async Task DeleteTemplateListAsync(int listId)
     {
-        var response = await httpClient.DeleteAsync($"api/templates/lists/{listId}");
-        response.EnsureSuccessStatusCode();
+        await templateRepo.DeleteListAsync(listId);
     }
 
     // Template Category CRUD
     public async Task<TemplateCategoryDto> CreateTemplateCategoryAsync(int listId, CreateTemplateCategoryRequest request)
     {
-        var response = await httpClient.PostAsJsonAsync($"api/templates/lists/{listId}/categories", request);
-        response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<TemplateCategoryDto>()
-            ?? throw new InvalidOperationException("Failed to create template category");
+        return await templateRepo.CreateCategoryAsync(listId, request, DefaultUserName);
     }
 
     public async Task<TemplateCategoryDto> UpdateTemplateCategoryAsync(int categoryId, UpdateTemplateCategoryRequest request)
     {
-        var response = await httpClient.PutAsJsonAsync($"api/templates/categories/{categoryId}", request);
-        response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<TemplateCategoryDto>()
-            ?? throw new InvalidOperationException("Failed to update template category");
+        return await templateRepo.UpdateCategoryAsync(categoryId, request, DefaultUserName)
+            ?? throw new InvalidOperationException($"Template category {categoryId} not found");
     }
 
     public async Task DeleteTemplateCategoryAsync(int categoryId)
     {
-        var response = await httpClient.DeleteAsync($"api/templates/categories/{categoryId}");
-        response.EnsureSuccessStatusCode();
+        await templateRepo.DeleteCategoryAsync(categoryId);
     }
 
     // Template Action CRUD
     public async Task<TemplateActionDto> CreateTemplateActionAsync(int categoryId, CreateTemplateActionRequest request)
     {
-        var response = await httpClient.PostAsJsonAsync($"api/templates/categories/{categoryId}/actions", request);
-        response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<TemplateActionDto>()
-            ?? throw new InvalidOperationException("Failed to create template action");
+        return await templateRepo.CreateActionAsync(categoryId, request, DefaultUserName);
     }
 
     public async Task<TemplateActionDto> UpdateTemplateActionAsync(int actionId, UpdateTemplateActionRequest request)
     {
-        var response = await httpClient.PutAsJsonAsync($"api/templates/actions/{actionId}", request);
-        response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<TemplateActionDto>()
-            ?? throw new InvalidOperationException("Failed to update template action");
+        return await templateRepo.UpdateActionAsync(actionId, request, DefaultUserName)
+            ?? throw new InvalidOperationException($"Template action {actionId} not found");
     }
 
     public async Task DeleteTemplateActionAsync(int actionId)
     {
-        var response = await httpClient.DeleteAsync($"api/templates/actions/{actionId}");
-        response.EnsureSuccessStatusCode();
+        await templateRepo.DeleteActionAsync(actionId);
     }
 
     // Import/Export
     public async Task<TemplateExportDto> ExportTemplateAsync(int setId)
     {
-        return await httpClient.GetFromJsonAsync<TemplateExportDto>($"api/templates/{setId}/export")
-            ?? throw new InvalidOperationException("Failed to export template");
+        return await templateRepo.ExportSetAsync(setId);
     }
 
     public async Task<List<TemplateExportDto>> ExportAllTemplatesAsync()
     {
-        var result = await httpClient.GetFromJsonAsync<List<TemplateExportDto>>("api/templates/export");
-        return result ?? [];
+        return await templateRepo.ExportAllAsync();
     }
 
     public async Task<TemplateSetDto> ImportTemplateAsync(TemplateImportDto importDto)
     {
-        var response = await httpClient.PostAsJsonAsync("api/templates/import", importDto);
-        response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<TemplateSetDto>()
-            ?? throw new InvalidOperationException("Failed to import template");
+        return await templateRepo.ImportSetAsync(importDto, DefaultUserName);
     }
 
     public async Task<FullExportDto> ExportFullAsync()
     {
-        return await httpClient.GetFromJsonAsync<FullExportDto>("api/export/full")
-            ?? throw new InvalidOperationException("Failed to export full data");
+        return await templateRepo.FullExportAsync();
     }
 
-    public async Task<object> ImportFullAsync(FullImportDto importDto)
+    public async Task<(int templateCount, int checklistCount)> ImportFullAsync(FullImportDto importDto)
     {
-        var response = await httpClient.PostAsJsonAsync("api/import/full", importDto);
-        response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<object>()
-            ?? throw new InvalidOperationException("Failed to import full data");
+        return await templateRepo.FullImportAsync(importDto, DefaultUserName);
     }
 }

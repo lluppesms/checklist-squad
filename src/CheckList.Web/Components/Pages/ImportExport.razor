@@ -236,7 +236,7 @@
 
             var result = await ApiClient.ImportFullAsync(importDto);
             successMessage = "Successfully imported full data.";
-            importResult = JsonSerializer.Serialize(result, new JsonSerializerOptions { WriteIndented = true });
+            importResult = $"Imported {result.templateCount} template(s) and {result.checklistCount} checklist(s).";
             selectedFile = null;
         }
         catch (Exception ex)

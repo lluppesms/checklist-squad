@@ -1,116 +1,116 @@
 namespace CheckList.Web.Models;
 
+using System.Text.Json.Serialization;
+
 public record TemplateExportDto(
-    ExportMetadata Metadata,
-    string SetName,
-    string SetDscr,
-    string OwnerName,
-    int SortOrder,
-    List<TemplateListExportDto> Lists);
+    [property: JsonPropertyName("setName")] string SetName,
+    [property: JsonPropertyName("setDscr")] string SetDscr,
+    [property: JsonPropertyName("ownerName")] string OwnerName,
+    [property: JsonPropertyName("sortOrder")] int SortOrder,
+    [property: JsonPropertyName("lists")] List<TemplateListExportDto> Lists,
+    [property: JsonPropertyName("metadata")] ExportMetadata Metadata);
 
 public record TemplateListExportDto(
-    string ListName,
-    string ListDscr,
-    int SortOrder,
-    List<TemplateCategoryExportDto> Categories);
+    [property: JsonPropertyName("listName")] string ListName,
+    [property: JsonPropertyName("listDscr")] string ListDscr,
+    [property: JsonPropertyName("sortOrder")] int SortOrder,
+    [property: JsonPropertyName("categories")] List<TemplateCategoryExportDto> Categories);
 
 public record TemplateCategoryExportDto(
-    string CategoryText,
-    string? CategoryDscr,
-    int SortOrder,
-    List<TemplateActionExportDto> Actions);
+    [property: JsonPropertyName("categoryText")] string CategoryText,
+    [property: JsonPropertyName("categoryDscr")] string? CategoryDscr,
+    [property: JsonPropertyName("sortOrder")] int SortOrder,
+    [property: JsonPropertyName("actions")] List<TemplateActionExportDto> Actions);
 
 public record TemplateActionExportDto(
-    string? ActionText,
-    string? ActionDscr,
-    int SortOrder);
+    [property: JsonPropertyName("actionText")] string? ActionText,
+    [property: JsonPropertyName("actionDscr")] string? ActionDscr,
+    [property: JsonPropertyName("sortOrder")] int SortOrder);
 
 public record ExportMetadata(
-    string ExportedAt,
-    string ExportedBy,
-    string Version);
+    [property: JsonPropertyName("exportDate")] DateTime ExportDate,
+    [property: JsonPropertyName("appVersion")] string AppVersion,
+    [property: JsonPropertyName("itemCount")] int ItemCount);
 
 public record TemplateImportDto(
-    string SetName,
-    string SetDscr,
-    string OwnerName,
-    int SortOrder,
-    List<TemplateListImportDto> Lists);
+    [property: JsonPropertyName("setName")] string SetName,
+    [property: JsonPropertyName("setDscr")] string SetDscr,
+    [property: JsonPropertyName("ownerName")] string OwnerName,
+    [property: JsonPropertyName("sortOrder")] int SortOrder,
+    [property: JsonPropertyName("lists")] List<TemplateListImportDto> Lists);
 
 public record TemplateListImportDto(
-    string ListName,
-    string ListDscr,
-    int SortOrder,
-    List<TemplateCategoryImportDto> Categories);
+    [property: JsonPropertyName("listName")] string ListName,
+    [property: JsonPropertyName("listDscr")] string ListDscr,
+    [property: JsonPropertyName("sortOrder")] int SortOrder,
+    [property: JsonPropertyName("categories")] List<TemplateCategoryImportDto> Categories);
 
 public record TemplateCategoryImportDto(
-    string CategoryText,
-    string? CategoryDscr,
-    int SortOrder,
-    List<TemplateActionImportDto> Actions);
+    [property: JsonPropertyName("categoryText")] string CategoryText,
+    [property: JsonPropertyName("categoryDscr")] string? CategoryDscr,
+    [property: JsonPropertyName("sortOrder")] int SortOrder,
+    [property: JsonPropertyName("actions")] List<TemplateActionImportDto> Actions);
 
 public record TemplateActionImportDto(
-    string? ActionText,
-    string? ActionDscr,
-    int SortOrder);
+    [property: JsonPropertyName("actionText")] string? ActionText,
+    [property: JsonPropertyName("actionDscr")] string? ActionDscr,
+    [property: JsonPropertyName("sortOrder")] int SortOrder);
 
 public record FullExportDto(
-    ExportMetadata Metadata,
-    List<TemplateExportDto> Templates,
-    List<CheckSetExportDto> Checklists);
+    [property: JsonPropertyName("templates")] List<TemplateExportDto> Templates,
+    [property: JsonPropertyName("checklists")] List<CheckSetExportDto> Checklists,
+    [property: JsonPropertyName("metadata")] ExportMetadata Metadata);
 
 public record CheckSetExportDto(
-    string SetName,
-    string SetDscr,
-    string OwnerName,
-    int SortOrder,
-    List<CheckListExportDto> Lists);
+    [property: JsonPropertyName("setName")] string SetName,
+    [property: JsonPropertyName("setDscr")] string? SetDscr,
+    [property: JsonPropertyName("ownerName")] string OwnerName,
+    [property: JsonPropertyName("sortOrder")] int SortOrder,
+    [property: JsonPropertyName("lists")] List<CheckListExportDto> Lists);
 
 public record CheckListExportDto(
-    string ListName,
-    string ListDscr,
-    int SortOrder,
-    List<CheckCategoryExportDto> Categories);
+    [property: JsonPropertyName("listName")] string ListName,
+    [property: JsonPropertyName("listDscr")] string? ListDscr,
+    [property: JsonPropertyName("sortOrder")] int SortOrder,
+    [property: JsonPropertyName("categories")] List<CheckCategoryExportDto> Categories);
 
 public record CheckCategoryExportDto(
-    string CategoryText,
-    string? CategoryDscr,
-    int SortOrder,
-    List<CheckActionExportDto> Actions);
+    [property: JsonPropertyName("categoryText")] string CategoryText,
+    [property: JsonPropertyName("categoryDscr")] string? CategoryDscr,
+    [property: JsonPropertyName("sortOrder")] int SortOrder,
+    [property: JsonPropertyName("actions")] List<CheckActionExportDto> Actions);
 
 public record CheckActionExportDto(
-    string? ActionText,
-    string? ActionDscr,
-    int SortOrder,
-    string? CompletedBy,
-    DateTime? CompletedDt);
+    [property: JsonPropertyName("actionText")] string ActionText,
+    [property: JsonPropertyName("actionDscr")] string? ActionDscr,
+    [property: JsonPropertyName("completeInd")] string CompleteInd,
+    [property: JsonPropertyName("sortOrder")] int SortOrder);
 
 public record FullImportDto(
-    List<TemplateImportDto> Templates,
-    List<CheckSetImportDto> Checklists);
+    [property: JsonPropertyName("templates")] List<TemplateImportDto> Templates,
+    [property: JsonPropertyName("checklists")] List<CheckSetImportDto> Checklists);
 
 public record CheckSetImportDto(
-    string SetName,
-    string SetDscr,
-    string OwnerName,
-    int SortOrder,
-    List<CheckListImportDto> Lists);
+    [property: JsonPropertyName("setName")] string SetName,
+    [property: JsonPropertyName("setDscr")] string? SetDscr,
+    [property: JsonPropertyName("ownerName")] string OwnerName,
+    [property: JsonPropertyName("sortOrder")] int SortOrder,
+    [property: JsonPropertyName("lists")] List<CheckListImportDto> Lists);
 
 public record CheckListImportDto(
-    string ListName,
-    string ListDscr,
-    int SortOrder,
-    List<CheckCategoryImportDto> Categories);
+    [property: JsonPropertyName("listName")] string ListName,
+    [property: JsonPropertyName("listDscr")] string? ListDscr,
+    [property: JsonPropertyName("sortOrder")] int SortOrder,
+    [property: JsonPropertyName("categories")] List<CheckCategoryImportDto> Categories);
 
 public record CheckCategoryImportDto(
-    string CategoryText,
-    string? CategoryDscr,
-    int SortOrder,
-    List<CheckActionImportDto> Actions);
+    [property: JsonPropertyName("categoryText")] string CategoryText,
+    [property: JsonPropertyName("categoryDscr")] string? CategoryDscr,
+    [property: JsonPropertyName("sortOrder")] int SortOrder,
+    [property: JsonPropertyName("actions")] List<CheckActionImportDto> Actions);
 
 public record CheckActionImportDto(
-    string? ActionText,
-    string? ActionDscr,
-    int SortOrder,
-    string? CompletedBy,
-    DateTime? CompletedDt);
+    [property: JsonPropertyName("actionText")] string ActionText,
+    [property: JsonPropertyName("actionDscr")] string? ActionDscr,
+    [property: JsonPropertyName("completeInd")] string CompleteInd,
+    [property: JsonPropertyName("sortOrder")] int SortOrder);

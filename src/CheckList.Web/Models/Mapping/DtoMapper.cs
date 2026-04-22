@@ -1,6 +1,4 @@
-namespace CheckList.Api.Models.Mapping;
-
-using CheckList.Api.Models.DTOs;
+namespace CheckList.Web.Models.Mapping;
 
 public static class DtoMapper
 {

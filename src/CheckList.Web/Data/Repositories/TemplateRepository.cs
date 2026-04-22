@@ -1,7 +1,7 @@
-namespace CheckList.Api.Repositories;
+namespace CheckList.Web.Data.Repositories;
 
-using CheckList.Api.Models.DTOs;
-using CheckList.Api.Models.Mapping;
+using CheckList.Web.Models;
+using CheckList.Web.Models.Mapping;
 
 public class TemplateRepository(CheckListDbContext db) : ITemplateRepository
 {

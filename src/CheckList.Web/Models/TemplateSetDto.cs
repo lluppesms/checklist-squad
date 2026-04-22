@@ -1,13 +1,5 @@
 namespace CheckList.Web.Models;
 
-public record TemplateSetSummaryDto(
-    int SetId,
-    string SetName,
-    string SetDscr,
-    string OwnerName,
-    string ActiveInd,
-    int SortOrder);
-
 public record TemplateSetDto(
     int SetId,
     string SetName,
@@ -35,4 +27,12 @@ public record TemplateActionDto(
     int ActionId,
     string? ActionText,
     string? ActionDscr,
+    int SortOrder);
+
+public record TemplateSetSummaryDto(
+    int SetId,
+    string SetName,
+    string SetDscr,
+    string OwnerName,
+    string ActiveInd,
     int SortOrder);

@@ -16,7 +16,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\CheckList.Api\CheckList.Api.csproj" />
     <ProjectReference Include="..\CheckList.Web\CheckList.Web.csproj" />
   </ItemGroup>
 
