@@ -9,7 +9,7 @@
     align-items: center;
     gap: 0.75rem;
     padding: 0.75rem 1.25rem;
-    color: var(--text-secondary);
+    color: var(--sidebar-text);
     text-decoration: none;
     font-size: 0.9rem;
     border-radius: 0;
@@ -24,13 +24,13 @@
 }
 
 .nav-item:hover {
-    background-color: var(--border-color);
-    color: var(--text-primary);
+    background-color: var(--sidebar-hover-bg);
+    color: var(--navbar-text);
     text-decoration: none;
 }
 
 .nav-item.active {
-    background-color: var(--accent-color);
+    background-color: var(--sidebar-active-bg);
     color: #fff;
     font-weight: 500;
 }

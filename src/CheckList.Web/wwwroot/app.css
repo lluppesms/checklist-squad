@@ -1,45 +1,103 @@
-/* ========== CSS Theme Variables ========== */
+/* ========== CSS Theme Variables — RV Outdoors Palette ========== */
 :root {
-    --bg-primary: #ffffff;
-    --bg-secondary: #f8f9fa;
+    /* Core backgrounds */
+    --bg-primary: #faf8f5;
+    --bg-secondary: #f0ece6;
     --bg-card: #ffffff;
-    --text-primary: #212529;
-    --text-secondary: #6c757d;
-    --text-muted: #adb5bd;
-    --border-color: #dee2e6;
-    --accent-color: #0d6efd;
-    --success-color: #198754;
-    --danger-color: #dc3545;
-    --warning-color: #ffc107;
-    --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
-    --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+    /* Text */
+    --text-primary: #2d2d2d;
+    --text-secondary: #5a6a5a;
+    --text-muted: #8b9b8b;
+    /* Borders */
+    --border-color: #d5cfc5;
+    /* Accent — forest green replaces Bootstrap blue */
+    --accent-color: #4A8C5C;
+    --accent-color-hover: #3d7a4e;
+    --accent-color-subtle: rgba(74, 140, 92, 0.1);
+    /* Semantic */
+    --success-color: #4A8C5C;
+    --danger-color: #c0392b;
+    --warning-color: #d4a017;
+    /* Extended outdoor palette */
+    --sky-blue: #6CB4D9;
+    --sky-blue-hover: #5a9fc4;
+    --sky-blue-subtle: rgba(108, 180, 217, 0.12);
+    --light-blue: #B8D9E8;
+    --forest-green: #4A8C5C;
+    --earth-brown: #8B6F47;
+    --earth-brown-subtle: rgba(139, 111, 71, 0.1);
+    --warm-gray: #8B8B8B;
+    --cream: #F5F0E8;
+    --charcoal: #3A3A3A;
+    /* Navbar / sidebar */
+    --navbar-bg: #3A3A3A;
+    --navbar-text: #F5F0E8;
+    --sidebar-bg: #2f3530;
+    --sidebar-text: #d5e0d5;
+    --sidebar-active-bg: #4A8C5C;
+    --sidebar-hover-bg: rgba(255, 255, 255, 0.08);
+    /* Cards */
+    --card-accent-border: #4A8C5C;
+    --card-gradient-start: rgba(74, 140, 92, 0.04);
+    --card-gradient-end: transparent;
+    /* Shadows */
+    --shadow-sm: 0 1px 3px rgba(58, 58, 58, 0.08);
+    --shadow-md: 0 4px 12px rgba(58, 58, 58, 0.12);
+    /* Sizing */
     --action-row-height: 48px;
     --touch-target-min: 44px;
 }
 
 @media (prefers-color-scheme: dark) {
     :root {
-        --bg-primary: #212529;
-        --bg-secondary: #2b3035;
-        --bg-card: #2b3035;
-        --text-primary: #f8f9fa;
-        --text-secondary: #adb5bd;
-        --text-muted: #6c757d;
-        --border-color: #495057;
-        --accent-color: #6ea8fe;
-        --success-color: #75b798;
-        --danger-color: #ea868f;
-        --warning-color: #ffda6a;
-        --shadow-sm: 0 1px 2px rgba(0,0,0,0.2);
-        --shadow-md: 0 4px 6px rgba(0,0,0,0.3);
+        --bg-primary: #1a1e1a;
+        --bg-secondary: #242a24;
+        --bg-card: #2a302a;
+        --text-primary: #e8ede8;
+        --text-secondary: #a0b0a0;
+        --text-muted: #6a7a6a;
+        --border-color: #3a453a;
+        --accent-color: #6dba80;
+        --accent-color-hover: #82cc95;
+        --accent-color-subtle: rgba(109, 186, 128, 0.12);
+        --success-color: #6dba80;
+        --danger-color: #e87c73;
+        --warning-color: #e0c050;
+        --sky-blue: #7cc4e6;
+        --sky-blue-hover: #94d2ee;
+        --sky-blue-subtle: rgba(124, 196, 230, 0.12);
+        --light-blue: #5a8fa8;
+        --forest-green: #6dba80;
+        --earth-brown: #b89870;
+        --earth-brown-subtle: rgba(184, 152, 112, 0.1);
+        --warm-gray: #9a9a9a;
+        --cream: #2a302a;
+        --charcoal: #e8ede8;
+        --navbar-bg: #1a1e1a;
+        --navbar-text: #d5e0d5;
+        --sidebar-bg: #1e241e;
+        --sidebar-text: #a0b0a0;
+        --sidebar-active-bg: #3d7a4e;
+        --sidebar-hover-bg: rgba(255, 255, 255, 0.06);
+        --card-accent-border: #6dba80;
+        --card-gradient-start: rgba(109, 186, 128, 0.06);
+        --card-gradient-end: transparent;
+        --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
+        --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
     }
 }
 
 /* ========== Base Styles ========== */
 html, body {
-    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-family: 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif;
     background-color: var(--bg-primary);
     color: var(--text-primary);
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Georgia', 'Segoe UI', serif;
+    font-weight: 600;
+    letter-spacing: -0.01em;
 }
 
 a, .btn-link {
@@ -52,8 +110,48 @@ a, .btn-link {
     border-color: var(--accent-color);
 }
 
+.btn-primary:hover, .btn-primary:active {
+    background-color: var(--accent-color-hover);
+    border-color: var(--accent-color-hover);
+}
+
+.btn-outline-primary {
+    color: var(--accent-color);
+    border-color: var(--accent-color);
+}
+
+.btn-outline-primary:hover {
+    background-color: var(--accent-color);
+    border-color: var(--accent-color);
+    color: #fff;
+}
+
+.btn-info {
+    background-color: var(--sky-blue);
+    border-color: var(--sky-blue);
+    color: #fff;
+}
+
+.btn-info:hover {
+    background-color: var(--sky-blue-hover);
+    border-color: var(--sky-blue-hover);
+    color: #fff;
+}
+
 .btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
     box-shadow: 0 0 0 0.1rem var(--bg-primary), 0 0 0 0.25rem var(--accent-color);
+}
+
+/* ========== Progress Bars — Forest Green ========== */
+.progress {
+    background-color: var(--bg-secondary);
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
+
+.progress-bar {
+    background-color: var(--forest-green) !important;
+    transition: width 0.4s ease;
 }
 
 h1:focus {
@@ -99,7 +197,10 @@ h1:focus {
 .card {
     background-color: var(--bg-card);
     border-color: var(--border-color);
+    border-left: 3px solid var(--card-accent-border);
+    border-radius: 0.75rem;
     box-shadow: var(--shadow-sm);
+    background-image: linear-gradient(135deg, var(--card-gradient-start), var(--card-gradient-end));
 }
 
 .card:hover {

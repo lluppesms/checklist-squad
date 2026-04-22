@@ -27,6 +27,7 @@
 .checklist-list {
     background-color: var(--bg-card);
     border: 1px solid var(--border-color);
+    border-left: 4px solid var(--forest-green);
     border-radius: 0.75rem;
     margin-bottom: 1rem;
     overflow: hidden;

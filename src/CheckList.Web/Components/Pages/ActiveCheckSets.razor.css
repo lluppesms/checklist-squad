@@ -23,21 +23,27 @@
 .checklist-card {
     background-color: var(--bg-card);
     border: 1px solid var(--border-color);
+    border-left: 4px solid var(--sky-blue);
     border-radius: 0.75rem;
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    transition: box-shadow 0.15s;
+    transition: box-shadow 0.15s, transform 0.15s;
+    background-image: linear-gradient(135deg, var(--sky-blue-subtle), transparent);
 }
 
 .checklist-card:hover {
     box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
 }
 
 .checklist-today {
     border-color: var(--accent-color);
+    border-left-color: var(--accent-color);
     border-width: 2px;
+    border-left-width: 4px;
     position: relative;
+    background-image: linear-gradient(135deg, var(--accent-color-subtle), transparent);
 }
 
 .today-badge {
@@ -96,14 +102,19 @@
     text-align: center;
     padding: 3rem 1rem;
     color: var(--text-muted);
+    background-color: var(--bg-card);
+    border: 2px dashed var(--border-color);
+    border-radius: 1rem;
 }
 
 .empty-state i {
     font-size: 3rem;
     display: block;
     margin-bottom: 1rem;
+    color: var(--sky-blue);
 }
 
 .empty-state a {
     color: var(--accent-color);
+    font-weight: 500;
 }

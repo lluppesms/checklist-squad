@@ -35,15 +35,18 @@
 .template-card {
     background-color: var(--bg-card);
     border: 1px solid var(--border-color);
+    border-left: 4px solid var(--earth-brown);
     border-radius: 0.75rem;
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    transition: box-shadow 0.15s;
+    transition: box-shadow 0.15s, transform 0.15s;
+    background-image: linear-gradient(135deg, var(--earth-brown-subtle), transparent);
 }
 
 .template-card:hover {
     box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
 }
 
 .template-card .card-body {
@@ -79,11 +82,15 @@
     text-align: center;
     padding: 3rem 1rem;
     color: var(--text-muted);
+    background-color: var(--bg-card);
+    border: 2px dashed var(--border-color);
+    border-radius: 1rem;
 }
 
 .empty-state i {
     font-size: 3rem;
     display: block;
     margin-bottom: 1rem;
+    color: var(--earth-brown);
 }
 
