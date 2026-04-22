@@ -41,8 +41,8 @@ public class ResponsiveTests : SmokeTestBase
         var heroTitle = Page.Locator("h1.hero-title");
         await Expect(heroTitle).ToBeVisibleAsync();
 
-        var quickLinks = Page.Locator(".quick-links");
-        await Expect(quickLinks).ToBeVisibleAsync();
+        var welcomeCard = Page.Locator(".welcome-card");
+        await Expect(welcomeCard).ToBeVisibleAsync();
     }
 
     [TestMethod]
