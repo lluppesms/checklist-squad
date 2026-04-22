@@ -1,10 +1,16 @@
 {
-  "appServicePlanSuffix": "asp",
-  "appInsightsSuffix": "appi",
-  "keyVaultAbbreviation": "kv",
-  "logWorkspaceSuffix": "law",
-  "sqlAbbreviation": "sql",
-  "signalRSuffix": "sigr",
-  "storageAccountSuffix": "stg",
-  "managedIdentity": "id"
+    "appInsightsSuffix": "appi",
+    "appServicePlanSuffix": "appsvc",
+    "containerRegistry": "cr",
+    "containerApp": "ca",
+    "containerAppEnvironment": "cae",
+    "functionApp": "func",
+    "identitySuffix": "id",
+    "keyVaultAbbreviation": "vault",
+    "logWorkspaceSuffix": "law",
+    "managedIdentity": "id",
+    "signalRSuffix": "sigr",
+    "sqlAbbreviation": "sql",
+    "storageAccountSuffix": "st",
+    "webSiteSuffix": "web"
 }

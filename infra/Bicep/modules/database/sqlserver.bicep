@@ -3,6 +3,8 @@
 // --------------------------------------------------------------------------------
 param sqlServerName string
 param sqlDatabaseName string = 'CheckListDb'
+param existingSqlServerName string = ''
+param existingSqlServerResourceGroupName string = ''
 param location string = resourceGroup().location
 param commonTags object = {}
 param environmentCode string = 'dev'
@@ -32,8 +34,19 @@ var adminDefinition = adAdminLoginUserId == '' ? {} : {
   azureADOnlyAuthentication: true
 }
 
+var deployNewServer = empty(existingSqlServerName)
+
 // --------------------------------------------------------------------------------
-resource sqlServerResource 'Microsoft.Sql/servers@2024-05-01-preview' = {
+resource existingSqlServerResource 'Microsoft.Sql/servers@2024-05-01-preview' existing = if (!deployNewServer) {
+  name: existingSqlServerName
+  scope: resourceGroup(existingSqlServerResourceGroupName == '' ? resourceGroup().name : existingSqlServerResourceGroupName)
+}
+resource existingSqlDBResource 'Microsoft.Sql/servers/databases@2024-05-01-preview' existing = if (!deployNewServer) {
+  parent: existingSqlServerResource
+  name: sqlDatabaseName
+}
+
+resource sqlServerResource 'Microsoft.Sql/servers@2024-05-01-preview' = if (deployNewServer) {
   name: sqlServerName
   location: location
   tags: tags
@@ -45,7 +58,7 @@ resource sqlServerResource 'Microsoft.Sql/servers@2024-05-01-preview' = {
   }
 }
 
-resource sqlDBResource 'Microsoft.Sql/servers/databases@2024-05-01-preview' = {
+resource sqlDBResource 'Microsoft.Sql/servers/databases@2024-05-01-preview' = if (deployNewServer) {
   parent: sqlServerResource
   name: sqlDatabaseName
   location: location
@@ -65,7 +78,7 @@ resource sqlDBResource 'Microsoft.Sql/servers/databases@2024-05-01-preview' = {
 }
 
 // Allow all Azure services to access this server
-resource sqlAllowAllAzureIps 'Microsoft.Sql/servers/firewallRules@2024-05-01-preview' = {
+resource sqlAllowAllAzureIps 'Microsoft.Sql/servers/firewallRules@2024-05-01-preview' = if (deployNewServer) {
   name: 'AllowAllWindowsAzureIps'
   parent: sqlServerResource
   properties: {
@@ -74,7 +87,7 @@ resource sqlAllowAllAzureIps 'Microsoft.Sql/servers/firewallRules@2024-05-01-pre
   }
 }
 
-resource sqlDBAuditingSettings 'Microsoft.Sql/servers/auditingSettings@2024-05-01-preview' = {
+resource sqlDBAuditingSettings 'Microsoft.Sql/servers/auditingSettings@2024-05-01-preview' = if (deployNewServer) {
   parent: sqlServerResource
   name: 'default'
   properties: {
@@ -89,9 +102,9 @@ resource sqlDBAuditingSettings 'Microsoft.Sql/servers/auditingSettings@2024-05-0
   }
 }
 
-resource diagnosticSettings 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = if (workspaceId != '') {
+resource diagnosticSettings 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = if (deployNewServer && workspaceId != '') {
   scope: sqlDBResource
-  name: '${sqlDBResource.name}-diagnostics'
+  name: '${sqlDatabaseName}-diagnostics'
   properties: {
     workspaceId: workspaceId
     logs: [
@@ -104,7 +117,10 @@ resource diagnosticSettings 'Microsoft.Insights/diagnosticSettings@2021-05-01-pr
 }
 
 // --------------------------------------------------------------------------------
-output serverName string = sqlServerResource.name
-output serverFqdn string = sqlServerResource.properties.fullyQualifiedDomainName
-output databaseName string = sqlDBResource.name
-output connectionString string = 'Server=tcp:${sqlServerResource.properties.fullyQualifiedDomainName},1433;Initial Catalog=${sqlDBResource.name};Encrypt=True;TrustServerCertificate=False;Connection Timeout=120;Authentication="Active Directory Default";'
+var outputServerName = deployNewServer ? sqlServerResource.name : existingSqlServerResource.name
+var outputDatabaseName = deployNewServer ? sqlDBResource.name : existingSqlDBResource.name
+
+output serverName string = outputServerName
+output serverFqdn string = '${outputServerName}.database.windows.net'
+output databaseName string = outputDatabaseName
+output connectionString string = 'Server=tcp:${outputServerName}.database.windows.net,1433;Initial Catalog=${outputDatabaseName};Encrypt=True;TrustServerCertificate=False;Connection Timeout=120;Authentication="Active Directory Default";'

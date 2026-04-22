@@ -1,64 +1,67 @@
 // --------------------------------------------------------------------------------
-// This BICEP file will create an App Service Plan and Web App
+// This BICEP file will create an Azure Website
 // --------------------------------------------------------------------------------
-param webSiteName string
-param appServicePlanName string
+param webSiteName string = ''
 param location string = resourceGroup().location
-param commonTags object = {}
 param environmentCode string = 'dev'
+param commonTags object = {}
+
+@description('The workspace to store audit logs.')
+param workspaceId string = ''
+
+@description('The Name of the service plan to deploy into.')
+param appServicePlanName string
+param appServicePlanResourceGroupName string = resourceGroup().name
+param webAppKind string = 'linux'
 
 @description('Application Insights connection string for telemetry.')
 param appInsightsConnectionString string = ''
 @description('Application Insights instrumentation key.')
 param appInsightsInstrumentationKey string = ''
-@description('Key Vault name for secret references.')
-param keyVaultName string = ''
-@description('The Log Analytics workspace ID for diagnostic settings.')
-param workspaceId string = ''
+
+@description('Custom application settings to merge with the base settings.')
+param customAppSettings object = {}
 
 // --------------------------------------------------------------------------------
 var templateTag = { TemplateFile: '~webapp.bicep' }
 var tags = union(commonTags, templateTag)
 
-// Tier configuration based on environment
-var skuName = environmentCode == 'prod' ? 'S1' : 'B1'
-var skuTier = environmentCode == 'prod' ? 'Standard' : 'Basic'
+var linuxFxVersion = webAppKind == 'linux' ? 'DOTNETCORE|10.0' : ''
 
-var kvSecretPrefix = keyVaultName != '' ? '@Microsoft.KeyVault(VaultName=${keyVaultName};SecretName=' : ''
-var kvSecretSuffix = keyVaultName != '' ? ')' : ''
-
-// --------------------------------------------------------------------------------
-resource appServicePlanResource 'Microsoft.Web/serverfarms@2024-04-01' = {
-  name: appServicePlanName
-  location: location
-  tags: tags
-  kind: 'linux'
-  sku: {
-    name: skuName
-    tier: skuTier
-  }
-  properties: {
-    reserved: true // Required for Linux
-  }
+// Base app settings that are always applied
+var baseAppSettings = {
+  APPLICATIONINSIGHTS_CONNECTION_STRING: appInsightsConnectionString
+  APPINSIGHTS_INSTRUMENTATIONKEY: appInsightsInstrumentationKey
+  ApplicationInsightsAgent_EXTENSION_VERSION: '~3'
 }
 
-resource webSiteResource 'Microsoft.Web/sites@2024-04-01' = {
+// Merge base settings with custom settings
+var mergedAppSettings = union(baseAppSettings, customAppSettings)
+
+// --------------------------------------------------------------------------------
+resource appServiceResource 'Microsoft.Web/serverfarms@2024-11-01' existing = {
+  name: appServicePlanName
+  scope: resourceGroup(appServicePlanResourceGroupName)
+}
+
+resource webSiteResource 'Microsoft.Web/sites@2024-11-01' = {
   name: webSiteName
   location: location
   tags: tags
-  kind: 'app,linux'
+  kind: 'app'
   identity: {
     type: 'SystemAssigned'
   }
   properties: {
-    serverFarmId: appServicePlanResource.id
+    serverFarmId: appServiceResource.id
     httpsOnly: true
     clientAffinityEnabled: false
     siteConfig: {
-      linuxFxVersion: 'DOTNETCORE|10.0'
+      linuxFxVersion: linuxFxVersion
       minTlsVersion: '1.2'
       ftpsState: 'FtpsOnly'
-      alwaysOn: environmentCode == 'prod'
+      alwaysOn: true
+      remoteDebuggingEnabled: false
       webSocketsEnabled: true // Required for SignalR
       appSettings: [
         {
@@ -69,30 +72,22 @@ resource webSiteResource 'Microsoft.Web/sites@2024-04-01' = {
           name: 'APPINSIGHTS_INSTRUMENTATIONKEY'
           value: appInsightsInstrumentationKey
         }
-        {
-          name: 'ApplicationInsightsAgent_EXTENSION_VERSION'
-          value: '~3'
-        }
-        {
-          name: 'ASPNETCORE_ENVIRONMENT'
-          value: environmentCode == 'prod' ? 'Production' : 'Development'
-        }
-        {
-          name: 'ConnectionStrings__DefaultConnection'
-          value: keyVaultName != '' ? '${kvSecretPrefix}SqlConnectionString${kvSecretSuffix}' : ''
-        }
-        {
-          name: 'Azure__SignalR__ConnectionString'
-          value: keyVaultName != '' ? '${kvSecretPrefix}SignalRConnectionString${kvSecretSuffix}' : ''
-        }
       ]
     }
   }
 }
 
-resource webSiteLogsConfig 'Microsoft.Web/sites/config@2024-04-01' = {
+// App Settings Configuration - merges base settings with custom app settings
+resource webSiteAppSettingsConfig 'Microsoft.Web/sites/config@2024-11-01' = {
+  parent: webSiteResource
+  name: 'appsettings'
+  properties: mergedAppSettings
+}
+
+resource webSiteLogsConfig 'Microsoft.Web/sites/config@2024-11-01' = {
   parent: webSiteResource
   name: 'logs'
+  dependsOn: [webSiteAppSettingsConfig]
   properties: {
     applicationLogs: {
       fileSystem: {

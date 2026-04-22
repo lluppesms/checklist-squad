@@ -27,5 +27,5 @@ output sqlServerName string              = toLower('${sanitizedAppNameInstance}$
 output signalRServiceName string         = toLower('${sanitizedAppInstanceNameWithDashes}-${resourceAbbreviations.signalRSuffix}-${sanitizedEnvironment}')
 output userAssignedIdentityName string   = toLower('${sanitizedAppNameInstance}-app-${resourceAbbreviations.managedIdentity}')
 
-// Key Vault names are capped at 24 characters
+// Key Vaults can only be 24 characters long
 output keyVaultName string               = take('${sanitizedAppNameInstance}${resourceAbbreviations.keyVaultAbbreviation}${sanitizedEnvironment}', 24)
