@@ -49,6 +49,6 @@ public class ConnectivityTests : SmokeTestBase
 
         var brand = Page.Locator(".app-brand");
         await Expect(brand).ToBeVisibleAsync();
-        await Expect(brand).ToContainTextAsync("Shared Checklist");
+        await Expect(brand).ToContainTextAsync("RigRoll");
     }
 }

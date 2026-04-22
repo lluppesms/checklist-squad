@@ -3,7 +3,7 @@ using System.Text.RegularExpressions;
 namespace CheckList.PlaywrightTests.SmokeTests;
 
 /// <summary>
-/// Base class for all Playwright smoke tests against the Shared Checklist app.
+/// Base class for all Playwright smoke tests against the RigRoll app.
 /// Each test gets its own browser context for isolation.
 /// </summary>
 [TestClass]

@@ -1,12 +1,12 @@
 @page "/templates/edit/{SetId:int?}"
 
-<PageTitle>@(isNewTemplate ? "Create Template" : "Edit Template") — Shared Checklist</PageTitle>
+<PageTitle>@(isNewTemplate ? "Create Blueprint" : "Edit Blueprint") — RigRoll</PageTitle>
 
 <div class="editor-header">
     <div class="header-title">
         <h2>
             <i class="bi bi-card-checklist"></i>
-            @(isNewTemplate ? "Create New Template" : "Edit Template")
+            @(isNewTemplate ? "Create New Blueprint" : "Edit Blueprint")
         </h2>
     </div>
     <div class="header-actions">
@@ -25,7 +25,7 @@
 
 @if (loading)
 {
-    <LoadingSpinner Message="Loading template..." />
+    <LoadingSpinner Message="Loading blueprint..." />
 }
 else if (errorMessage is not null)
 {
@@ -39,8 +39,8 @@ else
         <div class="set-details card mb-3">
             <div class="card-body">
                 <div class="mb-3">
-                    <label class="form-label">Template Name</label>
-                    <input type="text" class="form-control" @bind="setName" placeholder="Enter template name" />
+                    <label class="form-label">Blueprint Name</label>
+                    <input type="text" class="form-control" @bind="setName" placeholder="Enter blueprint name" />
                 </div>
                 <div class="mb-3">
                     <label class="form-label">Description</label>
@@ -262,7 +262,7 @@ else
             }
             catch (Exception ex)
             {
-                errorMessage = $"Failed to load template: {ex.Message}";
+                errorMessage = $"Failed to load blueprint: {ex.Message}";
             }
         }
 
@@ -398,7 +398,7 @@ else
     {
         if (string.IsNullOrWhiteSpace(setName) || string.IsNullOrWhiteSpace(ownerName))
         {
-            errorMessage = "Template name and owner are required.";
+            errorMessage = "Blueprint name and owner are required.";
             return;
         }
 
@@ -525,7 +525,7 @@ else
         }
         catch (Exception ex)
         {
-            errorMessage = $"Failed to save template: {ex.Message}";
+            errorMessage = $"Failed to save blueprint: {ex.Message}";
         }
         finally
         {

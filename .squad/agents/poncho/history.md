@@ -11,6 +11,27 @@
 
 <!-- Append new learnings below. Each entry is something lasting about the project. -->
 
+### 2026-07-28: Blueprints Rename (UI-Only)
+Renamed all user-facing references from "Templates" to "Blueprints" across the frontend per Lyle's request. No backend, database, or code-behind changes — purely display text.
+- **Templates.razor**: Page title, h2 heading, button labels ("Create New Blueprint", "Create Your First Blueprint"), loading/error/empty messages, delete dialog title, export filename prefix
+- **TemplateEditor.razor**: Page title, h2 heading, form label ("Blueprint Name"), placeholder, all error messages
+- **NavMenu.razor**: Sidebar nav label → "Blueprints"
+- **MainLayout.razor**: Bottom nav label → "Blueprints"
+- **Home.razor**: Quick-link card description ("blueprint" instead of "template")
+- **About.razor**: Feature card heading → "Blueprints", description text, "Activate a blueprint" copy
+- **ActiveCheckSets.razor**: Empty-state link text → "Blueprints"
+- **ImportExport.razor**: Export/import button labels, descriptions, success/error messages, export filename prefix
+- **Playwright tests**: Updated 6 text assertions across TemplateTests.cs, NavigationTests.cs, ResponsiveTests.cs, ImportExportTests.cs to match new display text
+- **Not changed**: URL routes (`/templates`), CSS classes (`.template-card`), C# identifiers, API endpoints, database schema
+Rebranded the entire app from "Shared Checklist" to "RigRoll":
+- **Files changed**: Home.razor, About.razor, MainLayout.razor, Templates.razor, TemplateEditor.razor, ImportExport.razor, Home.razor.css, plus 4 Playwright test files
+- **Brand name**: "RigRoll" everywhere — navbar, PageTitle components, hero copy, about page
+- **Home hero**: New three-part copy structure — headline ("Stop Shouting. Start RigRolling."), italic sub-headline, and body paragraph. Added `.hero-subheadline` CSS class for the italic callout.
+- **About page**: Updated "What Is This?" → "What Is RigRoll?", "Shared Checklists" → "Crew Checklists", "Happy Camping!" → "Happy RigRolling!"
+- **Playwright tests**: Updated all brand-name assertions (ConnectivityTests, HomePageTests, ImportExportTests, SmokeTestBase)
+- **No color changes**: Kept existing RV outdoors palette (forest green, sky blue, earth brown) — all CSS vars, zero hardcoded values
+- **Pattern**: Sub-headline uses `font-style: italic` with `var(--text-secondary)` — scoped in Home.razor.css
+
 ### 2026-04-21: Template Editor & Import/Export UI Complete
 Built the complete frontend for template management, including:
 - **Request DTOs**: Created `TemplateRequestDtos.cs` and `ImportExportDtos.cs` mirroring Mac's API contracts
@@ -78,6 +99,15 @@ Created `/about` page with camping-themed content:
 - **Navigation**: Added "About" with `bi-info-circle` to both NavMenu (desktop sidebar) and MainLayout bottom-nav (mobile)
 - **Zero hardcoded colors**: All CSS uses vars from app.css
 - **Pattern**: Mirrors Home page hero structure (image-wrapper, title, description) for visual consistency
+
+### 2026-07-27: localStorage Nickname Persistence
+Added browser localStorage persistence for user nicknames so they survive page refreshes and revisits:
+- **JS interop**: Added `nicknameStorage.get/set/clear` functions to `wwwroot/js/BlazorInterop.js`
+- **NicknamePrompt.razor**: Now checks localStorage via `OnAfterRenderAsync(firstRender)` before showing the overlay
+- **Flow**: On first render → check localStorage → if nickname found, set `UserIdentityService` and skip overlay → if not found, show overlay as before → on manual entry, save to both service and localStorage
+- **Key detail**: `checkedStorage` flag prevents a flash of the overlay before JS interop completes (overlay hidden until localStorage check finishes)
+- **localStorage key**: `checklist-nickname`
+- **No breaking changes**: Users without a stored nickname still see the overlay exactly as before
 
 ### 2026-04-22: Editable Checklist Name on Template Activation
 Added editable name field to ListSelectionDialog:

@@ -11,7 +11,7 @@ public class HomePageTests : SmokeTestBase
 
         var title = Page.Locator("h1.hero-title");
         await Expect(title).ToBeVisibleAsync();
-        await Expect(title).ToContainTextAsync("Shared Checklist");
+        await Expect(title).ToContainTextAsync("RigRolling");
     }
 
     [TestMethod]
@@ -85,6 +85,6 @@ public class HomePageTests : SmokeTestBase
     public async Task HomePage_PageTitle_IsCorrect()
     {
         await NavigateAndWaitForBlazor("/");
-        await Expect(Page).ToHaveTitleAsync("Shared Checklist");
+        await Expect(Page).ToHaveTitleAsync("RigRoll");
     }
 }

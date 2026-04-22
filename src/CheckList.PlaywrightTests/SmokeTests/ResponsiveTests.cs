@@ -53,12 +53,12 @@ public class ResponsiveTests : SmokeTestBase
 
         var bottomNav = Page.Locator(".bottom-nav");
 
-        // Click Templates in bottom nav
+        // Click Blueprints in bottom nav
         await bottomNav.Locator("a[href='templates']").ClickAsync();
         await Page.WaitForURLAsync("**/templates");
 
         var pageTitle = Page.Locator("h2.page-title");
-        await Expect(pageTitle).ToContainTextAsync("Templates");
+        await Expect(pageTitle).ToContainTextAsync("Blueprints");
     }
 
     [TestMethod]

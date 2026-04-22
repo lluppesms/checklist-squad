@@ -3,7 +3,7 @@
 @using System.Text.Json
 @inject IJSRuntime JSRuntime
 
-<PageTitle>Import/Export — Shared Checklist</PageTitle>
+<PageTitle>Import/Export — RigRoll</PageTitle>
 
 <h2 class="page-title">
     <i class="bi bi-arrow-down-up"></i> Import/Export
@@ -31,7 +31,7 @@
             <h4 class="section-title">
                 <i class="bi bi-download"></i> Export
             </h4>
-            <p class="text-muted">Export your templates and checklists as JSON files.</p>
+            <p class="text-muted">Export your blueprints and checklists as JSON files.</p>
 
             <div class="export-actions">
                 <button class="btn btn-primary" @onclick="ExportAllTemplates" disabled="@exporting">
@@ -39,14 +39,14 @@
                     {
                         <span class="spinner-border spinner-border-sm me-1" role="status"></span>
                     }
-                    <i class="bi bi-file-earmark-arrow-down"></i> Export All Templates
+                    <i class="bi bi-file-earmark-arrow-down"></i> Export All Blueprints
                 </button>
                 <button class="btn btn-secondary" @onclick="ExportFull" disabled="@exporting">
                     @if (exporting)
                     {
                         <span class="spinner-border spinner-border-sm me-1" role="status"></span>
                     }
-                    <i class="bi bi-database-down"></i> Full Export (Templates + Checklists)
+                    <i class="bi bi-database-down"></i> Full Export (Blueprints + Checklists)
                 </button>
             </div>
         </div>
@@ -57,7 +57,7 @@
             <h4 class="section-title">
                 <i class="bi bi-upload"></i> Import
             </h4>
-            <p class="text-muted">Upload and import templates or full data from JSON files.</p>
+            <p class="text-muted">Upload and import blueprints or full data from JSON files.</p>
 
             <div class="file-upload mb-3">
                 <InputFile OnChange="HandleFileSelected" accept=".json" class="form-control" />
@@ -76,7 +76,7 @@
                     {
                         <span class="spinner-border spinner-border-sm me-1" role="status"></span>
                     }
-                    <i class="bi bi-file-earmark-arrow-up"></i> Import Template
+                    <i class="bi bi-file-earmark-arrow-up"></i> Import Blueprint
                 </button>
                 <button class="btn btn-secondary" @onclick="ImportFull" disabled="@(importing || selectedFile is null)">
                     @if (importing)
@@ -119,14 +119,14 @@
 
             var exportData = await ApiClient.ExportAllTemplatesAsync();
             var json = JsonSerializer.Serialize(exportData, new JsonSerializerOptions { WriteIndented = true });
-            var fileName = $"Templates_Export_{DateTime.Now:yyyyMMdd_HHmmss}.json";
+            var fileName = $"Blueprints_Export_{DateTime.Now:yyyyMMdd_HHmmss}.json";
             await DownloadFile(fileName, json);
 
-            successMessage = $"Exported {exportData.Count} template(s) successfully.";
+            successMessage = $"Exported {exportData.Count} blueprint(s) successfully.";
         }
         catch (Exception ex)
         {
-            errorMessage = $"Failed to export templates: {ex.Message}";
+            errorMessage = $"Failed to export blueprints: {ex.Message}";
         }
         finally
         {
@@ -147,7 +147,7 @@
             var fileName = $"Full_Export_{DateTime.Now:yyyyMMdd_HHmmss}.json";
             await DownloadFile(fileName, json);
 
-            successMessage = $"Exported {exportData.Templates.Count} template(s) and {exportData.Checklists.Count} checklist(s) successfully.";
+            successMessage = $"Exported {exportData.Templates.Count} blueprint(s) and {exportData.Checklists.Count} checklist(s) successfully.";
         }
         catch (Exception ex)
         {
@@ -194,13 +194,13 @@
             }
 
             var result = await ApiClient.ImportTemplateAsync(importDto);
-            successMessage = $"Successfully imported template: {result.SetName}";
-            importResult = $"Template ID: {result.SetId}, Lists: {result.Lists.Count}";
+            successMessage = $"Successfully imported blueprint: {result.SetName}";
+            importResult = $"Blueprint ID: {result.SetId}, Lists: {result.Lists.Count}";
             selectedFile = null;
         }
         catch (Exception ex)
         {
-            errorMessage = $"Failed to import template: {ex.Message}";
+            errorMessage = $"Failed to import blueprint: {ex.Message}";
         }
         finally
         {
@@ -236,7 +236,7 @@
 
             var result = await ApiClient.ImportFullAsync(importDto);
             successMessage = "Successfully imported full data.";
-            importResult = $"Imported {result.templateCount} template(s) and {result.checklistCount} checklist(s).";
+            importResult = $"Imported {result.templateCount} blueprint(s) and {result.checklistCount} checklist(s).";
             selectedFile = null;
         }
         catch (Exception ex)

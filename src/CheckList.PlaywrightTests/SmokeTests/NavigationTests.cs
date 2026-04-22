@@ -26,7 +26,7 @@ public class NavigationTests : SmokeTestBase
         await Page.WaitForURLAsync($"**/templates");
 
         var pageTitle = Page.Locator("h2.page-title");
-        await Expect(pageTitle).ToContainTextAsync("Templates");
+        await Expect(pageTitle).ToContainTextAsync("Blueprints");
     }
 
     [TestMethod]

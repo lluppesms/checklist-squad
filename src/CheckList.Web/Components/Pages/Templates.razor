@@ -3,21 +3,21 @@
 @using System.Text.Json
 @inject IJSRuntime JSRuntime
 
-<PageTitle>Templates — Shared Checklist</PageTitle>
+<PageTitle>Blueprints — RigRoll</PageTitle>
 
 <h2 class="page-title">
-    <i class="bi bi-card-checklist"></i> Templates
+    <i class="bi bi-card-checklist"></i> Blueprints
 </h2>
 
 <div class="template-actions mb-3">
     <button class="btn btn-primary" @onclick="CreateNewTemplate">
-        <i class="bi bi-plus-lg"></i> Create New Template
+        <i class="bi bi-plus-lg"></i> Create New Blueprint
     </button>
 </div>
 
 @if (loading)
 {
-    <LoadingSpinner Message="Loading templates..." />
+    <LoadingSpinner Message="Loading blueprints..." />
 }
 else if (errorMessage is not null)
 {
@@ -29,9 +29,9 @@ else if (templates.Count == 0)
 {
     <div class="empty-state">
         <i class="bi bi-compass"></i>
-        <p>No templates yet — let's build your first adventure checklist! 🌲</p>
+        <p>No blueprints yet — let's build your first adventure checklist! 🌲</p>
         <button class="btn btn-primary mt-2" @onclick="CreateNewTemplate">
-            <i class="bi bi-plus-lg"></i> Create Your First Template
+            <i class="bi bi-plus-lg"></i> Create Your First Blueprint
         </button>
     </div>
 }
@@ -79,7 +79,7 @@ else
 }
 
 <ConfirmDialog IsVisible="@showDeleteDialog"
-               Title="Delete Template"
+               Title="Delete Blueprint"
                Message="@deleteMessage"
                ConfirmText="Delete"
                OnConfirm="ConfirmDelete"
@@ -119,7 +119,7 @@ else
         }
         catch (Exception ex)
         {
-            errorMessage = $"Failed to load templates: {ex.Message}";
+            errorMessage = $"Failed to load blueprints: {ex.Message}";
         }
         finally
         {
@@ -143,12 +143,12 @@ else
         {
             var exportData = await ApiClient.ExportTemplateAsync(setId);
             var json = JsonSerializer.Serialize(exportData, new JsonSerializerOptions { WriteIndented = true });
-            var fileName = $"Template_{exportData.SetName.Replace(" ", "_")}_{DateTime.Now:yyyyMMdd_HHmmss}.json";
+            var fileName = $"Blueprint_{exportData.SetName.Replace(" ", "_")}_{DateTime.Now:yyyyMMdd_HHmmss}.json";
             await DownloadFile(fileName, json);
         }
         catch (Exception ex)
         {
-            errorMessage = $"Failed to export template: {ex.Message}";
+            errorMessage = $"Failed to export blueprint: {ex.Message}";
         }
     }
 
@@ -172,7 +172,7 @@ else
             }
             catch (Exception ex)
             {
-                errorMessage = $"Failed to delete template: {ex.Message}";
+                errorMessage = $"Failed to delete blueprint: {ex.Message}";
             }
         }
     }
@@ -213,7 +213,7 @@ else
         }
         catch (Exception ex)
         {
-            errorMessage = $"Failed to load template details: {ex.Message}";
+            errorMessage = $"Failed to load blueprint details: {ex.Message}";
         }
         finally
         {
@@ -245,7 +245,7 @@ else
         }
         catch (Exception ex)
         {
-            errorMessage = $"Failed to activate template: {ex.Message}";
+            errorMessage = $"Failed to activate blueprint: {ex.Message}";
         }
         finally
         {

@@ -14,6 +14,12 @@ window.downloadFileFromBase64 = (fileName, base64) => {
     URL.revokeObjectURL(url);
 };
 
+window.nicknameStorage = {
+    get: () => localStorage.getItem('checklist-nickname'),
+    set: (name) => localStorage.setItem('checklist-nickname', name),
+    clear: () => localStorage.removeItem('checklist-nickname')
+};
+
 window.downloadFileFromStream = async (fileName, contentStreamReference) => {
     const arrayBuffer = await contentStreamReference.arrayBuffer();
     const blob = new Blob([arrayBuffer]);

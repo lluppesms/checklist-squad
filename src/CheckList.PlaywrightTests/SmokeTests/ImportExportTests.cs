@@ -21,7 +21,7 @@ public class ImportExportTests : SmokeTestBase
         var exportSection = Page.Locator(".export-section");
         await Expect(exportSection).ToBeVisibleAsync();
 
-        var exportAllButton = exportSection.Locator("button:has-text('Export All Templates')");
+        var exportAllButton = exportSection.Locator("button:has-text('Export All Blueprints')");
         await Expect(exportAllButton).ToBeVisibleAsync();
 
         var fullExportButton = exportSection.Locator("button:has-text('Full Export')");
@@ -40,7 +40,7 @@ public class ImportExportTests : SmokeTestBase
         await Expect(fileInput).ToBeAttachedAsync();
 
         // Import buttons should be disabled when no file is selected
-        var importTemplateButton = importSection.Locator("button:has-text('Import Template')");
+        var importTemplateButton = importSection.Locator("button:has-text('Import Blueprint')");
         await Expect(importTemplateButton).ToBeDisabledAsync();
     }
 
@@ -48,6 +48,6 @@ public class ImportExportTests : SmokeTestBase
     public async Task ImportExport_PageTitle_IsCorrect()
     {
         await NavigateAndWaitForBlazor("/import-export");
-        await Expect(Page).ToHaveTitleAsync("Import/Export — Shared Checklist");
+        await Expect(Page).ToHaveTitleAsync("Import/Export — RigRoll");
     }
 }

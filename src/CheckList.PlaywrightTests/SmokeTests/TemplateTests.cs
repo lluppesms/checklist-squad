@@ -10,9 +10,9 @@ public class TemplateTests : SmokeTestBase
         await NavigateAndWaitForBlazor("/templates");
 
         var pageTitle = Page.Locator("h2.page-title");
-        await Expect(pageTitle).ToContainTextAsync("Templates");
+        await Expect(pageTitle).ToContainTextAsync("Blueprints");
 
-        var createButton = Page.Locator("button:has-text('Create New Template')");
+        var createButton = Page.Locator("button:has-text('Create New Blueprint')");
         await Expect(createButton).ToBeVisibleAsync();
     }
 
@@ -52,7 +52,7 @@ public class TemplateTests : SmokeTestBase
     {
         await NavigateAndWaitForBlazor("/templates");
 
-        var createButton = Page.Locator("button:has-text('Create New Template')");
+        var createButton = Page.Locator("button:has-text('Create New Blueprint')");
         await createButton.ClickAsync();
 
         await Page.WaitForURLAsync("**/templates/edit**");

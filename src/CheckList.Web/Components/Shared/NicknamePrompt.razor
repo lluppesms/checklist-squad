@@ -1,6 +1,7 @@
 @namespace CheckList.Web.Components.Shared
+@inject IJSRuntime JS
 
-@if (!UserIdentity.HasNickName)
+@if (!UserIdentity.HasNickName && checkedStorage)
 {
     <div class="nickname-overlay">
         <div class="nickname-card">
@@ -29,21 +30,37 @@
     [Inject] private IUserIdentity UserIdentity { get; set; } = default!;
 
     private string nickName = string.Empty;
+    private bool checkedStorage;
 
-    private void SaveNickName()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!string.IsNullOrWhiteSpace(nickName))
+        if (firstRender && !UserIdentity.HasNickName)
         {
-            UserIdentity.SetNickName(nickName);
+            var saved = await JS.InvokeAsync<string?>("nicknameStorage.get");
+            if (!string.IsNullOrWhiteSpace(saved))
+            {
+                UserIdentity.SetNickName(saved);
+            }
+            checkedStorage = true;
             StateHasChanged();
         }
     }
 
-    private void HandleKeyDown(KeyboardEventArgs e)
+    private async Task SaveNickName()
+    {
+        if (!string.IsNullOrWhiteSpace(nickName))
+        {
+            UserIdentity.SetNickName(nickName);
+            await JS.InvokeVoidAsync("nicknameStorage.set", nickName.Trim());
+            StateHasChanged();
+        }
+    }
+
+    private async Task HandleKeyDown(KeyboardEventArgs e)
     {
         if (e.Key == "Enter")
         {
-            SaveNickName();
+            await SaveNickName();
         }
     }
 }

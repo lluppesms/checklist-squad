@@ -39,6 +39,14 @@
     line-height: 1.6;
 }
 
+.hero-subheadline {
+    color: var(--text-secondary);
+    font-size: 1.05rem;
+    font-style: italic;
+    margin-bottom: 1rem;
+    line-height: 1.5;
+}
+
 .welcome-card {
     background-color: var(--bg-card);
     border: 1px solid var(--border-color);
