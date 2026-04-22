@@ -30,3 +30,27 @@ Built the complete frontend for template management, including:
 - Reused existing `ConfirmDialog` and `LoadingSpinner` components for consistency
 - Timestamped export filenames: `Templates_Export_20260421_160000.json` pattern
 
+### 2026-04-21: Selective List Activation UI
+Added list selection dialog when activating templates so users can choose which lists to activate instead of always activating all lists:
+- **Model Update**: Changed `ActivateCheckSetRequest` to include optional `List<int>? SelectedListIds` parameter (backward compatible — null = activate all)
+- **API Client**: Updated `ActivateCheckSetAsync` signature to pass selected list IDs to API
+- **ListSelectionDialog Component**: New modal component at `/Components/Shared/ListSelectionDialog.razor` with:
+  - All lists pre-checked by default for quick activation
+  - Individual checkboxes with list name + description
+  - "Select All" / "Deselect All" toggle
+  - Selection counter ("3 of 7 lists selected")
+  - "Activate Selected" button (disabled if nothing selected)
+  - Mobile-friendly full-width layout on small screens
+  - CSS variables for dark/light theme support
+- **Templates.razor Flow**: Changed from one-click activation to two-step:
+  1. Click "Activate" → fetches template details → shows ListSelectionDialog
+  2. User selects lists → clicks "Activate Selected" → activates only those lists
+- **UX Pattern**: User-focused selection with sensible defaults (all checked) that still allows surgical control for days when only 1-2 lists are needed
+
+**Design Decisions**:
+- Checkboxes sized 1.25rem for easy mobile tapping
+- Modal max-height 90vh with scrollable list section
+- Full-screen on mobile (no awkward small modal on phone)
+- Disabled activation button when no lists selected (prevents empty activation)
+- Clear visual feedback on list hover and selection state
+

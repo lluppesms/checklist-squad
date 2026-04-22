@@ -16,9 +16,9 @@ public class CheckListApiClient(HttpClient httpClient) : ICheckListApiClient
         return await httpClient.GetFromJsonAsync<TemplateSetDto>($"api/templates/{setId}");
     }
 
-    public async Task<CheckSetDto?> ActivateCheckSetAsync(int templateSetId, string ownerName)
+    public async Task<CheckSetDto?> ActivateCheckSetAsync(int templateSetId, string ownerName, List<int>? selectedListIds = null)
     {
-        var request = new ActivateCheckSetRequest(ownerName);
+        var request = new ActivateCheckSetRequest(ownerName, selectedListIds);
         var response = await httpClient.PostAsJsonAsync($"api/checklists/activate/{templateSetId}", request);
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<CheckSetDto>();

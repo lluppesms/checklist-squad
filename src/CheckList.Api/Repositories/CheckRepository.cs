@@ -41,7 +41,7 @@ public class CheckRepository(CheckListDbContext db) : ICheckRepository
         return action;
     }
 
-    public async Task<CheckSet> ActivateFromTemplateAsync(int templateSetId, string ownerName)
+    public async Task<CheckSet> ActivateFromTemplateAsync(int templateSetId, string ownerName, List<int>? selectedListIds = null)
     {
         var template = await db.TemplateSets
             .Include(s => s.TemplateLists.OrderBy(l => l.SortOrder))
@@ -50,6 +50,15 @@ public class CheckRepository(CheckListDbContext db) : ICheckRepository
             .AsNoTracking()
             .FirstOrDefaultAsync(s => s.SetId == templateSetId)
             ?? throw new KeyNotFoundException($"TemplateSet {templateSetId} not found.");
+
+        var listsToActivate = selectedListIds?.Count > 0
+            ? template.TemplateLists.Where(tl => selectedListIds.Contains(tl.ListId)).ToList()
+            : template.TemplateLists.ToList();
+
+        if (selectedListIds?.Count > 0 && listsToActivate.Count == 0)
+        {
+            throw new ArgumentException("No matching lists found in the template.");
+        }
 
         var now = DateTime.UtcNow;
         var localDate = now.ToLocalTime();
@@ -67,7 +76,7 @@ public class CheckRepository(CheckListDbContext db) : ICheckRepository
             CreateUserName = ownerName,
             ChangeDateTime = now,
             ChangeUserName = ownerName,
-            CheckLists = template.TemplateLists.Select(tl => new CheckListEntity
+            CheckLists = listsToActivate.Select(tl => new CheckListEntity
             {
                 ListName = tl.ListName,
                 ListDscr = tl.ListDscr,

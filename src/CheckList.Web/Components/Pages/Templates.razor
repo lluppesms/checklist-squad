@@ -85,6 +85,12 @@ else
                OnConfirm="ConfirmDelete"
                OnCancel="CancelDelete" />
 
+<ListSelectionDialog IsVisible="@showListSelectionDialog"
+                     TemplateName="@selectedTemplateName"
+                     Lists="@selectedTemplateLists"
+                     OnConfirm="ConfirmActivateSelectedLists"
+                     OnCancel="CancelListSelection" />
+
 @code {
     [Inject] private ICheckListApiClient ApiClient { get; set; } = default!;
     [Inject] private IUserIdentity UserIdentity { get; set; } = default!;
@@ -98,6 +104,12 @@ else
     private bool showDeleteDialog;
     private int? deleteTargetId;
     private string deleteMessage = "";
+    
+    // List selection dialog state
+    private bool showListSelectionDialog;
+    private int? selectedTemplateId;
+    private string selectedTemplateName = "";
+    private List<TemplateListDto> selectedTemplateLists = [];
 
     protected override async Task OnInitializedAsync()
     {
@@ -179,7 +191,52 @@ else
         {
             activating = true;
             activatingId = templateSetId;
-            var checkSet = await ApiClient.ActivateCheckSetAsync(templateSetId, UserIdentity.NickName!);
+            
+            // Fetch full template details to show list selection
+            var template = await ApiClient.GetTemplateAsync(templateSetId);
+            if (template is not null && template.Lists.Count > 0)
+            {
+                selectedTemplateId = templateSetId;
+                selectedTemplateName = template.SetName;
+                selectedTemplateLists = template.Lists;
+                showListSelectionDialog = true;
+            }
+            else if (template is not null)
+            {
+                // No lists in template, activate anyway (edge case)
+                var checkSet = await ApiClient.ActivateCheckSetAsync(templateSetId, UserIdentity.NickName!);
+                if (checkSet is not null)
+                {
+                    Navigation.NavigateTo($"/checklists/{checkSet.SetId}");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to load template details: {ex.Message}";
+        }
+        finally
+        {
+            activating = false;
+            activatingId = null;
+        }
+    }
+
+    private async Task ConfirmActivateSelectedLists(List<int> selectedListIds)
+    {
+        showListSelectionDialog = false;
+        if (!selectedTemplateId.HasValue || !UserIdentity.HasNickName) return;
+
+        try
+        {
+            activating = true;
+            activatingId = selectedTemplateId.Value;
+            
+            var checkSet = await ApiClient.ActivateCheckSetAsync(
+                selectedTemplateId.Value, 
+                UserIdentity.NickName!, 
+                selectedListIds);
+            
             if (checkSet is not null)
             {
                 Navigation.NavigateTo($"/checklists/{checkSet.SetId}");
@@ -193,7 +250,20 @@ else
         {
             activating = false;
             activatingId = null;
+            selectedTemplateId = null;
+            selectedTemplateName = "";
+            selectedTemplateLists = [];
         }
+    }
+
+    private void CancelListSelection()
+    {
+        showListSelectionDialog = false;
+        activating = false;
+        activatingId = null;
+        selectedTemplateId = null;
+        selectedTemplateName = "";
+        selectedTemplateLists = [];
     }
 
     private async Task DownloadFile(string fileName, string content)

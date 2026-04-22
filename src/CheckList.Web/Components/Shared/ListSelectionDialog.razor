@@ -1,0 +1,111 @@
+@namespace CheckList.Web.Components.Shared
+
+@if (IsVisible)
+{
+    <div class="list-selection-overlay" @onclick="Cancel">
+        <div class="list-selection-dialog" @onclick:stopPropagation="true">
+            <div class="dialog-header">
+                <h5 class="dialog-title">@TemplateName</h5>
+                <button class="btn-close" @onclick="Cancel" aria-label="Close"></button>
+            </div>
+            <div class="dialog-body">
+                <p class="selection-hint">Select which lists to activate:</p>
+                
+                <div class="selection-controls">
+                    <button class="btn btn-sm btn-outline-secondary" @onclick="ToggleAll">
+                        @(allSelected ? "Deselect All" : "Select All")
+                    </button>
+                    <span class="selection-count">@selectedCount of @totalCount lists selected</span>
+                </div>
+
+                <div class="list-items">
+                    @foreach (var list in Lists)
+                    {
+                        <label class="list-item">
+                            <input type="checkbox" 
+                                   checked="@selectedListIds.Contains(list.ListId)"
+                                   @onchange="() => ToggleList(list.ListId)" />
+                            <div class="list-info">
+                                <div class="list-name">@list.ListName</div>
+                                @if (!string.IsNullOrWhiteSpace(list.ListDscr))
+                                {
+                                    <div class="list-description">@list.ListDscr</div>
+                                }
+                            </div>
+                        </label>
+                    }
+                </div>
+            </div>
+            <div class="dialog-footer">
+                <button class="btn btn-outline-secondary" @onclick="Cancel">Cancel</button>
+                <button class="btn btn-primary" 
+                        @onclick="Confirm" 
+                        disabled="@(selectedCount == 0)">
+                    Activate Selected
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsVisible { get; set; }
+    [Parameter] public string TemplateName { get; set; } = "";
+    [Parameter] public List<TemplateListDto> Lists { get; set; } = [];
+    [Parameter] public EventCallback<List<int>> OnConfirm { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+
+    private HashSet<int> selectedListIds = [];
+    private bool allSelected;
+    private int selectedCount => selectedListIds.Count;
+    private int totalCount => Lists.Count;
+
+    protected override void OnParametersSet()
+    {
+        // Initialize with all lists selected
+        if (IsVisible && selectedListIds.Count == 0)
+        {
+            selectedListIds = Lists.Select(l => l.ListId).ToHashSet();
+            allSelected = true;
+        }
+    }
+
+    private void ToggleList(int listId)
+    {
+        if (selectedListIds.Contains(listId))
+        {
+            selectedListIds.Remove(listId);
+        }
+        else
+        {
+            selectedListIds.Add(listId);
+        }
+        allSelected = selectedListIds.Count == totalCount;
+    }
+
+    private void ToggleAll()
+    {
+        if (allSelected)
+        {
+            selectedListIds.Clear();
+            allSelected = false;
+        }
+        else
+        {
+            selectedListIds = Lists.Select(l => l.ListId).ToHashSet();
+            allSelected = true;
+        }
+    }
+
+    private async Task Confirm()
+    {
+        await OnConfirm.InvokeAsync(selectedListIds.ToList());
+        selectedListIds.Clear();
+    }
+
+    private async Task Cancel()
+    {
+        selectedListIds.Clear();
+        await OnCancel.InvokeAsync();
+    }
+}

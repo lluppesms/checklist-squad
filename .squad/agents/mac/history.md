@@ -20,3 +20,11 @@
 - Full import/export includes both templates AND active checklists in single operation
 - Cascading deletes configured in DbContext handle hierarchy cleanup automatically
 - Default user "System" used for CRUD operations (ready for authentication integration later)
+
+### 2026-04-21 - Selective List Activation Feature
+- Added optional `SelectedListIds` parameter to `ActivateCheckSetRequest` (backward compatible - null/empty activates all lists)
+- Updated repository and controller layers to support selective list activation
+- When specific list IDs provided, only matching template lists are copied to the active checklist
+- Returns ArgumentException (BadRequest) if provided list IDs don't match any lists in the template
+- Maintains full backward compatibility - existing API calls without SelectedListIds continue to work unchanged
+- Enables use cases like skipping yearly maintenance lists on daily activation runs

@@ -15,13 +15,17 @@ public class CheckListsController(
     {
         try
         {
-            var checkSet = await checkRepo.ActivateFromTemplateAsync(templateSetId, request.OwnerName);
+            var checkSet = await checkRepo.ActivateFromTemplateAsync(templateSetId, request.OwnerName, request.SelectedListIds);
             await hubContext.Clients.All.CheckSetActivated(checkSet.SetId, checkSet.SetName);
             return CreatedAtAction(nameof(GetById), new { setId = checkSet.SetId }, checkSet.ToDto());
         }
         catch (KeyNotFoundException ex)
         {
             return NotFound(new { message = ex.Message });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
         }
     }
 
