@@ -1,7 +1,3 @@
-IF NOT EXISTS (SELECT 1 FROM sys.schemas WHERE name = N'CheckList')
-    EXEC(N'CREATE SCHEMA [CheckList]');
-GO
-
 /*
 Pre-Deployment Script
 Wipe user-created checklist data when OwnerId is not yet enforced as NOT NULL.
