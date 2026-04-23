@@ -52,55 +52,56 @@ A connection string with `User Id=CheckListAppUser` succeeds or fails based on:
 
 To truly restrict the CheckList application to only its schema, follow these steps:
 
-### Step 1: Create a Dedicated Database User
+### App Identity (Managed Identity — Runtime)
+
+Grant schema-scoped permissions only. **Do not** use `db_datareader` or `db_datawriter` — those are database-wide and defeat schema isolation.
 
 ```sql
--- Create a SQL login (do this ONCE per SQL Server)
-CREATE LOGIN [CheckListAppLogin] WITH PASSWORD = 'ComplexPasswordHere!';
-
--- Create a database user mapped to the login (do this in the CheckList database)
-USE [CheckListDatabase];
-CREATE USER [CheckListAppUser] FOR LOGIN [CheckListAppLogin];
+CREATE USER [lsq-checklist1-dev] FROM EXTERNAL PROVIDER;
+GRANT SELECT, INSERT, UPDATE, DELETE ON SCHEMA::[CheckList] TO [lsq-checklist1-dev];
+GRANT EXECUTE ON SCHEMA::[CheckList] TO [lsq-checklist1-dev];
 ```
 
-### Step 2: Grant Schema-Only Permissions
+Repeat the same pattern for each app sharing the database:
 
 ```sql
--- Grant only the permissions needed on the CheckList schema
-GRANT SELECT, INSERT, UPDATE, DELETE ON SCHEMA::[CheckList] TO [CheckListAppUser];
-GRANT EXECUTE ON SCHEMA::[CheckList] TO [CheckListAppUser];
-
--- Optional: Grant permission to use sequences if used
-GRANT UPDATE ON SCHEMA::[CheckList] TO [CheckListAppUser];
-
--- CRITICAL: Do NOT grant permissions on dbo or other schemas
--- Do NOT grant db_owner or db_datawriter (too broad)
+CREATE USER [lsq-reporting-dev] FROM EXTERNAL PROVIDER;
+GRANT SELECT, INSERT, UPDATE, DELETE ON SCHEMA::[Reporting] TO [lsq-reporting-dev];
+GRANT EXECUTE ON SCHEMA::[Reporting] TO [lsq-reporting-dev];
 ```
 
-### Step 3: Use the Restricted User in Connection Strings
+### Deploy Identity (CI/CD — DACPAC Publishing)
 
-**For SQL Authentication:**
-```
-Server=myserver.database.windows.net;Database=CheckListDatabase;User Id=CheckListAppUser;Password=<secure-password>;Encrypt=true;TrustServerCertificate=false;Connection Timeout=30;
-```
-
-**For Managed Identity (Entra ID):**
-```
-Server=myserver.database.windows.net;Database=CheckListDatabase;Authentication=Active Directory Default;Encrypt=true;TrustServerCertificate=false;Connection Timeout=30;
-```
-
-Then assign the Managed Identity (service principal) to a database role with the same `[CheckList]` schema permissions.
-
-### Step 4: Test the Connection
-
-After deployment, verify the restricted user can only see CheckList data:
+Use a **separate** principal for deployments so the running app never has DDL permissions:
 
 ```sql
--- Connect as CheckListAppUser and run:
-SELECT TABLE_SCHEMA, TABLE_NAME FROM INFORMATION_SCHEMA.TABLES
-WHERE TABLE_SCHEMA = 'CheckList';
+CREATE USER [devops-pipeline-user] FROM EXTERNAL PROVIDER;
+ALTER ROLE db_ddladmin ADD MEMBER [devops-pipeline-user];
+GRANT ALTER ON SCHEMA::[CheckList] TO [devops-pipeline-user];
+GRANT CREATE TABLE TO [devops-pipeline-user];
+```
 
--- You should see only CheckList tables. If you see dbo tables, permissions are too broad.
+### Connection String
+
+The connection string does not change — schema enforcement comes from the SQL permissions above, not the connection string itself.
+
+**For Managed Identity (recommended):**
+```
+Server=myserver.database.windows.net;Database=SharedDb;Authentication=Active Directory Default;Encrypt=true;TrustServerCertificate=false;Connection Timeout=30;
+```
+
+**For SQL Authentication (if needed):**
+```
+Server=myserver.database.windows.net;Database=SharedDb;User Id=CheckListAppUser;Password=<secure-password>;Encrypt=true;TrustServerCertificate=false;Connection Timeout=30;
+```
+
+### Verify Permissions
+
+After setup, connect as the app identity and confirm it can only see its own schema:
+
+```sql
+SELECT TABLE_SCHEMA, TABLE_NAME FROM INFORMATION_SCHEMA.TABLES;
+-- Should show only [CheckList].* tables
 ```
 
 ---
