@@ -11,6 +11,18 @@
 
 <!-- Append new learnings below. Each entry is something lasting about the project. -->
 
+### 2026-04-22 — Schema Isolation Documentation & Risk Analysis
+
+**Schema migration completed:** CheckList app moved from `[dbo]` to dedicated `[CheckList]` schema for shared database hosting.
+
+**Key patterns established:**
+- EF Core DbContext specifies schema in `OnModelCreating()`, not in entity classes (keeps entities portable)
+- SQL permissions enforce schema isolation, not connection strings (separate deployment principal from app user)
+- Seven operational risks identified and mitigation strategies documented: identity collisions (low), cross-schema refs (medium), backup granularity (high), resource contention (medium), migration coordination (high), connection pooling (medium), deployment permissions (medium)
+- DACPAC deployment includes pre-deployment script to create `[CheckList]` schema if missing
+
+**Decision:** Comprehensive schema isolation guide published at `docs/schema-isolation.md` for operators setting up shared database. High-risk items (backup granularity, migration coordination) flagged for ongoing coordination with other app teams. Deployment model requires two principals: one for app (read-only CheckList schema), one for DACPAC publish (scoped alter permissions).
+
 ### 2025-07-18 — Reference Repo Analysis & Architecture Plan
 
 **Reference repo (lluppesms/dadabase.demo) structure:**

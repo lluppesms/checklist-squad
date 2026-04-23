@@ -75,3 +75,14 @@ Frontend team completed theme refresh and About page:
 - New `/about` page with hero, feature cards, tech stack, and CTA sections
 - "About" link added to sidebar and mobile bottom nav
 - Card color convention applied: sky-blue = info, earth-brown = technical, forest-green = CTA
+
+### 2026-04-22 - Database Schema Migration from [dbo] to [CheckList]
+- Migrated CheckListDbContext.cs from default dbo schema to CheckList schema
+- Added `modelBuilder.HasDefaultSchema("CheckList")` at the beginning of OnModelCreating method
+- Updated all 12 entity ToTable calls to explicitly specify "CheckList" schema as second parameter
+- Entities migrated: TemplateSet, TemplateList, TemplateCategory, TemplateAction, CheckSet, CheckList, CheckCategory, CheckAction, AppUser, CheckSetShare, SharingInvite, UserPartnership
+- No changes required to entity classes, repositories, or connection strings — schema is handled by EF Core configuration
+- InMemoryDatabase provider used in tests ignores schema, so existing tests remain compatible
+- Path: `src/CheckList.Web/Data/CheckListDbContext.cs`
+- **Coordinated with Blain's SQL Database Project restructure** — schema isolation complete end-to-end
+- **Status:** COMPLETE — All 209 tests passing

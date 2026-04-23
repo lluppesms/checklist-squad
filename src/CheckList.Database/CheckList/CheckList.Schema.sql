@@ -1,0 +1,3 @@
+CREATE SCHEMA [CheckList]
+    AUTHORIZATION [dbo];
+GO

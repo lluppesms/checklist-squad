@@ -19,10 +19,12 @@ public class CheckListDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.HasDefaultSchema("CheckList");
+
         // TemplateSet
         modelBuilder.Entity<TemplateSet>(e =>
         {
-            e.ToTable("TemplateSet");
+            e.ToTable("TemplateSet", "CheckList");
             e.HasKey(x => x.SetId);
             e.Property(x => x.SetName).HasMaxLength(255).IsRequired();
             e.Property(x => x.SetDscr).HasMaxLength(1000).IsRequired();
@@ -39,7 +41,7 @@ public class CheckListDbContext : DbContext
         // TemplateList
         modelBuilder.Entity<TemplateList>(e =>
         {
-            e.ToTable("TemplateList");
+            e.ToTable("TemplateList", "CheckList");
             e.HasKey(x => x.ListId);
             e.Property(x => x.ListName).HasMaxLength(255).IsRequired();
             e.Property(x => x.ListDscr).HasMaxLength(1000).IsRequired();
@@ -55,7 +57,7 @@ public class CheckListDbContext : DbContext
         // TemplateCategory
         modelBuilder.Entity<TemplateCategory>(e =>
         {
-            e.ToTable("TemplateCategory");
+            e.ToTable("TemplateCategory", "CheckList");
             e.HasKey(x => x.CategoryId);
             e.Property(x => x.CategoryText).HasMaxLength(255).IsRequired();
             e.Property(x => x.CategoryDscr).HasMaxLength(1000);
@@ -71,7 +73,7 @@ public class CheckListDbContext : DbContext
         // TemplateAction
         modelBuilder.Entity<TemplateAction>(e =>
         {
-            e.ToTable("TemplateAction");
+            e.ToTable("TemplateAction", "CheckList");
             e.HasKey(x => x.ActionId);
             e.Property(x => x.ActionText).HasMaxLength(255);
             e.Property(x => x.ActionDscr).HasMaxLength(1000);
@@ -87,7 +89,7 @@ public class CheckListDbContext : DbContext
         // CheckSet
         modelBuilder.Entity<CheckSet>(e =>
         {
-            e.ToTable("CheckSet");
+            e.ToTable("CheckSet", "CheckList");
             e.HasKey(x => x.SetId);
             e.Property(x => x.SetName).HasMaxLength(255).IsRequired();
             e.Property(x => x.SetDscr).HasMaxLength(1000);
@@ -106,7 +108,7 @@ public class CheckListDbContext : DbContext
         // CheckList
         modelBuilder.Entity<CheckListEntity>(e =>
         {
-            e.ToTable("CheckList");
+            e.ToTable("CheckList", "CheckList");
             e.HasKey(x => x.ListId);
             e.Property(x => x.ListName).HasMaxLength(255).IsRequired();
             e.Property(x => x.ListDscr).HasMaxLength(1000);
@@ -122,7 +124,7 @@ public class CheckListDbContext : DbContext
         // CheckCategory
         modelBuilder.Entity<CheckCategory>(e =>
         {
-            e.ToTable("CheckCategory");
+            e.ToTable("CheckCategory", "CheckList");
             e.HasKey(x => x.CategoryId);
             e.Property(x => x.CategoryText).HasMaxLength(255).IsRequired();
             e.Property(x => x.CategoryDscr).HasMaxLength(1000);
@@ -138,7 +140,7 @@ public class CheckListDbContext : DbContext
         // CheckAction
         modelBuilder.Entity<CheckAction>(e =>
         {
-            e.ToTable("CheckAction");
+            e.ToTable("CheckAction", "CheckList");
             e.HasKey(x => x.ActionId);
             e.Property(x => x.ActionText).HasMaxLength(255).IsRequired();
             e.Property(x => x.ActionDscr).HasMaxLength(1000);
@@ -154,7 +156,7 @@ public class CheckListDbContext : DbContext
         // AppUser
         modelBuilder.Entity<AppUser>(e =>
         {
-            e.ToTable("AppUser");
+            e.ToTable("AppUser", "CheckList");
             e.HasKey(x => x.UserId);
             e.Property(x => x.UserId).HasMaxLength(256).IsRequired();
             e.Property(x => x.DisplayName).HasMaxLength(256).IsRequired();
@@ -166,7 +168,7 @@ public class CheckListDbContext : DbContext
         // CheckSetShare
         modelBuilder.Entity<CheckSetShare>(e =>
         {
-            e.ToTable("CheckSetShare");
+            e.ToTable("CheckSetShare", "CheckList");
             e.HasKey(x => x.ShareId);
             e.Property(x => x.SharedWithUserId).HasMaxLength(256).IsRequired();
             e.Property(x => x.Role).HasMaxLength(50).IsRequired().HasDefaultValue("user");
@@ -181,7 +183,7 @@ public class CheckListDbContext : DbContext
         // SharingInvite
         modelBuilder.Entity<SharingInvite>(e =>
         {
-            e.ToTable("SharingInvite");
+            e.ToTable("SharingInvite", "CheckList");
             e.HasKey(x => x.InviteId);
             e.Property(x => x.InviteTokenHash).HasMaxLength(128).IsRequired();
             e.Property(x => x.SenderUserId).HasMaxLength(256).IsRequired();
@@ -198,7 +200,7 @@ public class CheckListDbContext : DbContext
         // UserPartnership
         modelBuilder.Entity<UserPartnership>(e =>
         {
-            e.ToTable("UserPartnership");
+            e.ToTable("UserPartnership", "CheckList");
             e.HasKey(x => x.PartnershipId);
             e.Property(x => x.UserId).HasMaxLength(256).IsRequired();
             e.Property(x => x.PartnerUserId).HasMaxLength(256).IsRequired();

@@ -112,3 +112,17 @@
 - **Files created:** `src/CheckList.Database/Patch/Add-App-User-Rights.sql`, `.github/workflows/5-run-sql-script.yml`, `.azdo/pipelines/5-run-sql-script.yml`, `.azdo/pipelines/stages/run-sql-stages.yml`, `.azdo/pipelines/jobs/run-sql-job.yml`, `.azdo/pipelines/steps/run-sql-steps.yml`
 - **Files modified:** `.github/workflows/template-run-sql.yml` (added `sqlCmdVariables` input), `.github/workflows/4-build-deploy-dacpac.yml` (added `grant-identity` job), `.azdo/pipelines/stages/dacpac-deploy-stages.yml` (added `Grant Identity` stage)
 - **New pipeline variables required:** `APP_NAME` — the app name prefix (e.g., `lsq-checklist`) used to compose the managed identity name. Must be set as a GHA repo/environment variable and an AzDO variable group variable.
+
+### 2026-04-22: SQL Database Schema Restructure from [dbo] to [CheckList]
+- **Restructured entire SQL Database Project** to use custom `[CheckList]` schema instead of default `[dbo]`
+- **Migration approach:** Created parallel `CheckList/` folder structure alongside existing `dbo/` folder (dbo files left for reference/rollback)
+- **Files migrated:** 12 tables, 1 stored procedure, Pre.Deployment.sql (13 refs), Post.Deployment.sql (23 refs) — total 133 `[dbo]` → `[CheckList]` replacements across 15 files
+- **Schema creation safety:** Added idempotent schema check to Pre.Deployment.sql (checks `sys.schemas` before creating) plus standalone `CheckList.Schema.sql` file
+- **Project file update:** `.sqlproj` now references `CheckList\Pre.Deployment.sql` and `CheckList\Post.Deployment.sql` instead of `dbo\` paths
+- **Verification:** Zero `[dbo]` references in CheckList folder (excluding `AUTHORIZATION [dbo]` in schema creation), 146 `[CheckList]` references total
+- **Directory structure:** `CheckList/Tables/`, `CheckList/Stored Procedures/`, `CheckList/Views/` — mirrors old `dbo/` hierarchy
+- **Files changed:** `CheckList.Database.sqlproj`, all 16 .sql files in new CheckList/ folder
+- **Key insight:** Pre-deployment wipe logic preserved (CheckSet.OwnerId nullable→NOT NULL migration), seed data integrity maintained through schema rename
+- **Deployment impact:** First DACPAC publish will create `[CheckList]` schema automatically via Pre.Deployment.sql safety check — no manual intervention needed
+- **Coordinated with Mac's EF Core schema migration** — all 12 DbContext entities now reference `[CheckList]` schema
+- **Status:** COMPLETE — All 209 tests passing, DACPAC builds successfully
