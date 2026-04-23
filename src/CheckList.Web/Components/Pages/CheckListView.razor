@@ -1,4 +1,5 @@
 @page "/checklists/{SetId:int}"
+@attribute [Authorize]
 @using Microsoft.AspNetCore.SignalR.Client
 @implements IAsyncDisposable
 
@@ -23,6 +24,17 @@ else if (checkSet is not null)
                 @if (!string.IsNullOrEmpty(checkSet.SetDscr))
                 {
                     <p class="checklist-description">@checkSet.SetDscr</p>
+                }
+                @if (isShared)
+                {
+                    <div class="sharing-info">
+                        <i class="bi bi-people-fill"></i>
+                        <span>Shared with you by <strong>@checkSet.OwnerName</strong></span>
+                        @if (!string.IsNullOrEmpty(userRole))
+                        {
+                            <span class="role-indicator">• Your role: @(userRole == "admin" ? "Co-Captain" : "Crew Member")</span>
+                        }
+                    </div>
                 }
             </div>
             <div class="d-flex align-items-center gap-2">
@@ -54,7 +66,7 @@ else if (checkSet is not null)
                     <h4 class="list-name">@list.ListName</h4>
                 </div>
                 <div class="list-progress-mini">
-                    <span>@listCompleted/@listTotal</span>
+                    <span>@listCompleted/@listTotal — @(listTotal > 0 ? (int)Math.Round(100.0 * listCompleted / listTotal) : 0)%</span>
                 </div>
             </button>
 
@@ -78,7 +90,7 @@ else if (checkSet is not null)
                                     <h5 class="category-title">@category.CategoryText</h5>
                                 </div>
                                 <div class="category-progress-mini">
-                                    <span>@catCompleted/@catTotal</span>
+                                    <span>@catCompleted/@catTotal — @(catTotal > 0 ? (int)Math.Round(100.0 * catCompleted / catTotal) : 0)%</span>
                                 </div>
                             </button>
 
@@ -140,6 +152,7 @@ else if (checkSet is not null)
     [Inject] private ICheckListApiClient ApiClient { get; set; } = default!;
     [Inject] private IUserIdentity UserIdentity { get; set; } = default!;
     [Inject] private NavigationManager Navigation { get; set; } = default!;
+    [Inject] private ISharingService SharingService { get; set; } = default!;
 
     private CheckSetDto? checkSet;
     private bool loading = true;
@@ -151,6 +164,8 @@ else if (checkSet is not null)
     private List<string> toastMessages = [];
     private HubConnection? hubConnection;
     private bool toggling;
+    private bool isShared;
+    private string? userRole;
 
     private int TotalActions => checkSet?.Lists
         .SelectMany(l => l.Categories)
@@ -175,6 +190,26 @@ else if (checkSet is not null)
             checkSet = await ApiClient.GetCheckSetAsync(SetId);
             if (checkSet is not null)
             {
+                // Determine if shared
+                isShared = !string.IsNullOrEmpty(checkSet.OwnerId) && 
+                           !string.IsNullOrEmpty(UserIdentity.UserId) &&
+                           checkSet.OwnerId != UserIdentity.UserId;
+
+                // Get user's role for this checklist if shared
+                if (isShared && !string.IsNullOrEmpty(UserIdentity.UserId))
+                {
+                    try
+                    {
+                        var partners = await SharingService.GetPartnersAsync(UserIdentity.UserId);
+                        var partner = partners.FirstOrDefault(p => p.UserId == checkSet.OwnerId);
+                        userRole = partner?.Role;
+                    }
+                    catch
+                    {
+                        // If we can't get the role, that's okay, just don't show it
+                    }
+                }
+
                 foreach (var list in checkSet.Lists)
                 {
                     foreach (var category in list.Categories)

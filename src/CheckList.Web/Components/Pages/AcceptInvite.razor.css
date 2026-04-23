@@ -1,0 +1,87 @@
+.accept-invite-container {
+    min-height: 70vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1rem;
+}
+
+.accept-invite-card {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 1rem;
+    padding: 2.5rem;
+    max-width: 500px;
+    width: 100%;
+    box-shadow: var(--shadow-md);
+    text-align: center;
+}
+
+.welcome-section,
+.processing-section,
+.success-section,
+.error-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.rv-icon {
+    font-size: 4rem;
+    color: var(--accent-color);
+}
+
+.welcome-title,
+.success-title,
+.error-title {
+    color: var(--text-primary);
+    font-size: 1.75rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.welcome-message,
+.processing-message,
+.success-message,
+.error-message {
+    color: var(--text-secondary);
+    font-size: 1rem;
+    line-height: 1.6;
+    margin: 0;
+}
+
+.success-icon {
+    font-size: 4rem;
+    color: var(--success-color);
+}
+
+.error-icon {
+    font-size: 4rem;
+    color: var(--danger-color);
+}
+
+.processing-section .spinner-border {
+    width: 3rem;
+    height: 3rem;
+}
+
+.error-actions {
+    margin-top: 0.5rem;
+}
+
+@media (max-width: 576px) {
+    .accept-invite-card {
+        padding: 2rem 1.5rem;
+    }
+
+    .welcome-title,
+    .success-title,
+    .error-title {
+        font-size: 1.5rem;
+    }
+
+    .btn-lg {
+        width: 100%;
+    }
+}

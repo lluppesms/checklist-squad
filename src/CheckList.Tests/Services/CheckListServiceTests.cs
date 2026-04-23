@@ -21,7 +21,9 @@ public sealed class CheckListServiceTests
         mockClientsAll.Setup(c => c.All).Returns(_hubClients.Object);
         _hubContext.Setup(h => h.Clients).Returns(mockClientsAll.Object);
 
-        _service = new CheckListService(_templateRepo.Object, _checkRepo.Object, _hubContext.Object);
+        var mockSharingService = new Mock<ISharingService>();
+
+        _service = new CheckListService(_templateRepo.Object, _checkRepo.Object, _hubContext.Object, mockSharingService.Object);
     }
 
     // GetTemplatesAsync

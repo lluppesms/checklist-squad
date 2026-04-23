@@ -1,10 +1,16 @@
 @page "/checklists"
+@attribute [Authorize]
 
 <PageTitle>My Checklists</PageTitle>
 
-<h2 class="page-title">
-    <i class="bi bi-clipboard-check"></i> My Checklists
-</h2>
+<div class="page-header">
+    <h2 class="page-title">
+        <i class="bi bi-clipboard-check"></i> My Checklists
+    </h2>
+    <button class="btn btn-outline-secondary btn-invite" @onclick="OpenInviteDialog">
+        <i class="bi bi-person-plus"></i> Invite Partner
+    </button>
+</div>
 
 @if (loading)
 {
@@ -16,46 +22,74 @@ else if (errorMessage is not null)
         <i class="bi bi-exclamation-triangle"></i> @errorMessage
     </div>
 }
-else if (checkSets.Count == 0)
-{
-    <div class="empty-state">
-        <i class="bi bi-signpost-split"></i>
-        <p>No active checklists yet — time to hit the road! Head to <a href="templates">Blueprints</a> to start one. 🚐</p>
-    </div>
-}
 else
 {
-    <div class="checklist-grid">
-        @foreach (var cs in checkSets)
+    <div class="partners-section">
+        <button class="partners-toggle" @onclick="TogglePartners">
+            <div class="partners-toggle-left">
+                <i class="bi @(partnersExpanded ? "bi-chevron-down" : "bi-chevron-right")"></i>
+                <span>Sharing Partners</span>
+            </div>
+            <i class="bi bi-people"></i>
+        </button>
+        @if (partnersExpanded)
         {
-            var isToday = cs.CreateDateTime.Date == DateTime.Today;
-            <div class="checklist-card @(isToday ? "checklist-today" : "")">
-                @if (isToday)
-                {
-                    <span class="today-badge"><i class="bi bi-calendar-check"></i> Today</span>
-                }
-                <a href="checklists/@cs.SetId" class="card-link">
-                    <div class="card-body">
-                        <h5 class="card-title">@cs.SetName</h5>
-                        @if (!string.IsNullOrEmpty(cs.SetDscr))
-                        {
-                            <p class="card-description">@cs.SetDscr</p>
-                        }
-                        <div class="card-meta">
-                            <span><i class="bi bi-person"></i> @cs.OwnerName</span>
-                        </div>
-                    </div>
-                </a>
-                <div class="card-footer">
-                    <button class="btn btn-outline-danger btn-sm"
-                            @onclick="() => PromptDelete(cs.SetId, cs.SetName)">
-                        <i class="bi bi-trash"></i> Delete
-                    </button>
-                </div>
+            <div class="partners-content">
+                <PartnersPanel />
             </div>
         }
     </div>
+
+    @if (checkSets.Count == 0)
+    {
+        <div class="empty-state">
+            <i class="bi bi-signpost-split"></i>
+            <p>No active checklists yet — time to hit the road! Head to <a href="templates">Blueprints</a> to start one. 🚐</p>
+        </div>
+    }
+    else
+    {
+        <div class="checklist-grid">
+            @foreach (var cs in checkSets)
+            {
+                var isToday = cs.CreateDateTime.Date == DateTime.Today;
+                var isShared = !string.IsNullOrEmpty(cs.OwnerId) && cs.OwnerId != UserIdentity.UserId;
+                <div class="checklist-card @(isToday ? "checklist-today" : "")">
+                    @if (isToday)
+                    {
+                        <span class="today-badge"><i class="bi bi-calendar-check"></i> Today</span>
+                    }
+                    @if (isShared)
+                    {
+                        <span class="shared-badge"><i class="bi bi-people"></i> Shared</span>
+                    }
+                    <a href="checklists/@cs.SetId" class="card-link">
+                        <div class="card-body">
+                            <h5 class="card-title">@cs.SetName</h5>
+                            @if (!string.IsNullOrEmpty(cs.SetDscr))
+                            {
+                                <p class="card-description">@cs.SetDscr</p>
+                            }
+                            <div class="card-meta">
+                                <span><i class="bi bi-person"></i> @cs.OwnerName</span>
+                            </div>
+                        </div>
+                    </a>
+                    <div class="card-footer">
+                        <button class="btn btn-outline-danger btn-sm"
+                                @onclick="() => PromptDelete(cs.SetId, cs.SetName)">
+                            <i class="bi bi-trash"></i> Delete
+                        </button>
+                    </div>
+                </div>
+            }
+        </div>
+    }
 }
+
+<InvitePartnerDialog IsVisible="@showInviteDialog"
+                     OnClose="CloseInviteDialog"
+                     OnInviteSent="OnInviteSent" />
 
 <ConfirmDialog IsVisible="@showDeleteConfirm"
                Title="Delete Checklist"
@@ -66,6 +100,7 @@ else
 
 @code {
     [Inject] private ICheckListApiClient ApiClient { get; set; } = default!;
+    [Inject] private IUserIdentity UserIdentity { get; set; } = default!;
     [Inject] private NavigationManager Navigation { get; set; } = default!;
 
     private List<CheckSetSummaryDto> checkSets = [];
@@ -74,6 +109,8 @@ else
     private bool showDeleteConfirm;
     private int? deleteSetId;
     private string? deleteSetName;
+    private bool showInviteDialog;
+    private bool partnersExpanded;
 
     protected override async Task OnInitializedAsync()
     {
@@ -85,7 +122,9 @@ else
         try
         {
             loading = true;
-            checkSets = await ApiClient.GetActiveCheckSetsAsync();
+            checkSets = !string.IsNullOrEmpty(UserIdentity.UserId)
+                ? await ApiClient.GetActiveCheckSetsForUserAsync(UserIdentity.UserId)
+                : await ApiClient.GetActiveCheckSetsAsync();
         }
         catch (Exception ex)
         {
@@ -128,5 +167,25 @@ else
         showDeleteConfirm = false;
         deleteSetId = null;
         deleteSetName = null;
+    }
+
+    private void OpenInviteDialog()
+    {
+        showInviteDialog = true;
+    }
+
+    private void CloseInviteDialog()
+    {
+        showInviteDialog = false;
+    }
+
+    private void OnInviteSent()
+    {
+        // Invitation sent successfully
+    }
+
+    private void TogglePartners()
+    {
+        partnersExpanded = !partnersExpanded;
     }
 }

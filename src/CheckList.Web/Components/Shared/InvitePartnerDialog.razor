@@ -1,0 +1,254 @@
+@namespace CheckList.Web.Components.Shared
+@using CheckList.Web.Services
+
+@if (IsVisible)
+{
+    <div class="invite-overlay" @onclick="Close">
+        <div class="invite-dialog" @onclick:stopPropagation="true">
+            <div class="dialog-header">
+                <h5 class="dialog-title">Invite Partner</h5>
+                <button class="btn-close" @onclick="Close" aria-label="Close"></button>
+            </div>
+            
+            @if (inviteLink is null)
+            {
+                <div class="dialog-body">
+                    <div class="form-group">
+                        <label for="partnerEmail" class="form-label">Partner's Email</label>
+                        <input id="partnerEmail"
+                               type="email"
+                               class="form-input"
+                               @bind="recipientEmail"
+                               @bind:event="oninput"
+                               placeholder="partner@example.com"
+                               maxlength="255"
+                               disabled="@isSending"
+                               aria-label="Partner email address" />
+                        @if (emailError is not null)
+                        {
+                            <span class="field-error">@emailError</span>
+                        }
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Role</label>
+                        <div class="role-options">
+                            <label class="role-option">
+                                <input type="radio"
+                                       name="role"
+                                       value="user"
+                                       checked="@(selectedRole == "user")"
+                                       @onchange='() => selectedRole = "user"'
+                                       disabled="@isSending" />
+                                <div class="role-info">
+                                    <div class="role-name">Crew Member</div>
+                                    <div class="role-description">Can check items</div>
+                                </div>
+                            </label>
+                            <label class="role-option">
+                                <input type="radio"
+                                       name="role"
+                                       value="admin"
+                                       checked="@(selectedRole == "admin")"
+                                       @onchange='() => selectedRole = "admin"'
+                                       disabled="@isSending" />
+                                <div class="role-info">
+                                    <div class="role-name">Co-Captain</div>
+                                    <div class="role-description">Can check items & edit blueprints</div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    @if (errorMessage is not null)
+                    {
+                        <div class="alert alert-danger">
+                            <i class="bi bi-exclamation-triangle"></i> @errorMessage
+                        </div>
+                    }
+                </div>
+
+                <div class="dialog-footer">
+                    <button class="btn btn-outline-secondary" @onclick="Close" disabled="@isSending">
+                        Cancel
+                    </button>
+                    <button class="btn btn-primary" @onclick="SendInvite" disabled="@(isSending || !IsValidEmail())">
+                        @if (isSending)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                            <span>Sending...</span>
+                        }
+                        else
+                        {
+                            <span>Create Invite</span>
+                        }
+                    </button>
+                </div>
+            }
+            else
+            {
+                <div class="dialog-body">
+                    <div class="success-message">
+                        <i class="bi bi-check-circle"></i>
+                        <p>Invite created! Share this link with your partner:</p>
+                    </div>
+
+                    <div class="invite-link-container">
+                        <input type="text"
+                               class="invite-link-input"
+                               value="@inviteLink"
+                               readonly
+                               @ref="inviteLinkInput"
+                               aria-label="Invite link" />
+                        <button class="btn btn-sm btn-outline-secondary copy-btn"
+                                @onclick="CopyLink"
+                                disabled="@copying">
+                            @if (copying)
+                            {
+                                <i class="bi bi-check"></i>
+                                <span>Copied!</span>
+                            }
+                            else
+                            {
+                                <i class="bi bi-clipboard"></i>
+                                <span>Copy</span>
+                            }
+                        </button>
+                    </div>
+
+                    <div class="expiry-info">
+                        <i class="bi bi-clock"></i> Link expires in 7 days
+                    </div>
+                </div>
+
+                <div class="dialog-footer">
+                    <button class="btn btn-outline-secondary" @onclick="SendAnother">
+                        Send Another
+                    </button>
+                    <button class="btn btn-primary" @onclick="Close">
+                        Done
+                    </button>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    [Inject] private ISharingService SharingService { get; set; } = default!;
+    [Inject] private IUserIdentity UserIdentity { get; set; } = default!;
+    [Inject] private NavigationManager Navigation { get; set; } = default!;
+    [Inject] private IJSRuntime JS { get; set; } = default!;
+
+    [Parameter] public bool IsVisible { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback OnInviteSent { get; set; }
+
+    private string recipientEmail = "";
+    private string selectedRole = "user";
+    private bool isSending;
+    private string? errorMessage;
+    private string? emailError;
+    private string? inviteLink;
+    private bool copying;
+    private ElementReference inviteLinkInput;
+
+    protected override void OnParametersSet()
+    {
+        if (IsVisible && inviteLink is null)
+        {
+            recipientEmail = "";
+            selectedRole = "user";
+            errorMessage = null;
+            emailError = null;
+        }
+    }
+
+    private bool IsValidEmail()
+    {
+        if (string.IsNullOrWhiteSpace(recipientEmail))
+            return false;
+
+        var trimmed = recipientEmail.Trim();
+        return trimmed.Contains("@") && trimmed.Length >= 5;
+    }
+
+    private async Task SendInvite()
+    {
+        emailError = null;
+        errorMessage = null;
+
+        if (!IsValidEmail())
+        {
+            emailError = "Please enter a valid email address";
+            return;
+        }
+
+        if (string.IsNullOrEmpty(UserIdentity.UserId))
+        {
+            errorMessage = "You must be authenticated to send invites";
+            return;
+        }
+
+        try
+        {
+            isSending = true;
+            var (token, invite) = await SharingService.CreateInviteAsync(
+                UserIdentity.UserId,
+                recipientEmail.Trim(),
+                selectedRole);
+
+            var baseUrl = Navigation.BaseUri.TrimEnd('/');
+            inviteLink = $"{baseUrl}/invite/{token}";
+
+            await OnInviteSent.InvokeAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to create invite: {ex.Message}";
+        }
+        finally
+        {
+            isSending = false;
+        }
+    }
+
+    private async Task CopyLink()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", inviteLink);
+            copying = true;
+            await Task.Delay(2000);
+            copying = false;
+        }
+        catch
+        {
+            // Fallback: select the text
+            try
+            {
+                await inviteLinkInput.FocusAsync();
+            }
+            catch { }
+        }
+    }
+
+    private void SendAnother()
+    {
+        inviteLink = null;
+        recipientEmail = "";
+        selectedRole = "user";
+        errorMessage = null;
+        emailError = null;
+    }
+
+    private async Task Close()
+    {
+        inviteLink = null;
+        recipientEmail = "";
+        selectedRole = "user";
+        errorMessage = null;
+        emailError = null;
+        await OnClose.InvokeAsync();
+    }
+}

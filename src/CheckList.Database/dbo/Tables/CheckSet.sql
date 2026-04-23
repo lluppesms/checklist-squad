@@ -5,6 +5,7 @@ CREATE TABLE [dbo].[CheckSet]
     [SetName] NVARCHAR(255) NOT NULL,
     [SetDscr] NVARCHAR(1000) NULL,
     [OwnerName] NVARCHAR(256) NOT NULL,
+    [OwnerId] NVARCHAR(256) NOT NULL,
     [ActiveInd] NVARCHAR(1) NOT NULL,
     [SortOrder] INT NOT NULL,
     [CreateDateTime] DATETIME NOT NULL,
@@ -12,7 +13,8 @@ CREATE TABLE [dbo].[CheckSet]
     [ChangeDateTime] DATETIME NOT NULL,
     [ChangeUserName] NVARCHAR(255) NOT NULL,
     CONSTRAINT [PK_CheckSet] PRIMARY KEY CLUSTERED ([SetId] ASC),
-    CONSTRAINT [FK_CheckSet_TemplateSet] FOREIGN KEY ([TemplateSetId]) REFERENCES [dbo].[TemplateSet] ([SetId])
+    CONSTRAINT [FK_CheckSet_TemplateSet] FOREIGN KEY ([TemplateSetId]) REFERENCES [dbo].[TemplateSet] ([SetId]) ON DELETE CASCADE,
+    CONSTRAINT [FK_CheckSet_AppUser]     FOREIGN KEY ([OwnerId])       REFERENCES [dbo].[AppUser]    ([UserId]) ON DELETE CASCADE
 );
 GO
 

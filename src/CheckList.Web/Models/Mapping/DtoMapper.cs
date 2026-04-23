@@ -92,10 +92,10 @@ public static class DtoMapper
 
     // CheckSet regular mappings
     public static CheckSetSummaryDto ToSummaryDto(this CheckSet entity) =>
-        new(entity.SetId, entity.TemplateSetId, entity.SetName, entity.SetDscr, entity.OwnerName, entity.ActiveInd, entity.SortOrder, entity.CreateDateTime);
+        new(entity.SetId, entity.TemplateSetId, entity.SetName, entity.SetDscr, entity.OwnerName, entity.OwnerId, entity.ActiveInd, entity.SortOrder, entity.CreateDateTime);
 
     public static CheckSetDto ToDto(this CheckSet entity) =>
-        new(entity.SetId, entity.TemplateSetId, entity.SetName, entity.SetDscr, entity.OwnerName, entity.ActiveInd, entity.SortOrder,
+        new(entity.SetId, entity.TemplateSetId, entity.SetName, entity.SetDscr, entity.OwnerName, entity.OwnerId, entity.ActiveInd, entity.SortOrder,
             entity.CheckLists.Select(l => l.ToDto()).ToList());
 
     public static CheckListDto ToDto(this CheckListEntity entity) =>

@@ -6,6 +6,7 @@ public record CheckSetSummaryDto(
     string SetName,
     string? SetDscr,
     string OwnerName,
+    string? OwnerId,
     string ActiveInd,
     int SortOrder,
     DateTime CreateDateTime);
@@ -16,6 +17,7 @@ public record CheckSetDto(
     string SetName,
     string? SetDscr,
     string OwnerName,
+    string? OwnerId,
     string ActiveInd,
     int SortOrder,
     List<CheckListDto> Lists);

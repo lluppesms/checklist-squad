@@ -49,6 +49,25 @@
 - CSS for name input uses only CSS variables (--text-primary, --bg-card, --border-color, --accent-color) — no hardcoded colors
 - 3 new tests added (147 total, up from 144): custom name used, null fallback, whitespace fallback
 
+### 2026-04-22 - Partnership-Based Sharing Backend (Mac)
+- **New Entities**: `SharingInvite` (invite token hash + status), `UserPartnership` (directional A→B and B→A rows), modified `CheckSetShare` (added PartnershipId for provenance)
+- **Bidirectional Partnerships**: Each invite creates TWO UserPartnership rows (sender grants to acceptor, acceptor grants to sender) enabling symmetric access
+- **Auto-Share on Partnership**: When invite accepted, ALL existing active checklists for both users are auto-shared via CheckSetShare with PartnershipId tracking
+- **Auto-Share on Create**: When new checklist activated, auto-shared to all active partners via ISharingService.AutoShareNewCheckSetAsync() called from CheckListService
+- **Provenance Tracking**: CheckSetShare.PartnershipId links shares to their creating partnership — enables clean cascade delete on revoke
+- **Token Security**: 32-byte random tokens Base64Url encoded for invite links, SHA256 hash stored in DB (raw token never persisted)
+- **7-Day Expiry**: Invites expire after 7 days, validation checks expiry + email match + pending status
+- **No Email Yet**: NoOpEmailService logs invite links instead of sending email (ready for future SMTP/SendGrid integration)
+- **Repository Pattern**: SharingRepository handles all sharing DB ops (invites, partnerships, shares), CheckListDbContext updated with new DbSets
+- **API Endpoints**: `/api/sharing/invite` (POST), `/api/sharing/accept/{token}` (POST), `/api/sharing/partners` (GET), `/api/sharing/partners/{id}` (DELETE)
+- **Schema Migration**: DatabaseSchemaService.cs updated with idempotent SQL for new tables + PartnershipId column on CheckSetShare
+- **DACPAC Files**: Created SharingInvite.sql, UserPartnership.sql, updated CheckSetShare.sql with PartnershipId FK
+- **Authorization Helper**: UserHasAccessAsync checks owner OR CheckSetShare for access control (ready for future authorization middleware)
+- **Transaction Safety**: AcceptInviteAsync uses transaction for atomicity (create partnerships + auto-share + mark invite accepted)
+- All new services registered in Program.cs DI container
+- CheckListServiceTests updated to mock ISharingService dependency
+- Build verified successful (0 errors)
+
 ### 2026-04-22 - RV Outdoors Theme & About Page (Poncho)
 Frontend team completed theme refresh and About page:
 - Entire Bootstrap palette replaced with warm RV/campground colors: forest green primary, sky blue secondary, earth brown accents

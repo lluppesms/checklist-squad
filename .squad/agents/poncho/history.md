@@ -11,6 +11,28 @@
 
 <!-- Append new learnings below. Each entry is something lasting about the project. -->
 
+### 2026-07-28: Sharing UI Complete
+Built the complete sharing UI for the checklist collaboration feature:
+- **InvitePartnerDialog.razor**: Modal dialog for creating sharing invites with email input, role selection (Crew Member/Co-Captain), and invite link generation with copy-to-clipboard functionality
+- **AcceptInvite.razor**: Public page at `/invite/{token}` that handles unauthenticated welcome flow (redirects to login with returnUrl) and authenticated acceptance flow (auto-processes invite on load)
+- **PartnersPanel.razor**: Collapsible panel showing current sharing partners with role badges, partnership dates, and remove functionality with confirmation
+- **ActiveCheckSets.razor integration**: Added "Invite Partner" button in page header, collapsible "Sharing Partners" section above checklists grid, and "Shared" badge on checklists not owned by current user
+- **CheckListView.razor integration**: Added sharing indicator showing "Shared with you by {owner}" and user's role (Crew Member/Co-Captain) when viewing shared checklists
+- **DTO updates**: Extended CheckSetSummaryDto and CheckSetDto to include OwnerId for determining shared status
+- **User-friendly role labels**: Internal "user"/"admin" mapped to "Crew Member"/"Co-Captain" throughout UI
+- **Mobile-first design**: Full-screen dialogs on mobile, adequate tap targets (min 44px), responsive partner cards
+- **Sky-blue accent**: Used `--sky-blue` for sharing-related UI elements (badges, borders, icons) per team convention for informational content
+- **Clipboard JSInterop**: Uses `navigator.clipboard.writeText()` directly from Blazor component — no custom JS wrapper needed
+- **AcceptInvite security**: Does NOT have `[Authorize]` attribute so unauthenticated users can see welcome message before signing in
+
+**Key patterns applied**:
+- Follow existing dialog patterns (ConfirmDialog, ListSelectionDialog) for overlay, close button, and footer actions
+- CSS variables throughout — zero hardcoded colors
+- Scoped `.razor.css` files for every component
+- Direct service injection (`ISharingService`, `IUserIdentity`) — no HTTP calls
+- Error handling with user-friendly messages
+- Consistent border-left accent pattern (sky-blue for sharing)
+
 ### 2026-07-28: Blueprints Rename (UI-Only)
 Renamed all user-facing references from "Templates" to "Blueprints" across the frontend per Lyle's request. No backend, database, or code-behind changes — purely display text.
 - **Templates.razor**: Page title, h2 heading, button labels ("Create New Blueprint", "Create Your First Blueprint"), loading/error/empty messages, delete dialog title, export filename prefix

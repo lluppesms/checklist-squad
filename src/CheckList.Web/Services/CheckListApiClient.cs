@@ -9,7 +9,8 @@ namespace CheckList.Web.Services;
 public class CheckListService(
     ITemplateRepository templateRepo,
     ICheckRepository checkRepo,
-    IHubContext<CheckListHub, ICheckListHubClient> hubContext) : ICheckListApiClient
+    IHubContext<CheckListHub, ICheckListHubClient> hubContext,
+    ISharingService sharingService) : ICheckListApiClient
 {
     private const string DefaultUserName = "System";
 
@@ -25,9 +26,16 @@ public class CheckListService(
         return set?.ToDto();
     }
 
-    public async Task<CheckSetDto?> ActivateCheckSetAsync(int templateSetId, string ownerName, List<int>? selectedListIds = null, string? customName = null)
+    public async Task<CheckSetDto?> ActivateCheckSetAsync(int templateSetId, string ownerName, List<int>? selectedListIds = null, string? customName = null, string? ownerId = null)
     {
-        var checkSet = await checkRepo.ActivateFromTemplateAsync(templateSetId, ownerName, selectedListIds, customName);
+        var checkSet = await checkRepo.ActivateFromTemplateAsync(templateSetId, ownerName, selectedListIds, customName, ownerId);
+        
+        // Auto-share to partners if owner is specified
+        if (!string.IsNullOrEmpty(ownerId))
+        {
+            await sharingService.AutoShareNewCheckSetAsync(checkSet.SetId, ownerId);
+        }
+        
         await hubContext.Clients.All.CheckSetActivated(checkSet.SetId, checkSet.SetName);
         return checkSet.ToDto();
     }
@@ -35,6 +43,12 @@ public class CheckListService(
     public async Task<List<CheckSetSummaryDto>> GetActiveCheckSetsAsync()
     {
         var sets = await checkRepo.GetAllActiveSetsAsync();
+        return sets.Select(s => s.ToSummaryDto()).ToList();
+    }
+
+    public async Task<List<CheckSetSummaryDto>> GetActiveCheckSetsForUserAsync(string userId)
+    {
+        var sets = await checkRepo.GetActiveSetsForUserAsync(userId);
         return sets.Select(s => s.ToSummaryDto()).ToList();
     }
 
