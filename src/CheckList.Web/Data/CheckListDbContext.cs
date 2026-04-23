@@ -90,14 +90,15 @@ public class CheckListDbContext : DbContext
             e.Property(x => x.SetName).HasMaxLength(255).IsRequired();
             e.Property(x => x.SetDscr).HasMaxLength(1000);
             e.Property(x => x.OwnerName).HasMaxLength(256).IsRequired();
-            e.Property(x => x.OwnerId).HasMaxLength(256);
+            e.Property(x => x.OwnerId).HasMaxLength(256).IsRequired();
             e.Property(x => x.ActiveInd).HasMaxLength(1).IsRequired().HasDefaultValue("Y");
             e.Property(x => x.SortOrder).HasDefaultValue(50);
             e.Property(x => x.CreateDateTime).HasDefaultValueSql("GETDATE()");
             e.Property(x => x.CreateUserName).HasMaxLength(255).HasDefaultValue("UNKNOWN");
             e.Property(x => x.ChangeDateTime).HasDefaultValueSql("GETDATE()");
             e.Property(x => x.ChangeUserName).HasMaxLength(255).HasDefaultValue("UNKNOWN");
-            e.HasOne(x => x.TemplateSet).WithMany(t => t.CheckSets).HasForeignKey(x => x.TemplateSetId).OnDelete(DeleteBehavior.NoAction);
+            e.HasOne(x => x.TemplateSet).WithMany(t => t.CheckSets).HasForeignKey(x => x.TemplateSetId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<AppUser>().WithMany(u => u.OwnedCheckSets).HasForeignKey(x => x.OwnerId).IsRequired(true).OnDelete(DeleteBehavior.Cascade);
         });
 
         // CheckList
@@ -170,7 +171,7 @@ public class CheckListDbContext : DbContext
             e.Property(x => x.CreateDateTime).HasDefaultValueSql("GETDATE()");
             e.Property(x => x.CreateUserName).HasMaxLength(255).HasDefaultValue("UNKNOWN");
             e.HasOne(x => x.CheckSet).WithMany(s => s.CheckSetShares).HasForeignKey(x => x.CheckSetId).OnDelete(DeleteBehavior.Cascade);
-            e.HasOne(x => x.SharedWithUser).WithMany(u => u.CheckSetShares).HasForeignKey(x => x.SharedWithUserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.SharedWithUser).WithMany(u => u.CheckSetShares).HasForeignKey(x => x.SharedWithUserId).OnDelete(DeleteBehavior.NoAction);
             e.HasIndex(x => new { x.CheckSetId, x.SharedWithUserId }).IsUnique();
         });
     }

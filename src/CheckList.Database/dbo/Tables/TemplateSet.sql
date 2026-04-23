@@ -4,6 +4,7 @@ CREATE TABLE [dbo].[TemplateSet]
     [SetName] NVARCHAR(255) NOT NULL,
     [SetDscr] NVARCHAR(1000) NOT NULL,
     [OwnerName] NVARCHAR(256) NOT NULL,
+    [OwnerId] NVARCHAR(256) NULL,
     [ActiveInd] NVARCHAR(1) NOT NULL,
     [SortOrder] INT NOT NULL,
     [CreateDateTime] DATETIME NOT NULL,

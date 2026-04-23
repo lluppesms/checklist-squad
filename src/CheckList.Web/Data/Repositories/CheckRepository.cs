@@ -127,6 +127,16 @@ public class CheckRepository(CheckListDbContext db) : ICheckRepository
         };
 
         db.CheckSets.Add(checkSet);
+
+        if (!string.IsNullOrEmpty(ownerId))
+        {
+            var existing = await db.AppUsers.FindAsync(ownerId);
+            if (existing is null)
+                db.AppUsers.Add(new AppUser { UserId = ownerId, DisplayName = ownerName, CreateDateTime = now, LastLoginDateTime = now });
+            else
+                existing.LastLoginDateTime = now;
+        }
+
         await db.SaveChangesAsync();
         return checkSet;
     }

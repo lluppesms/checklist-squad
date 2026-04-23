@@ -1,5 +1,7 @@
 @inherits LayoutComponentBase
 @using Microsoft.AspNetCore.Components.Authorization
+@using CheckList.Web.Data
+@using CheckList.Web.Data.Entities
 
 <div class="app-layout">
     <!-- Top Navbar -->
@@ -93,6 +95,7 @@
 
 @code {
     [Inject] private IUserIdentity UserIdentity { get; set; } = default!;
+    [Inject] private CheckListDbContext DbContext { get; set; } = default!;
     [CascadingParameter] private Task<AuthenticationState> AuthStateTask { get; set; } = default!;
 
     private bool menuOpen;
@@ -104,6 +107,17 @@
         if (user.Identity?.IsAuthenticated == true)
         {
             UserIdentity.SetAuthenticatedUser(user);
+
+            if (UserIdentity.IsAuthenticated && !string.IsNullOrEmpty(UserIdentity.UserId))
+            {
+                var now = DateTime.UtcNow;
+                var appUser = await DbContext.AppUsers.FindAsync(UserIdentity.UserId);
+                if (appUser is null)
+                    DbContext.AppUsers.Add(new AppUser { UserId = UserIdentity.UserId, DisplayName = UserIdentity.NickName ?? UserIdentity.UserId, Email = UserIdentity.Email, CreateDateTime = now, LastLoginDateTime = now });
+                else
+                    appUser.LastLoginDateTime = now;
+                await DbContext.SaveChangesAsync();
+            }
         }
     }
 

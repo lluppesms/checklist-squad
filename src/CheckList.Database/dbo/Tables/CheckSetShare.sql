@@ -8,7 +8,7 @@ CREATE TABLE [dbo].[CheckSetShare]
     [CreateUserName]   NVARCHAR(255) NOT NULL,
     CONSTRAINT [PK_CheckSetShare] PRIMARY KEY CLUSTERED ([ShareId] ASC),
     CONSTRAINT [FK_CheckSetShare_CheckSet]  FOREIGN KEY ([CheckSetId])       REFERENCES [dbo].[CheckSet]  ([SetId])  ON DELETE CASCADE,
-    CONSTRAINT [FK_CheckSetShare_AppUser]   FOREIGN KEY ([SharedWithUserId]) REFERENCES [dbo].[AppUser]   ([UserId]) ON DELETE CASCADE,
+    CONSTRAINT [FK_CheckSetShare_AppUser]   FOREIGN KEY ([SharedWithUserId]) REFERENCES [dbo].[AppUser]   ([UserId]) ON DELETE NO ACTION,
     CONSTRAINT [UQ_CheckSetShare_SetUser]   UNIQUE ([CheckSetId], [SharedWithUserId])
 );
 GO
