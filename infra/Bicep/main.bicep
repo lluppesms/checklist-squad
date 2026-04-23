@@ -56,6 +56,15 @@ param sqlAdminLoginTenantId string = ''
 @description('The Key Vault owner user ID (object ID).')
 param adminUserId string = ''
 
+@description('The Entra ID (Azure AD) tenant ID for app authentication.')
+param azureAdTenantId string = ''
+
+@description('The Entra ID (Azure AD) app registration client ID for app authentication.')
+param azureAdClientId string = ''
+
+@description('The Entra ID (Azure AD) tenant domain for app authentication (e.g. myorg.onmicrosoft.com).')
+param azureAdDomain string = ''
+
 // calculated variables disguised as parameters
 param runDateTime string = utcNow()
 
@@ -163,6 +172,12 @@ module webAppModule 'modules/webapp/webapp.bicep' = {
       ASPNETCORE_ENVIRONMENT: environmentCode == 'prod' ? 'Production' : 'Development'
       ConnectionStrings__DefaultConnection: webAppConnectionString
       Azure__SignalR__ConnectionString: signalRModule.outputs.signalRConnectionString
+      AzureAd__Instance: 'https://login.microsoftonline.com/'
+      AzureAd__TenantId: azureAdTenantId
+      AzureAd__ClientId: azureAdClientId
+      AzureAd__Domain: azureAdDomain
+      AzureAd__CallbackPath: '/signin-oidc'
+      AzureAd__SignedOutCallbackPath: '/signout-callback-oidc'
     }
   }
 }

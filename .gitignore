@@ -21,3 +21,4 @@ old-source/CheckList.Core/appsettings.*.json
 src/CheckList.Database/bin/Debug/CheckList.Database.dacpac
 src/CheckList.Database/CheckList.Database.dbmdl
 
+src/CheckList.Database/bin/Debug/CheckList.Database.dacpac

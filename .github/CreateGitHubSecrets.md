@@ -45,6 +45,10 @@ gh secret set SQLADMIN_LOGIN_USERSID -b 'yoursid'
 gh secret set SQLADMIN_LOGIN_TENANTID -b 'yourtennant'
 
 gh secret set KEYVAULT_OWNER_USERID -b 'yourAccountSid'
+
+gh secret set AZUREAD_APP_TENANT_ID -b '<yourEntraIdTenantId>'
+gh secret set AZUREAD_APP_CLIENT_ID -b '<yourAppRegistrationClientId>'
+gh secret set AZUREAD_APP_DOMAIN -b '<yourDomain.onmicrosoft.com>'
 ```
 
 ---
@@ -63,6 +67,14 @@ gh secret set KEYVAULT_OWNER_USERID -b 'yourAccountSid'
 | `SQLADMIN_LOGIN_USERSID` | SQL Admin user SID (object ID) |
 | `SQLADMIN_LOGIN_TENANTID` | SQL Admin tenant ID |
 | `KEYVAULT_OWNER_USERID` | Key Vault administrator principal ID |
+
+### Entra ID App Authentication Secrets
+
+| Secret Name | Description |
+| --- | --- |
+| `AZUREAD_APP_TENANT_ID` | Entra ID Tenant ID for app user authentication |
+| `AZUREAD_APP_CLIENT_ID` | App Registration client ID for user authentication (NOT the deploy service principal) |
+| `AZUREAD_APP_DOMAIN` | Entra ID tenant domain (e.g. `myorg.onmicrosoft.com`) |
 
 ### Variables (non-sensitive values)
 

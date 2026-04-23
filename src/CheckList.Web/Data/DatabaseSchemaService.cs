@@ -20,6 +20,18 @@ public static class DatabaseSchemaService
             await db.Database.ExecuteSqlRawAsync(SchemaUpdateSql);
             logger.LogInformation("Database schema updates applied successfully.");
         }
+        catch (Microsoft.Data.SqlClient.SqlException ex) when (ex.Number == 262 || ex.Number == 2760)
+        {
+            // Error 262 = CREATE TABLE/ALTER permission denied
+            // Error 2760 = schema does not exist
+            // In production the DACPAC handles DDL at deploy time, so the runtime
+            // identity intentionally lacks DDL permissions. If the schema is already
+            // up-to-date this code would have been a no-op anyway.
+            logger.LogWarning(
+                "Skipped startup schema migration — the runtime identity lacks DDL permissions. " +
+                "This is expected when the DACPAC has already been deployed. " +
+                "If tables are missing, deploy the DACPAC first. Detail: {Message}", ex.Message);
+        }
         catch (Exception ex)
         {
             logger.LogError(ex, "Failed to apply database schema updates. " +
@@ -43,10 +55,10 @@ public static class DatabaseSchemaService
 -- =========================================================
 IF NOT EXISTS (
     SELECT 1 FROM sys.tables
-    WHERE schema_id = SCHEMA_ID('dbo') AND name = 'AppUser'
+    WHERE schema_id = SCHEMA_ID('CheckList') AND name = 'AppUser'
 )
 BEGIN
-    CREATE TABLE [dbo].[AppUser]
+    CREATE TABLE [CheckList].[AppUser]
     (
         [UserId]            NVARCHAR(256) NOT NULL,
         [DisplayName]       NVARCHAR(256) NOT NULL,
@@ -63,10 +75,10 @@ END
 -- =========================================================
 IF NOT EXISTS (
     SELECT 1 FROM sys.columns
-    WHERE object_id = OBJECT_ID(N'[dbo].[TemplateSet]') AND name = N'OwnerId'
+    WHERE object_id = OBJECT_ID(N'[CheckList].[TemplateSet]') AND name = N'OwnerId'
 )
 BEGIN
-    ALTER TABLE [dbo].[TemplateSet] ADD [OwnerId] NVARCHAR(256) NULL;
+    ALTER TABLE [CheckList].[TemplateSet] ADD [OwnerId] NVARCHAR(256) NULL;
 END
 
 -- =========================================================
@@ -75,10 +87,10 @@ END
 -- =========================================================
 IF NOT EXISTS (
     SELECT 1 FROM sys.columns
-    WHERE object_id = OBJECT_ID(N'[dbo].[CheckSet]') AND name = N'OwnerId'
+    WHERE object_id = OBJECT_ID(N'[CheckList].[CheckSet]') AND name = N'OwnerId'
 )
 BEGIN
-    ALTER TABLE [dbo].[CheckSet] ADD [OwnerId] NVARCHAR(256) NULL;
+    ALTER TABLE [CheckList].[CheckSet] ADD [OwnerId] NVARCHAR(256) NULL;
 END
 
 -- =========================================================
@@ -89,10 +101,10 @@ END
 -- =========================================================
 IF NOT EXISTS (
     SELECT 1 FROM sys.tables
-    WHERE schema_id = SCHEMA_ID('dbo') AND name = 'CheckSetShare'
+    WHERE schema_id = SCHEMA_ID('CheckList') AND name = 'CheckSetShare'
 )
 BEGIN
-    CREATE TABLE [dbo].[CheckSetShare]
+    CREATE TABLE [CheckList].[CheckSetShare]
     (
         [ShareId]          INT           IDENTITY(1,1) NOT NULL,
         [CheckSetId]       INT           NOT NULL,
@@ -101,8 +113,8 @@ BEGIN
         [CreateDateTime]   DATETIME      NOT NULL CONSTRAINT [DF_CheckSetShare_CreateDateTime] DEFAULT (GETDATE()),
         [CreateUserName]   NVARCHAR(255) NOT NULL CONSTRAINT [DF_CheckSetShare_CreateUserName] DEFAULT (N'UNKNOWN'),
         CONSTRAINT [PK_CheckSetShare]         PRIMARY KEY CLUSTERED ([ShareId] ASC),
-        CONSTRAINT [FK_CheckSetShare_CheckSet] FOREIGN KEY ([CheckSetId])       REFERENCES [dbo].[CheckSet] ([SetId]) ON DELETE CASCADE,
-        CONSTRAINT [FK_CheckSetShare_AppUser]  FOREIGN KEY ([SharedWithUserId]) REFERENCES [dbo].[AppUser]  ([UserId]) ON DELETE CASCADE,
+        CONSTRAINT [FK_CheckSetShare_CheckSet] FOREIGN KEY ([CheckSetId])       REFERENCES [CheckList].[CheckSet] ([SetId]) ON DELETE CASCADE,
+        CONSTRAINT [FK_CheckSetShare_AppUser]  FOREIGN KEY ([SharedWithUserId]) REFERENCES [CheckList].[AppUser]  ([UserId]) ON DELETE CASCADE,
         CONSTRAINT [UQ_CheckSetShare_SetUser]  UNIQUE ([CheckSetId], [SharedWithUserId])
     );
 END
@@ -112,10 +124,10 @@ END
 -- =========================================================
 IF NOT EXISTS (
     SELECT 1 FROM sys.tables
-    WHERE schema_id = SCHEMA_ID('dbo') AND name = 'SharingInvite'
+    WHERE schema_id = SCHEMA_ID('CheckList') AND name = 'SharingInvite'
 )
 BEGIN
-    CREATE TABLE [dbo].[SharingInvite]
+    CREATE TABLE [CheckList].[SharingInvite]
     (
         [InviteId]         INT           IDENTITY(1,1) NOT NULL,
         [InviteTokenHash]  NVARCHAR(128) NOT NULL,
@@ -128,8 +140,8 @@ BEGIN
         [AcceptedByUserId] NVARCHAR(256) NULL,
         [AcceptedAt]       DATETIME      NULL,
         CONSTRAINT [PK_SharingInvite]             PRIMARY KEY CLUSTERED ([InviteId] ASC),
-        CONSTRAINT [FK_SharingInvite_Sender]      FOREIGN KEY ([SenderUserId])     REFERENCES [dbo].[AppUser] ([UserId]) ON DELETE CASCADE,
-        CONSTRAINT [FK_SharingInvite_AcceptedBy]  FOREIGN KEY ([AcceptedByUserId]) REFERENCES [dbo].[AppUser] ([UserId]) ON DELETE NO ACTION,
+        CONSTRAINT [FK_SharingInvite_Sender]      FOREIGN KEY ([SenderUserId])     REFERENCES [CheckList].[AppUser] ([UserId]) ON DELETE CASCADE,
+        CONSTRAINT [FK_SharingInvite_AcceptedBy]  FOREIGN KEY ([AcceptedByUserId]) REFERENCES [CheckList].[AppUser] ([UserId]) ON DELETE NO ACTION,
         CONSTRAINT [UQ_SharingInvite_TokenHash]   UNIQUE ([InviteTokenHash])
     );
 END
@@ -140,10 +152,10 @@ END
 -- =========================================================
 IF NOT EXISTS (
     SELECT 1 FROM sys.tables
-    WHERE schema_id = SCHEMA_ID('dbo') AND name = 'UserPartnership'
+    WHERE schema_id = SCHEMA_ID('CheckList') AND name = 'UserPartnership'
 )
 BEGIN
-    CREATE TABLE [dbo].[UserPartnership]
+    CREATE TABLE [CheckList].[UserPartnership]
     (
         [PartnershipId]        INT           IDENTITY(1,1) NOT NULL,
         [UserId]               NVARCHAR(256) NOT NULL,
@@ -153,9 +165,9 @@ BEGIN
         [CreatedFromInviteId]  INT           NULL,
         [CreatedAt]            DATETIME      NOT NULL CONSTRAINT [DF_UserPartnership_CreatedAt]        DEFAULT (GETDATE()),
         CONSTRAINT [PK_UserPartnership]              PRIMARY KEY CLUSTERED ([PartnershipId] ASC),
-        CONSTRAINT [FK_UserPartnership_User]         FOREIGN KEY ([UserId])              REFERENCES [dbo].[AppUser]      ([UserId])   ON DELETE CASCADE,
-        CONSTRAINT [FK_UserPartnership_Partner]      FOREIGN KEY ([PartnerUserId])       REFERENCES [dbo].[AppUser]      ([UserId])   ON DELETE NO ACTION,
-        CONSTRAINT [FK_UserPartnership_Invite]       FOREIGN KEY ([CreatedFromInviteId]) REFERENCES [dbo].[SharingInvite] ([InviteId]) ON DELETE NO ACTION,
+        CONSTRAINT [FK_UserPartnership_User]         FOREIGN KEY ([UserId])              REFERENCES [CheckList].[AppUser]      ([UserId])   ON DELETE CASCADE,
+        CONSTRAINT [FK_UserPartnership_Partner]      FOREIGN KEY ([PartnerUserId])       REFERENCES [CheckList].[AppUser]      ([UserId])   ON DELETE NO ACTION,
+        CONSTRAINT [FK_UserPartnership_Invite]       FOREIGN KEY ([CreatedFromInviteId]) REFERENCES [CheckList].[SharingInvite] ([InviteId]) ON DELETE NO ACTION,
         CONSTRAINT [UQ_UserPartnership_UserPartner]  UNIQUE ([UserId], [PartnerUserId])
     );
 END
@@ -165,20 +177,20 @@ END
 -- =========================================================
 IF NOT EXISTS (
     SELECT 1 FROM sys.columns
-    WHERE object_id = OBJECT_ID(N'[dbo].[CheckSetShare]') AND name = N'PartnershipId'
+    WHERE object_id = OBJECT_ID(N'[CheckList].[CheckSetShare]') AND name = N'PartnershipId'
 )
 BEGIN
-    ALTER TABLE [dbo].[CheckSetShare] ADD [PartnershipId] INT NULL;
+    ALTER TABLE [CheckList].[CheckSetShare] ADD [PartnershipId] INT NULL;
     
     -- Add FK only if the column was just created (prevents duplicate FK on re-run)
     IF NOT EXISTS (
         SELECT 1 FROM sys.foreign_keys
-        WHERE object_id = OBJECT_ID(N'[dbo].[FK_CheckSetShare_Partnership]')
+        WHERE object_id = OBJECT_ID(N'[CheckList].[FK_CheckSetShare_Partnership]')
     )
     BEGIN
-        ALTER TABLE [dbo].[CheckSetShare]
+        ALTER TABLE [CheckList].[CheckSetShare]
         ADD CONSTRAINT [FK_CheckSetShare_Partnership] 
-        FOREIGN KEY ([PartnershipId]) REFERENCES [dbo].[UserPartnership] ([PartnershipId]) ON DELETE NO ACTION;
+        FOREIGN KEY ([PartnershipId]) REFERENCES [CheckList].[UserPartnership] ([PartnershipId]) ON DELETE NO ACTION;
     END
 END
 ";

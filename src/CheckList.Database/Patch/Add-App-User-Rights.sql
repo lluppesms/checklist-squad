@@ -1,8 +1,10 @@
 -- ------------------------------------------------------------------------------------------------------------------------
 -- Grant App Service Managed Identity access to the database
 -- ------------------------------------------------------------------------------------------------------------------------
--- This script grants the App Service system-assigned managed identity the necessary
--- database roles to read, write, and execute stored procedures.
+-- This script grants the App Service system-assigned managed identity schema-scoped
+-- permissions on the [CheckList] schema. Using schema-scoped grants instead of
+-- db_datareader / db_datawriter ensures this identity cannot read or modify tables
+-- belonging to other applications sharing the same database.
 -- The identity name must be passed as a SQLCMD variable: $(AppIdentityName)
 -- ------------------------------------------------------------------------------------------------------------------------
 -- Usage (manual):
@@ -24,37 +26,14 @@ BEGIN
     PRINT 'User [$(AppIdentityName)] already exists — skipping creation.';
 END
 
--- Grant db_datareader role
-IF NOT EXISTS (SELECT 1 FROM sys.database_role_members rm
-    JOIN sys.database_principals r ON rm.role_principal_id = r.principal_id
-    JOIN sys.database_principals m ON rm.member_principal_id = m.principal_id
-    WHERE r.name = 'db_datareader' AND m.name = '$(AppIdentityName)')
-BEGIN
-    PRINT 'Adding [$(AppIdentityName)] to db_datareader...';
-    ALTER ROLE db_datareader ADD MEMBER [$(AppIdentityName)];
-END
-ELSE
-BEGIN
-    PRINT '[$(AppIdentityName)] is already a member of db_datareader.';
-END
+-- Grant schema-scoped DML permissions (SELECT, INSERT, UPDATE, DELETE)
+-- This replaces db_datareader + db_datawriter with least-privilege access
+PRINT 'Granting SELECT, INSERT, UPDATE, DELETE on schema [CheckList] to [$(AppIdentityName)]...';
+GRANT SELECT, INSERT, UPDATE, DELETE ON SCHEMA::[CheckList] TO [$(AppIdentityName)];
 
--- Grant db_datawriter role
-IF NOT EXISTS (SELECT 1 FROM sys.database_role_members rm
-    JOIN sys.database_principals r ON rm.role_principal_id = r.principal_id
-    JOIN sys.database_principals m ON rm.member_principal_id = m.principal_id
-    WHERE r.name = 'db_datawriter' AND m.name = '$(AppIdentityName)')
-BEGIN
-    PRINT 'Adding [$(AppIdentityName)] to db_datawriter...';
-    ALTER ROLE db_datawriter ADD MEMBER [$(AppIdentityName)];
-END
-ELSE
-BEGIN
-    PRINT '[$(AppIdentityName)] is already a member of db_datawriter.';
-END
-
--- Grant EXECUTE on dbo schema
-PRINT 'Granting EXECUTE on schema [dbo] to [$(AppIdentityName)]...';
-GRANT EXECUTE ON SCHEMA::[dbo] TO [$(AppIdentityName)];
+-- Grant EXECUTE on the CheckList schema (for stored procedures)
+PRINT 'Granting EXECUTE on schema [CheckList] to [$(AppIdentityName)]...';
+GRANT EXECUTE ON SCHEMA::[CheckList] TO [$(AppIdentityName)];
 
 PRINT 'Managed identity rights granted successfully for [$(AppIdentityName)].';
 GO

@@ -12,24 +12,24 @@ DECLARE
 
 SET	@Set3Name = 'RV Goddess - Setup Tasks'
 
-DELETE FROM [dbo].[TemplateAction] Where CategoryId IN (Select tl.ListId From TemplateSet ts INNER JOIN TemplateList tl on ts.SetId = tl.SetId INNER JOIN TemplateCategory tc on tc.ListId = tl.ListId Where SetName = @Set3Name)
-DELETE FROM [dbo].[TemplateCategory] Where ListId IN (Select tl.ListId From TemplateSet ts INNER JOIN TemplateList tl on ts.SetId = tl.SetId Where SetName = @Set3Name)
-DELETE FROM [dbo].[TemplateList] Where SetId IN (Select SetId From TemplateSet ts Where SetName = @Set3Name)
-DELETE FROM [dbo].[TemplateSet] Where SetName = @Set3Name
+DELETE FROM [CheckList].[TemplateAction] Where CategoryId IN (Select tl.ListId From TemplateSet ts INNER JOIN TemplateList tl on ts.SetId = tl.SetId INNER JOIN TemplateCategory tc on tc.ListId = tl.ListId Where SetName = @Set3Name)
+DELETE FROM [CheckList].[TemplateCategory] Where ListId IN (Select tl.ListId From TemplateSet ts INNER JOIN TemplateList tl on ts.SetId = tl.SetId Where SetName = @Set3Name)
+DELETE FROM [CheckList].[TemplateList] Where SetId IN (Select SetId From TemplateSet ts Where SetName = @Set3Name)
+DELETE FROM [CheckList].[TemplateSet] Where SetName = @Set3Name
 
-Insert into [dbo].[TemplateSet](SetName, SetDscr, OwnerName) Values (@Set3Name, '', @OwnerName)
+Insert into [CheckList].[TemplateSet](SetName, SetDscr, OwnerName) Values (@Set3Name, '', @OwnerName)
 	SET @Set3Id = SCOPE_IDENTITY()
-Insert into [dbo].[TemplateList](ListName, ListDscr, SetId) Values ('Departure List', '', @Set3Id)
+Insert into [CheckList].[TemplateList](ListName, ListDscr, SetId) Values ('Departure List', '', @Set3Id)
 	SET @List31Id = SCOPE_IDENTITY()
-Insert into [dbo].[TemplateCategory](CategoryText, ListId) Values ('Interior', @List31Id)
+Insert into [CheckList].[TemplateCategory](CategoryText, ListId) Values ('Interior', @List31Id)
 	SET @Category31Id = SCOPE_IDENTITY()
-Insert into [dbo].[TemplateCategory](CategoryText, ListId) Values ('Passenger Area', @List31Id)
+Insert into [CheckList].[TemplateCategory](CategoryText, ListId) Values ('Passenger Area', @List31Id)
 	SET @Category32Id = SCOPE_IDENTITY()
-Insert into [dbo].[TemplateCategory](CategoryText, ListId) Values ('Exterior', @List31Id)
+Insert into [CheckList].[TemplateCategory](CategoryText, ListId) Values ('Exterior', @List31Id)
 	SET @Category33Id = SCOPE_IDENTITY()
-Insert into [dbo].[TemplateCategory](CategoryText, ListId) Values ('At Departure', @List31Id)
+Insert into [CheckList].[TemplateCategory](CategoryText, ListId) Values ('At Departure', @List31Id)
 	SET @Category34Id = SCOPE_IDENTITY()
-Insert into [dbo].[TemplateAction](ActionText, CategoryId, SortOrder) Values 
+Insert into [CheckList].[TemplateAction](ActionText, CategoryId, SortOrder) Values 
 	('Items stored', @Category31Id, 10),
 	('Cupboard doors closed', @Category31Id, 20),
 	('Ceiling vents closed', @Category31Id, 30),
@@ -76,8 +76,8 @@ Insert into [dbo].[TemplateAction](ActionText, CategoryId, SortOrder) Values
 
 
  Select s.SetId, s.SetName, l.ListId, l.ListName, l.ListDscr, c.CategoryId, c.CategoryText, a.ActionId, a.ActionText, a.ActionDscr
- From [dbo].[TemplateSet] s
- INNER JOIN [dbo].[TemplateList] l on s.SetId = l.SetId
- INNER JOIN [dbo].[TemplateCategory] c on c.ListId = l.ListId
- INNER JOIN [dbo].[TemplateAction] a on a.CategoryId = c.CategoryId
+ From [CheckList].[TemplateSet] s
+ INNER JOIN [CheckList].[TemplateList] l on s.SetId = l.SetId
+ INNER JOIN [CheckList].[TemplateCategory] c on c.ListId = l.ListId
+ INNER JOIN [CheckList].[TemplateAction] a on a.CategoryId = c.CategoryId
  WHERE s.SetId = @Set3Id 

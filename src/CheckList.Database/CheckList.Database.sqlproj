@@ -7,8 +7,8 @@
     <ModelCollation>1033, CI</ModelCollation>
   </PropertyGroup>
   <ItemGroup>
-    <PreDeploy Include="dbo\Pre.Deployment.sql" />
-    <PostDeploy Include="dbo\Post.Deployment.sql" />
+    <PreDeploy Include="CheckList\Pre.Deployment.sql" />
+    <PostDeploy Include="CheckList\Post.Deployment.sql" />
   </ItemGroup>
   <ItemGroup>
     <Build Remove="Patch\**\*.sql" />

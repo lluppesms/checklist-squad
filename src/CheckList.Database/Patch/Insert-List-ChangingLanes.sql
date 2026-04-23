@@ -29,37 +29,37 @@ DECLARE
 
 SET	@Set2Name = 'Changing Lanes Check Lists'
 
-DELETE FROM [dbo].[TemplateAction] Where CategoryId IN (Select tl.ListId From TemplateSet ts INNER JOIN TemplateList tl on ts.SetId = tl.SetId INNER JOIN TemplateCategory tc on tc.ListId = tl.ListId Where SetName = @Set2Name)
-DELETE FROM [dbo].[TemplateCategory] Where ListId IN (Select tl.ListId From TemplateSet ts INNER JOIN TemplateList tl on ts.SetId = tl.SetId Where SetName = @Set2Name)
-DELETE FROM [dbo].[TemplateList] Where SetId IN (Select SetId From TemplateSet ts Where SetName = @Set2Name)
-DELETE FROM [dbo].[TemplateSet] Where SetName = @Set2Name
+DELETE FROM [CheckList].[TemplateAction] Where CategoryId IN (Select tl.ListId From TemplateSet ts INNER JOIN TemplateList tl on ts.SetId = tl.SetId INNER JOIN TemplateCategory tc on tc.ListId = tl.ListId Where SetName = @Set2Name)
+DELETE FROM [CheckList].[TemplateCategory] Where ListId IN (Select tl.ListId From TemplateSet ts INNER JOIN TemplateList tl on ts.SetId = tl.SetId Where SetName = @Set2Name)
+DELETE FROM [CheckList].[TemplateList] Where SetId IN (Select SetId From TemplateSet ts Where SetName = @Set2Name)
+DELETE FROM [CheckList].[TemplateSet] Where SetName = @Set2Name
 
 
-Insert into [dbo].[TemplateSet](SetName, SetDscr, OwnerName) Values (@Set2Name, '', @OwnerName)
+Insert into [CheckList].[TemplateSet](SetName, SetDscr, OwnerName) Values (@Set2Name, '', @OwnerName)
 	SET @Set2Id = SCOPE_IDENTITY()
 
-Insert into [dbo].[TemplateList](ListName, ListDscr, SortOrder, SetId) Values ('T-24', 'These can be done casually any time the day before', 10, @Set2Id)
+Insert into [CheckList].[TemplateList](ListName, ListDscr, SortOrder, SetId) Values ('T-24', 'These can be done casually any time the day before', 10, @Set2Id)
 	SET @List22Id = SCOPE_IDENTITY()
-Insert into [dbo].[TemplateCategory](CategoryText, ListId) Values ('Main', @List22Id)
+Insert into [CheckList].[TemplateCategory](CategoryText, ListId) Values ('Main', @List22Id)
 	SET @Category2BId = SCOPE_IDENTITY()
 
-Insert into [dbo].[TemplateList](ListName, ListDscr, SortOrder, SetId) Values ('T-12', 'Do these the night before departure, usually just before bed', 20, @Set2Id)
+Insert into [CheckList].[TemplateList](ListName, ListDscr, SortOrder, SetId) Values ('T-12', 'Do these the night before departure, usually just before bed', 20, @Set2Id)
 	SET @List23Id = SCOPE_IDENTITY()
-Insert into [dbo].[TemplateCategory](CategoryText, ListId) Values ('Main', @List23Id)
+Insert into [CheckList].[TemplateCategory](CategoryText, ListId) Values ('Main', @List23Id)
 	SET @Category2CId = SCOPE_IDENTITY()
 
-Insert into [dbo].[TemplateList](ListName, ListDscr, SortOrder, SetId) Values ('T-0', 'Do these the morning of departure', 30, @Set2Id)
+Insert into [CheckList].[TemplateList](ListName, ListDscr, SortOrder, SetId) Values ('T-0', 'Do these the morning of departure', 30, @Set2Id)
 	SET @List24Id = SCOPE_IDENTITY()
-Insert into [dbo].[TemplateCategory](CategoryText, ListId) Values ('Main', @List24Id)
+Insert into [CheckList].[TemplateCategory](CategoryText, ListId) Values ('Main', @List24Id)
 	SET @Category2DId = SCOPE_IDENTITY()
 
-Insert into [dbo].[TemplateList](ListName, ListDscr, SortOrder, SetId) Values ('Hitching (time to roll!)', 
+Insert into [CheckList].[TemplateList](ListName, ListDscr, SortOrder, SetId) Values ('Hitching (time to roll!)', 
 'This is BY FAR the most important list. Missing steps here can cause severe damage to the rig and / or truck, and possibly even injuries.  There are some redundancies on this list, but it''s good to double check some things from the outside.', 40, @Set2Id)
 	SET @List25Id = SCOPE_IDENTITY()
-Insert into [dbo].[TemplateCategory](CategoryText, ListId) Values ('Main', @List25Id)
+Insert into [CheckList].[TemplateCategory](CategoryText, ListId) Values ('Main', @List25Id)
 	SET @Category2EId = SCOPE_IDENTITY()
 
-Insert into [dbo].[TemplateAction](ActionText, ActionDscr, CategoryId, SortOrder) Values 
+Insert into [CheckList].[TemplateAction](ActionText, ActionDscr, CategoryId, SortOrder) Values 
   ('Dump / Flush REAR black tank', null, @Category2BId, 10),
   ('Secure REAR Dump Hose', 'Less stuff to stow on departure day.  Has tube under RV to store them)', @Category2BId, 20),
   ('TREAT REAR Black Tank', null, @Category2BId, 30),
@@ -75,7 +75,7 @@ Insert into [dbo].[TemplateAction](ActionText, ActionDscr, CategoryId, SortOrder
   ('Check Pin Box Airbag pressure (100psi)', 'Our FlexAir pin box has a shock and airbag.  I''ve found that 100psi cold with no load puts it right about where it''s supposed to ride when loaded', @Category2BId, 130),
   ('Check Radios / charge if needed (we use these)', null, @Category2BId, 140)
 
-Insert into [dbo].[TemplateAction](ActionText, ActionDscr, CategoryId, SortOrder) Values 
+Insert into [CheckList].[TemplateAction](ActionText, ActionDscr, CategoryId, SortOrder) Values 
   ('Secure outside items.', 'Rug, chairs, etc', @Category2CId, 10),
   ('Plan route and fuel', 'Get a feel on gas station locations, rest stops, etc.  I also text the next address to myself so I have it in the truck for the GPS in the morning', @Category2CId, 20),
   ('Garage: rear bathroom vent closed and lights off', null, @Category2CId, 30),
@@ -88,7 +88,7 @@ Insert into [dbo].[TemplateAction](ActionText, ActionDscr, CategoryId, SortOrder
   ('Secure patio', 'Collapse patio rails and close rear door', @Category2CId, 100),
   ('Dump grey tanks and geo-treat (AFTER showers, dishes, etc)', 'I like to put about 5 gallons of water in both grey tanks along with a cup of water softener and bit of dawn dish soap.  This concoction will splash around in there while we drive and clean the tanks and sensors', @Category2CId, 110)
 
-Insert into [dbo].[TemplateAction](ActionText, ActionDscr, CategoryId, SortOrder) Values 
+Insert into [CheckList].[TemplateAction](ActionText, ActionDscr, CategoryId, SortOrder) Values 
   ('Usually Tara starts in the front (bedroom), and I start in the rear (garage), and we meet in the middle.', null, @Category2DId, 10),
   ('Run generator (exercise) while prepping to leave (if etiquette allows)', 'when we can, we switch over to genny power to run the A/C, etc for the last 30 mins to hour to exercise it', @Category2DId, 20),
   ('Bedroom secure and carpet stowed', 'closet door latched, laundry door closed', @Category2DId, 30),
@@ -118,8 +118,8 @@ Insert into [dbo].[TemplateAction](ActionText, ActionDscr, CategoryId, SortOrder
   ('Secure Electrical and plumbing', 'water hose, power cord, poop hose)', @Category2DId, 270),
   ('Nautilus in dry camp mode', 'relieve system pressure before switching)', @Category2DId, 280)
 
-Insert into [dbo].[TemplateAction](ActionText, ActionDscr, CategoryId, SortOrder) Values 
-  ('T-24, T-12, T-0 [dbo].[TemplateList]s Complete', null, @Category2EId, 10),
+Insert into [CheckList].[TemplateAction](ActionText, ActionDscr, CategoryId, SortOrder) Values 
+  ('T-24, T-12, T-0 [CheckList].[TemplateList]s Complete', null, @Category2EId, 10),
   ('RIG - Slides and awnings IN', null, @Category2EId, 20),
   ('RIG - Stairs and hand rail STOWED.', null, @Category2EId, 30),
   ('RIG - Forward Bay Closed and Latched', null, @Category2EId, 40),
@@ -152,8 +152,8 @@ Insert into [dbo].[TemplateAction](ActionText, ActionDscr, CategoryId, SortOrder
 
 
  Select s.SetId, s.SetName, l.ListId, l.ListName, l.ListDscr, c.CategoryId, c.CategoryText, a.ActionId, a.ActionText, a.ActionDscr
- From [dbo].[TemplateSet] s
- INNER JOIN [dbo].[TemplateList] l on s.SetId = l.SetId
- INNER JOIN [dbo].[TemplateCategory] c on c.ListId = l.ListId
- INNER JOIN [dbo].[TemplateAction] a on a.CategoryId = c.CategoryId
+ From [CheckList].[TemplateSet] s
+ INNER JOIN [CheckList].[TemplateList] l on s.SetId = l.SetId
+ INNER JOIN [CheckList].[TemplateCategory] c on c.ListId = l.ListId
+ INNER JOIN [CheckList].[TemplateAction] a on a.CategoryId = c.CategoryId
  WHERE s.SetId = @Set2Id 

@@ -1,4 +1,4 @@
-CREATE TABLE [dbo].[AppUser]
+CREATE TABLE [CheckList].[AppUser]
 (
     [UserId]            NVARCHAR(256) NOT NULL,
     [DisplayName]       NVARCHAR(256) NOT NULL,
@@ -9,7 +9,7 @@ CREATE TABLE [dbo].[AppUser]
 );
 GO
 
-ALTER TABLE [dbo].[AppUser] ADD CONSTRAINT [DF_AppUser_CreateDateTime]    DEFAULT (GETDATE()) FOR [CreateDateTime];
+ALTER TABLE [CheckList].[AppUser] ADD CONSTRAINT [DF_AppUser_CreateDateTime]    DEFAULT (GETDATE()) FOR [CreateDateTime];
 GO
-ALTER TABLE [dbo].[AppUser] ADD CONSTRAINT [DF_AppUser_LastLoginDateTime] DEFAULT (GETDATE()) FOR [LastLoginDateTime];
+ALTER TABLE [CheckList].[AppUser] ADD CONSTRAINT [DF_AppUser_LastLoginDateTime] DEFAULT (GETDATE()) FOR [LastLoginDateTime];
 GO
