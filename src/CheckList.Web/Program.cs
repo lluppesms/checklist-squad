@@ -49,6 +49,13 @@ builder.Services.AddScoped<IUserIdentity, UserIdentityService>();
 
 var app = builder.Build();
 
+// Apply any pending schema changes to the database (idempotent – safe to run on every startup).
+// This ensures the auth-related columns and tables exist even on databases created before
+// the authentication feature was added.
+await DatabaseSchemaService.ApplySchemaUpdatesAsync(
+    app.Services,
+    app.Logger);
+
 app.MapDefaultEndpoints();
 
 // Configure the HTTP request pipeline.
