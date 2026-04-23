@@ -229,6 +229,41 @@ Deploying schema changes (e.g., adding a column) involves publishing a DACPAC to
 - A conflict during publish can leave the database in an inconsistent state
 - Different apps on different release schedules create deployment windows
 
+#### Why Per-Schema DACPACs Are Mostly Safe
+
+When each app's `.sqlproj` only defines objects in its own schema (e.g., `[CheckList].*`), SqlPackage's diff engine only generates DDL for those objects. It **will not** generate `DROP` statements for schemas or objects it doesn't define — **as long as `/p:DropObjectsNotInSource` remains `False`** (the default).
+
+This means CheckList's DACPAC won't touch `[ReportingApp].*` tables, and vice versa.
+
+#### SqlPackage Flags for Safe Multi-App Publishing
+
+Use these flags when publishing to a shared database:
+
+```bash
+SqlPackage /Action:Publish /SourceFile:CheckList.Database.dacpac \
+  /TargetConnectionString:"..." \
+  /p:IncludeCompositeObjects=False \
+  /p:DoNotDropObjectTypes=Schemas \
+  /p:ExcludeObjectTypes=Users;Logins;RoleMembership;Permissions
+```
+
+| Flag | Purpose |
+|------|---------|
+| `/p:DoNotDropObjectTypes=Schemas` | Prevents dropping other apps' schemas |
+| `/p:ExcludeObjectTypes=Users;Logins;...` | Won't modify security objects shared across apps |
+| `/p:IncludeCompositeObjects=False` | Ignores objects that reference external schemas |
+| `/p:DropObjectsNotInSource=False` | **(Default)** Never set this to `True` in a shared database |
+
+#### Remaining Risks
+
+1. **Lock contention during DDL** — `ALTER TABLE` takes schema-level locks that can briefly block other apps' queries against the same database. Deploy during low-traffic windows.
+
+2. **Shared `dbo` schema** — If any app still puts objects in `dbo`, that's a danger zone where DACPACs can conflict. Every app must use its own dedicated schema.
+
+3. **Pre/Post-deployment scripts** — These run arbitrary SQL outside the DACPAC diff engine, so a bug in one app's script could reference another schema. Code review these carefully.
+
+4. **Simultaneous publishes** — Two DACPACs running at the same time can cause deadlocks on system catalog tables. Use a deployment queue or mutex in CI/CD.
+
 **Mitigation:**  
 1. **Test DACPAC publish in a staging database first**
    - Replicate the shared database structure with multiple schemas
@@ -246,10 +281,17 @@ Deploying schema changes (e.g., adding a column) involves publishing a DACPAC to
    - Use a deployment calendar or Slack channel for visibility
    - Most critical for schema DDL changes (ALTER TABLE, CREATE PROCEDURE)
 
-4. **Automate DACPAC validation in CI/CD**
-   - Before publishing to production, validate that the DACPAC only touches the CheckList schema
-   - Script: Compare the DACPAC's object list against the expected schema
-   - Fail the build if unexpected schemas are included
+4. **Add a CI safety gate to validate deploy scripts**
+   - Before publishing to production, generate the deploy script and verify it only touches the expected schema:
+   ```bash
+   # Generate the deploy script WITHOUT executing it
+   SqlPackage /Action:Script /SourceFile:CheckList.Database.dacpac \
+     /TargetConnectionString:"..." /OutputPath:deploy.sql
+
+   # Fail if the script references any schema other than CheckList
+   Select-String -Path deploy.sql -Pattern '\[(ReportingApp|OtherApp)\]\.' -Quiet
+   ```
+   - Fail the build if unexpected schemas are referenced in the generated script
 
 ---
 
@@ -385,6 +427,18 @@ When deploying the CheckList DACPAC to a shared database for the first time:
 2. **Subsequent deployments** only need `ALTER SCHEMA` permission (schema already exists)
 
 3. **Test the deploy** in a staging environment first to catch any conflicts
+
+
+### Redeployment to a local database
+
+If you have a local development database and wish to refresh it, use this command
+
+```bash
+ SqlPackage /Action:Publish `
+   /SourceFile:src\CheckList.Database\bin\Debug\CheckList.Database.dacpac `
+   /TargetConnectionString:"Server=(localdb)\mssqllocaldb;Database=CheckListDb;Trusted_Connection=True;" `
+   /p:CreateNewDatabase=True
+```
 
 ---
 
