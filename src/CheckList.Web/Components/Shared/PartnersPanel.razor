@@ -1,0 +1,168 @@
+@namespace CheckList.Web.Components.Shared
+@using CheckList.Web.Services
+
+<div class="partners-panel">
+    <div class="panel-header">
+        <h5 class="panel-title">
+            <i class="bi bi-people"></i> Sharing Partners
+        </h5>
+        <button class="btn btn-sm btn-primary" @onclick="OpenInviteDialog">
+            <i class="bi bi-person-plus"></i> Invite Partner
+        </button>
+    </div>
+
+    @if (loading)
+    {
+        <div class="panel-loading">
+            <div class="spinner-border spinner-border-sm" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <span class="ms-2">Loading partners...</span>
+        </div>
+    }
+    else if (errorMessage is not null)
+    {
+        <div class="alert alert-danger">
+            <i class="bi bi-exclamation-triangle"></i> @errorMessage
+        </div>
+    }
+    else if (partners.Count == 0)
+    {
+        <div class="empty-partners">
+            <i class="bi bi-person-plus-fill"></i>
+            <p>No sharing partners yet. Invite someone to collaborate!</p>
+        </div>
+    }
+    else
+    {
+        <div class="partners-list">
+            @foreach (var partner in partners)
+            {
+                <div class="partner-card">
+                    <div class="partner-info">
+                        <div class="partner-avatar">
+                            <i class="bi bi-person-circle"></i>
+                        </div>
+                        <div class="partner-details">
+                            <div class="partner-name">@partner.DisplayName</div>
+                            @if (!string.IsNullOrEmpty(partner.Email))
+                            {
+                                <div class="partner-email">@partner.Email</div>
+                            }
+                            <div class="partner-meta">
+                                <span class="role-badge role-@partner.Role">
+                                    @(partner.Role == "admin" ? "Co-Captain" : "Crew Member")
+                                </span>
+                                <span class="partner-since">
+                                    Since @partner.PartnerSince.ToString("MMM d, yyyy")
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="btn btn-sm btn-outline-danger remove-btn"
+                            @onclick="() => PromptRemove(partner)">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+<InvitePartnerDialog IsVisible="@showInviteDialog"
+                     OnClose="CloseInviteDialog"
+                     OnInviteSent="OnInviteSent" />
+
+<ConfirmDialog IsVisible="@showRemoveConfirm"
+               Title="Remove Partner"
+               Message="@($"Are you sure you want to remove {removePartner?.DisplayName} as a sharing partner? They will lose access to your checklists.")"
+               ConfirmText="Remove"
+               OnConfirm="ConfirmRemove"
+               OnCancel="CancelRemove" />
+
+@code {
+    [Inject] private ISharingService SharingService { get; set; } = default!;
+    [Inject] private IUserIdentity UserIdentity { get; set; } = default!;
+
+    private List<PartnerDto> partners = [];
+    private bool loading;
+    private string? errorMessage;
+    private bool showInviteDialog;
+    private bool showRemoveConfirm;
+    private PartnerDto? removePartner;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadPartners();
+    }
+
+    private async Task LoadPartners()
+    {
+        if (string.IsNullOrEmpty(UserIdentity.UserId))
+            return;
+
+        try
+        {
+            loading = true;
+            errorMessage = null;
+            partners = await SharingService.GetPartnersAsync(UserIdentity.UserId);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to load partners: {ex.Message}";
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    private void OpenInviteDialog()
+    {
+        showInviteDialog = true;
+    }
+
+    private void CloseInviteDialog()
+    {
+        showInviteDialog = false;
+    }
+
+    private async Task OnInviteSent()
+    {
+        // Optionally reload partners here if you want to show pending invites
+        // For now, we'll just keep the dialog open so they can see the link
+    }
+
+    private void PromptRemove(PartnerDto partner)
+    {
+        removePartner = partner;
+        showRemoveConfirm = true;
+    }
+
+    private async Task ConfirmRemove()
+    {
+        if (removePartner is null || string.IsNullOrEmpty(UserIdentity.UserId))
+            return;
+
+        try
+        {
+            await SharingService.RevokePartnershipAsync(UserIdentity.UserId, removePartner.UserId);
+            partners.RemoveAll(p => p.UserId == removePartner.UserId);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to remove partner: {ex.Message}";
+        }
+        finally
+        {
+            showRemoveConfirm = false;
+            removePartner = null;
+        }
+    }
+
+    private void CancelRemove()
+    {
+        showRemoveConfirm = false;
+        removePartner = null;
+    }
+}

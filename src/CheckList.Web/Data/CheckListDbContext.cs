@@ -14,6 +14,8 @@ public class CheckListDbContext : DbContext
     public DbSet<CheckAction> CheckActions => Set<CheckAction>();
     public DbSet<AppUser> AppUsers => Set<AppUser>();
     public DbSet<CheckSetShare> CheckSetShares => Set<CheckSetShare>();
+    public DbSet<SharingInvite> SharingInvites => Set<SharingInvite>();
+    public DbSet<UserPartnership> UserPartnerships => Set<UserPartnership>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -90,7 +92,7 @@ public class CheckListDbContext : DbContext
             e.Property(x => x.SetName).HasMaxLength(255).IsRequired();
             e.Property(x => x.SetDscr).HasMaxLength(1000);
             e.Property(x => x.OwnerName).HasMaxLength(256).IsRequired();
-            e.Property(x => x.OwnerId).HasMaxLength(256).IsRequired();
+            e.Property(x => x.OwnerId).HasMaxLength(256);
             e.Property(x => x.ActiveInd).HasMaxLength(1).IsRequired().HasDefaultValue("Y");
             e.Property(x => x.SortOrder).HasDefaultValue(50);
             e.Property(x => x.CreateDateTime).HasDefaultValueSql("GETDATE()");
@@ -98,7 +100,7 @@ public class CheckListDbContext : DbContext
             e.Property(x => x.ChangeDateTime).HasDefaultValueSql("GETDATE()");
             e.Property(x => x.ChangeUserName).HasMaxLength(255).HasDefaultValue("UNKNOWN");
             e.HasOne(x => x.TemplateSet).WithMany(t => t.CheckSets).HasForeignKey(x => x.TemplateSetId).OnDelete(DeleteBehavior.Cascade);
-            e.HasOne<AppUser>().WithMany(u => u.OwnedCheckSets).HasForeignKey(x => x.OwnerId).IsRequired(true).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<AppUser>().WithMany(u => u.OwnedCheckSets).HasForeignKey(x => x.OwnerId).IsRequired(false).OnDelete(DeleteBehavior.NoAction);
         });
 
         // CheckList
@@ -172,7 +174,41 @@ public class CheckListDbContext : DbContext
             e.Property(x => x.CreateUserName).HasMaxLength(255).HasDefaultValue("UNKNOWN");
             e.HasOne(x => x.CheckSet).WithMany(s => s.CheckSetShares).HasForeignKey(x => x.CheckSetId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne(x => x.SharedWithUser).WithMany(u => u.CheckSetShares).HasForeignKey(x => x.SharedWithUserId).OnDelete(DeleteBehavior.NoAction);
+            e.HasOne(x => x.Partnership).WithMany().HasForeignKey(x => x.PartnershipId).OnDelete(DeleteBehavior.NoAction);
             e.HasIndex(x => new { x.CheckSetId, x.SharedWithUserId }).IsUnique();
+        });
+
+        // SharingInvite
+        modelBuilder.Entity<SharingInvite>(e =>
+        {
+            e.ToTable("SharingInvite");
+            e.HasKey(x => x.InviteId);
+            e.Property(x => x.InviteTokenHash).HasMaxLength(128).IsRequired();
+            e.Property(x => x.SenderUserId).HasMaxLength(256).IsRequired();
+            e.Property(x => x.RecipientEmail).HasMaxLength(256).IsRequired();
+            e.Property(x => x.Role).HasMaxLength(50).IsRequired().HasDefaultValue("user");
+            e.Property(x => x.Status).HasMaxLength(50).IsRequired().HasDefaultValue("pending");
+            e.Property(x => x.CreatedAt).HasDefaultValueSql("GETDATE()");
+            e.Property(x => x.AcceptedByUserId).HasMaxLength(256);
+            e.HasOne(x => x.Sender).WithMany().HasForeignKey(x => x.SenderUserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.AcceptedByUser).WithMany().HasForeignKey(x => x.AcceptedByUserId).OnDelete(DeleteBehavior.NoAction);
+            e.HasIndex(x => x.InviteTokenHash).IsUnique();
+        });
+
+        // UserPartnership
+        modelBuilder.Entity<UserPartnership>(e =>
+        {
+            e.ToTable("UserPartnership");
+            e.HasKey(x => x.PartnershipId);
+            e.Property(x => x.UserId).HasMaxLength(256).IsRequired();
+            e.Property(x => x.PartnerUserId).HasMaxLength(256).IsRequired();
+            e.Property(x => x.Role).HasMaxLength(50).IsRequired().HasDefaultValue("user");
+            e.Property(x => x.AutoShareEnabled).IsRequired().HasDefaultValue(true);
+            e.Property(x => x.CreatedAt).HasDefaultValueSql("GETDATE()");
+            e.HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.Partner).WithMany().HasForeignKey(x => x.PartnerUserId).OnDelete(DeleteBehavior.NoAction);
+            e.HasOne(x => x.CreatedFromInvite).WithMany().HasForeignKey(x => x.CreatedFromInviteId).OnDelete(DeleteBehavior.NoAction);
+            e.HasIndex(x => new { x.UserId, x.PartnerUserId }).IsUnique();
         });
     }
 }

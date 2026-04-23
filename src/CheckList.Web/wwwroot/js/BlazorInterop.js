@@ -30,3 +30,8 @@ window.downloadFileFromStream = async (fileName, contentStreamReference) => {
     a.click();
     URL.revokeObjectURL(url);
 };
+
+// Clipboard copy functionality
+if (!window.navigator.clipboard) {
+    console.warn('Clipboard API not available');
+}

@@ -1,3 +1,5 @@
+using Microsoft.EntityFrameworkCore.Diagnostics;
+
 namespace CheckList.Tests.Helpers;
 
 public static class DbContextHelper
@@ -7,6 +9,7 @@ public static class DbContextHelper
         dbName ??= Guid.NewGuid().ToString();
         var options = new DbContextOptionsBuilder<CheckListDbContext>()
             .UseInMemoryDatabase(dbName)
+            .ConfigureWarnings(w => w.Ignore(InMemoryEventId.TransactionIgnoredWarning))
             .Options;
         return new CheckListDbContext(options);
     }

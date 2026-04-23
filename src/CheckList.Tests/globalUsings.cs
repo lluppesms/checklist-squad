@@ -3,6 +3,7 @@ global using Moq;
 global using Microsoft.EntityFrameworkCore;
 global using Microsoft.AspNetCore.SignalR;
 global using Microsoft.AspNetCore.Mvc;
+global using Microsoft.AspNetCore.Http;
 global using CheckList.Web.Data;
 global using CheckList.Web.Data.Entities;
 global using CheckList.Web.Data.Repositories;

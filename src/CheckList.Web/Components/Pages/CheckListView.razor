@@ -25,6 +25,17 @@ else if (checkSet is not null)
                 {
                     <p class="checklist-description">@checkSet.SetDscr</p>
                 }
+                @if (isShared)
+                {
+                    <div class="sharing-info">
+                        <i class="bi bi-people-fill"></i>
+                        <span>Shared with you by <strong>@checkSet.OwnerName</strong></span>
+                        @if (!string.IsNullOrEmpty(userRole))
+                        {
+                            <span class="role-indicator">• Your role: @(userRole == "admin" ? "Co-Captain" : "Crew Member")</span>
+                        }
+                    </div>
+                }
             </div>
             <div class="d-flex align-items-center gap-2">
                 <ConnectionStatus Status="@connectionStatus" />
@@ -141,6 +152,7 @@ else if (checkSet is not null)
     [Inject] private ICheckListApiClient ApiClient { get; set; } = default!;
     [Inject] private IUserIdentity UserIdentity { get; set; } = default!;
     [Inject] private NavigationManager Navigation { get; set; } = default!;
+    [Inject] private ISharingService SharingService { get; set; } = default!;
 
     private CheckSetDto? checkSet;
     private bool loading = true;
@@ -152,6 +164,8 @@ else if (checkSet is not null)
     private List<string> toastMessages = [];
     private HubConnection? hubConnection;
     private bool toggling;
+    private bool isShared;
+    private string? userRole;
 
     private int TotalActions => checkSet?.Lists
         .SelectMany(l => l.Categories)
@@ -176,6 +190,26 @@ else if (checkSet is not null)
             checkSet = await ApiClient.GetCheckSetAsync(SetId);
             if (checkSet is not null)
             {
+                // Determine if shared
+                isShared = !string.IsNullOrEmpty(checkSet.OwnerId) && 
+                           !string.IsNullOrEmpty(UserIdentity.UserId) &&
+                           checkSet.OwnerId != UserIdentity.UserId;
+
+                // Get user's role for this checklist if shared
+                if (isShared && !string.IsNullOrEmpty(UserIdentity.UserId))
+                {
+                    try
+                    {
+                        var partners = await SharingService.GetPartnersAsync(UserIdentity.UserId);
+                        var partner = partners.FirstOrDefault(p => p.UserId == checkSet.OwnerId);
+                        userRole = partner?.Role;
+                    }
+                    catch
+                    {
+                        // If we can't get the role, that's okay, just don't show it
+                    }
+                }
+
                 foreach (var list in checkSet.Lists)
                 {
                     foreach (var category in list.Categories)

@@ -20,8 +20,13 @@
 - **Blazor Server + Playwright gotchas:** (1) `FillAsync` doesn't trigger Blazor `@bind:event="oninput"` — use `PressSequentiallyAsync` instead. (2) Blazor Server prerender loads HTML instantly but SignalR circuit takes seconds — must wait for circuit before interacting. (3) Nickname entry needs retry loop because circuit may not be ready when overlay appears. (4) Session-scoped state (nickname) doesn't persist across browser contexts.
 - **Playwright test base URL:** Configurable via `APP_URL` env var, defaults to `https://lsq-checklist1-dev.azurewebsites.net/`.
 - **Playwright test structure:** `SmokeTests/SmokeTestBase.cs` manages browser lifecycle per-test and provides `NavigateAndWaitForBlazor()` with Blazor circuit detection + nickname dismissal.
+- **InMemory database transactions:** EF Core InMemory provider doesn't support transactions. Must configure `ConfigureWarnings(w => w.Ignore(InMemoryEventId.TransactionIgnoredWarning))` in DbContextHelper to suppress the error when testing code that uses transactions.
+- **Controller test HTTP context:** API controllers that access `Request.Scheme` or `Request.Host` need a mocked HTTP context in tests. Use `DefaultHttpContext()` and set `ControllerContext.HttpContext` in test setup.
+- **Sharing feature coverage:** Added 65 tests for sharing feature (repositories: 17, services: 31, controllers: 17) covering invite creation, acceptance, partnerships, auto-sharing, and access control. Total test count: 209 tests.
 
 ## Recent Updates
+
+📌 **2026-04-22:** Comprehensive sharing feature tests added — 65 tests across repository, service, and controller layers. All 209 tests passing. Coverage includes invite token generation/hashing, partnership management, auto-share behavior, and access control validation.
 
 📌 **2026-04-22:** Playwright smoke test suite created by Hawkins — 35 tests, all green against live dev site. Covers home page, navigation, checklists, templates, import/export, responsive layout, and SignalR connectivity.
 

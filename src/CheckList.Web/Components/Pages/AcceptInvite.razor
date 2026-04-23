@@ -1,0 +1,129 @@
+@page "/invite/{InviteToken}"
+@namespace CheckList.Web.Components.Pages
+@using CheckList.Web.Services
+
+<PageTitle>Accept Invite</PageTitle>
+
+<div class="accept-invite-container">
+    <div class="accept-invite-card">
+        @if (!UserIdentity.IsAuthenticated)
+        {
+            <div class="welcome-section">
+                <div class="rv-icon">
+                    <i class="bi bi-truck"></i>
+                </div>
+                <h2 class="welcome-title">You're Invited!</h2>
+                <p class="welcome-message">
+                    Someone wants to share their RigRoll checklists with you. 
+                    Sign in to accept this invitation and start collaborating.
+                </p>
+                <button class="btn btn-primary btn-lg" @onclick="SignIn">
+                    <i class="bi bi-box-arrow-in-right"></i> Sign In to Accept
+                </button>
+            </div>
+        }
+        else if (processing)
+        {
+            <div class="processing-section">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Processing...</span>
+                </div>
+                <p class="processing-message">Processing your invitation...</p>
+            </div>
+        }
+        else if (result?.Success == true)
+        {
+            <div class="success-section">
+                <div class="success-icon">
+                    <i class="bi bi-check-circle-fill"></i>
+                </div>
+                <h2 class="success-title">Partnership Confirmed!</h2>
+                <p class="success-message">
+                    You're now sharing checklists with <strong>@result.PartnerDisplayName</strong>.
+                </p>
+                <button class="btn btn-primary btn-lg" @onclick="GoToChecklists">
+                    <i class="bi bi-clipboard-check"></i> View My Checklists
+                </button>
+            </div>
+        }
+        else if (result?.ErrorMessage is not null)
+        {
+            <div class="error-section">
+                <div class="error-icon">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                </div>
+                <h2 class="error-title">Unable to Accept Invite</h2>
+                <p class="error-message">@result.ErrorMessage</p>
+                <div class="error-actions">
+                    <button class="btn btn-outline-secondary" @onclick="GoHome">
+                        <i class="bi bi-house"></i> Go Home
+                    </button>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public string InviteToken { get; set; } = "";
+
+    [Inject] private ISharingService SharingService { get; set; } = default!;
+    [Inject] private IUserIdentity UserIdentity { get; set; } = default!;
+    [Inject] private NavigationManager Navigation { get; set; } = default!;
+
+    private bool processing;
+    private SharingInviteResult? result;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (UserIdentity.IsAuthenticated)
+        {
+            await ProcessInvite();
+        }
+    }
+
+    private async Task ProcessInvite()
+    {
+        if (string.IsNullOrEmpty(UserIdentity.UserId) || 
+            string.IsNullOrEmpty(UserIdentity.Email) ||
+            string.IsNullOrEmpty(UserIdentity.NickName))
+        {
+            result = new SharingInviteResult(false, "User identity is incomplete. Please sign in again.");
+            return;
+        }
+
+        try
+        {
+            processing = true;
+            result = await SharingService.AcceptInviteAsync(
+                InviteToken,
+                UserIdentity.UserId,
+                UserIdentity.Email,
+                UserIdentity.NickName);
+        }
+        catch (Exception ex)
+        {
+            result = new SharingInviteResult(false, $"An error occurred: {ex.Message}");
+        }
+        finally
+        {
+            processing = false;
+        }
+    }
+
+    private void SignIn()
+    {
+        var returnUrl = Uri.EscapeDataString($"/invite/{InviteToken}");
+        Navigation.NavigateTo($"/account/login?returnUrl={returnUrl}", forceLoad: true);
+    }
+
+    private void GoToChecklists()
+    {
+        Navigation.NavigateTo("/checklists");
+    }
+
+    private void GoHome()
+    {
+        Navigation.NavigateTo("/");
+    }
+}

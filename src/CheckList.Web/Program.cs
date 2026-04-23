@@ -29,6 +29,7 @@ builder.Services.AddDbContext<CheckListDbContext>(options =>
 // Repositories
 builder.Services.AddScoped<ITemplateRepository, TemplateRepository>();
 builder.Services.AddScoped<ICheckRepository, CheckRepository>();
+builder.Services.AddScoped<ISharingRepository, SharingRepository>();
 
 // Blazor (requires Razor Pages for OIDC callbacks)
 builder.Services.AddRazorPages();
@@ -46,6 +47,8 @@ builder.Services.AddSwaggerGen();
 // Application services
 builder.Services.AddScoped<ICheckListApiClient, CheckListService>();
 builder.Services.AddScoped<IUserIdentity, UserIdentityService>();
+builder.Services.AddScoped<ISharingService, SharingService>();
+builder.Services.AddScoped<IEmailService, NoOpEmailService>();
 
 var app = builder.Build();
 

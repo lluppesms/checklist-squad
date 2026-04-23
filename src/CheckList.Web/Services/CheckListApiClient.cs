@@ -9,7 +9,8 @@ namespace CheckList.Web.Services;
 public class CheckListService(
     ITemplateRepository templateRepo,
     ICheckRepository checkRepo,
-    IHubContext<CheckListHub, ICheckListHubClient> hubContext) : ICheckListApiClient
+    IHubContext<CheckListHub, ICheckListHubClient> hubContext,
+    ISharingService sharingService) : ICheckListApiClient
 {
     private const string DefaultUserName = "System";
 
@@ -28,6 +29,13 @@ public class CheckListService(
     public async Task<CheckSetDto?> ActivateCheckSetAsync(int templateSetId, string ownerName, List<int>? selectedListIds = null, string? customName = null, string? ownerId = null)
     {
         var checkSet = await checkRepo.ActivateFromTemplateAsync(templateSetId, ownerName, selectedListIds, customName, ownerId);
+        
+        // Auto-share to partners if owner is specified
+        if (!string.IsNullOrEmpty(ownerId))
+        {
+            await sharingService.AutoShareNewCheckSetAsync(checkSet.SetId, ownerId);
+        }
+        
         await hubContext.Clients.All.CheckSetActivated(checkSet.SetId, checkSet.SetName);
         return checkSet.ToDto();
     }

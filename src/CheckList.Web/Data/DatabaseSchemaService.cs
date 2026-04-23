@@ -104,5 +104,80 @@ BEGIN
         CONSTRAINT [UQ_CheckSetShare_SetUser]  UNIQUE ([CheckSetId], [SharedWithUserId])
     );
 END
+
+-- =========================================================
+-- SharingInvite table (pending partnership invitations)
+-- =========================================================
+IF NOT EXISTS (
+    SELECT 1 FROM sys.tables
+    WHERE schema_id = SCHEMA_ID('dbo') AND name = 'SharingInvite'
+)
+BEGIN
+    CREATE TABLE [dbo].[SharingInvite]
+    (
+        [InviteId]         INT           IDENTITY(1,1) NOT NULL,
+        [InviteTokenHash]  NVARCHAR(128) NOT NULL,
+        [SenderUserId]     NVARCHAR(256) NOT NULL,
+        [RecipientEmail]   NVARCHAR(256) NOT NULL,
+        [Role]             NVARCHAR(50)  NOT NULL CONSTRAINT [DF_SharingInvite_Role]      DEFAULT (N'user'),
+        [Status]           NVARCHAR(50)  NOT NULL CONSTRAINT [DF_SharingInvite_Status]    DEFAULT (N'pending'),
+        [ExpiresAt]        DATETIME      NOT NULL,
+        [CreatedAt]        DATETIME      NOT NULL CONSTRAINT [DF_SharingInvite_CreatedAt] DEFAULT (GETDATE()),
+        [AcceptedByUserId] NVARCHAR(256) NULL,
+        [AcceptedAt]       DATETIME      NULL,
+        CONSTRAINT [PK_SharingInvite]             PRIMARY KEY CLUSTERED ([InviteId] ASC),
+        CONSTRAINT [FK_SharingInvite_Sender]      FOREIGN KEY ([SenderUserId])     REFERENCES [dbo].[AppUser] ([UserId]) ON DELETE CASCADE,
+        CONSTRAINT [FK_SharingInvite_AcceptedBy]  FOREIGN KEY ([AcceptedByUserId]) REFERENCES [dbo].[AppUser] ([UserId]) ON DELETE NO ACTION,
+        CONSTRAINT [UQ_SharingInvite_TokenHash]   UNIQUE ([InviteTokenHash])
+    );
+END
+
+-- =========================================================
+-- UserPartnership table (bidirectional partnership rows)
+-- Each partnership creates TWO rows: A→B and B→A
+-- =========================================================
+IF NOT EXISTS (
+    SELECT 1 FROM sys.tables
+    WHERE schema_id = SCHEMA_ID('dbo') AND name = 'UserPartnership'
+)
+BEGIN
+    CREATE TABLE [dbo].[UserPartnership]
+    (
+        [PartnershipId]        INT           IDENTITY(1,1) NOT NULL,
+        [UserId]               NVARCHAR(256) NOT NULL,
+        [PartnerUserId]        NVARCHAR(256) NOT NULL,
+        [Role]                 NVARCHAR(50)  NOT NULL CONSTRAINT [DF_UserPartnership_Role]            DEFAULT (N'user'),
+        [AutoShareEnabled]     BIT           NOT NULL CONSTRAINT [DF_UserPartnership_AutoShareEnabled] DEFAULT (1),
+        [CreatedFromInviteId]  INT           NULL,
+        [CreatedAt]            DATETIME      NOT NULL CONSTRAINT [DF_UserPartnership_CreatedAt]        DEFAULT (GETDATE()),
+        CONSTRAINT [PK_UserPartnership]              PRIMARY KEY CLUSTERED ([PartnershipId] ASC),
+        CONSTRAINT [FK_UserPartnership_User]         FOREIGN KEY ([UserId])              REFERENCES [dbo].[AppUser]      ([UserId])   ON DELETE CASCADE,
+        CONSTRAINT [FK_UserPartnership_Partner]      FOREIGN KEY ([PartnerUserId])       REFERENCES [dbo].[AppUser]      ([UserId])   ON DELETE NO ACTION,
+        CONSTRAINT [FK_UserPartnership_Invite]       FOREIGN KEY ([CreatedFromInviteId]) REFERENCES [dbo].[SharingInvite] ([InviteId]) ON DELETE NO ACTION,
+        CONSTRAINT [UQ_UserPartnership_UserPartner]  UNIQUE ([UserId], [PartnerUserId])
+    );
+END
+
+-- =========================================================
+-- PartnershipId column on CheckSetShare (provenance tracking)
+-- =========================================================
+IF NOT EXISTS (
+    SELECT 1 FROM sys.columns
+    WHERE object_id = OBJECT_ID(N'[dbo].[CheckSetShare]') AND name = N'PartnershipId'
+)
+BEGIN
+    ALTER TABLE [dbo].[CheckSetShare] ADD [PartnershipId] INT NULL;
+    
+    -- Add FK only if the column was just created (prevents duplicate FK on re-run)
+    IF NOT EXISTS (
+        SELECT 1 FROM sys.foreign_keys
+        WHERE object_id = OBJECT_ID(N'[dbo].[FK_CheckSetShare_Partnership]')
+    )
+    BEGIN
+        ALTER TABLE [dbo].[CheckSetShare]
+        ADD CONSTRAINT [FK_CheckSetShare_Partnership] 
+        FOREIGN KEY ([PartnershipId]) REFERENCES [dbo].[UserPartnership] ([PartnershipId]) ON DELETE NO ACTION;
+    END
+END
 ";
 }

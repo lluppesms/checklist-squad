@@ -15,6 +15,9 @@ public class CheckSetShare
     /// <summary>Role granted: "admin" (can edit templates) or "user" (can check off items).</summary>
     public string Role { get; set; } = "user";
 
+    /// <summary>Optional provenance: if this share was auto-created from a partnership.</summary>
+    public int? PartnershipId { get; set; }
+
     public DateTime CreateDateTime { get; set; }
 
     public string CreateUserName { get; set; } = "UNKNOWN";
@@ -22,4 +25,5 @@ public class CheckSetShare
     // Navigation
     public CheckSet CheckSet { get; set; } = null!;
     public AppUser SharedWithUser { get; set; } = null!;
+    public UserPartnership? Partnership { get; set; }
 }

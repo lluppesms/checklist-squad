@@ -1,12 +1,8 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.5.2.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "old-source", "old-source", "{EE8A8348-277A-1F43-D6BD-822AC401D14D}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CheckList.Core", "old-source\CheckList.Core\CheckList.Core.csproj", "{678270D1-4BA8-B1C1-EFB3-328A65257AF6}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{827E0CD3-B72D-47B6-A68D-7590B98EB39B}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CheckList.AppHost", "src\CheckList.AppHost\CheckList.AppHost.csproj", "{C06FB235-BB49-49D2-84E9-5812F4D0AC64}"
@@ -29,18 +25,6 @@ Global
 		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{678270D1-4BA8-B1C1-EFB3-328A65257AF6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{678270D1-4BA8-B1C1-EFB3-328A65257AF6}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{678270D1-4BA8-B1C1-EFB3-328A65257AF6}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{678270D1-4BA8-B1C1-EFB3-328A65257AF6}.Debug|x64.Build.0 = Debug|Any CPU
-		{678270D1-4BA8-B1C1-EFB3-328A65257AF6}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{678270D1-4BA8-B1C1-EFB3-328A65257AF6}.Debug|x86.Build.0 = Debug|Any CPU
-		{678270D1-4BA8-B1C1-EFB3-328A65257AF6}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{678270D1-4BA8-B1C1-EFB3-328A65257AF6}.Release|Any CPU.Build.0 = Release|Any CPU
-		{678270D1-4BA8-B1C1-EFB3-328A65257AF6}.Release|x64.ActiveCfg = Release|Any CPU
-		{678270D1-4BA8-B1C1-EFB3-328A65257AF6}.Release|x64.Build.0 = Release|Any CPU
-		{678270D1-4BA8-B1C1-EFB3-328A65257AF6}.Release|x86.ActiveCfg = Release|Any CPU
-		{678270D1-4BA8-B1C1-EFB3-328A65257AF6}.Release|x86.Build.0 = Release|Any CPU
 		{C06FB235-BB49-49D2-84E9-5812F4D0AC64}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{C06FB235-BB49-49D2-84E9-5812F4D0AC64}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C06FB235-BB49-49D2-84E9-5812F4D0AC64}.Debug|x64.ActiveCfg = Debug|Any CPU
@@ -100,7 +84,6 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{678270D1-4BA8-B1C1-EFB3-328A65257AF6} = {EE8A8348-277A-1F43-D6BD-822AC401D14D}
 		{C06FB235-BB49-49D2-84E9-5812F4D0AC64} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{E8B7E528-6422-4F8C-A4CE-FA1ECA43340E} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{4A562B6C-0D5C-46FB-9747-DF212CC0000F} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
