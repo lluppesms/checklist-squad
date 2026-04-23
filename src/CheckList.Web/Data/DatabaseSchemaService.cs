@@ -20,6 +20,18 @@ public static class DatabaseSchemaService
             await db.Database.ExecuteSqlRawAsync(SchemaUpdateSql);
             logger.LogInformation("Database schema updates applied successfully.");
         }
+        catch (Microsoft.Data.SqlClient.SqlException ex) when (ex.Number == 262 || ex.Number == 2760)
+        {
+            // Error 262 = CREATE TABLE/ALTER permission denied
+            // Error 2760 = schema does not exist
+            // In production the DACPAC handles DDL at deploy time, so the runtime
+            // identity intentionally lacks DDL permissions. If the schema is already
+            // up-to-date this code would have been a no-op anyway.
+            logger.LogWarning(
+                "Skipped startup schema migration — the runtime identity lacks DDL permissions. " +
+                "This is expected when the DACPAC has already been deployed. " +
+                "If tables are missing, deploy the DACPAC first. Detail: {Message}", ex.Message);
+        }
         catch (Exception ex)
         {
             logger.LogError(ex, "Failed to apply database schema updates. " +
