@@ -67,7 +67,10 @@ az pipelines variable-group create \
       EXISTING_SERVICEPLAN_NAME='' \
       EXISTING_SERVICEPLAN_RESOURCE_GROUP_NAME='' \
       EXISTING_SQLSERVER_NAME='' \
-      EXISTING_SQLSERVER_RESOURCE_GROUP_NAME=''
+      EXISTING_SQLSERVER_RESOURCE_GROUP_NAME='' \
+      AZUREAD_APP_TENANT_ID='yourEntraIdTenantId' \
+      AZUREAD_APP_CLIENT_ID='yourAppRegistrationClientId' \
+      AZUREAD_APP_DOMAIN='yourDomain.onmicrosoft.com'
 ```
 
 ### Variable Descriptions
@@ -89,3 +92,6 @@ az pipelines variable-group create \
 | `EXISTING_SERVICEPLAN_RESOURCE_GROUP_NAME` | (Optional) Resource group of existing App Service Plan | |
 | `EXISTING_SQLSERVER_NAME` | (Optional) Existing SQL Server name to reuse | |
 | `EXISTING_SQLSERVER_RESOURCE_GROUP_NAME` | (Optional) Resource group of existing SQL Server | |
+| `AZUREAD_APP_TENANT_ID` | Entra ID Tenant ID for app user authentication | `<GUID>` |
+| `AZUREAD_APP_CLIENT_ID` | App Registration client ID for user authentication (NOT the deploy SP) | `<GUID>` |
+| `AZUREAD_APP_DOMAIN` | Entra ID tenant domain | `myorg.onmicrosoft.com` |

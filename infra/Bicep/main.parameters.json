@@ -17,6 +17,9 @@
     "sqlAdminLoginUserId": { "value": "#{SQLADMIN_LOGIN_USERID}#" },
     "sqlAdminLoginUserSid": { "value": "#{SQLADMIN_LOGIN_USERSID}#" },
     "sqlAdminLoginTenantId": { "value": "#{SQLADMIN_LOGIN_TENANTID}#" },
-    "adminUserId": { "value": "#{KEYVAULT_OWNER_USERID}#" }
+    "adminUserId": { "value": "#{KEYVAULT_OWNER_USERID}#" },
+    "azureAdTenantId": { "value": "#{AZUREAD_APP_TENANT_ID}#" },
+    "azureAdClientId": { "value": "#{AZUREAD_APP_CLIENT_ID}#" },
+    "azureAdDomain": { "value": "#{AZUREAD_APP_DOMAIN}#" }
   }
 }
