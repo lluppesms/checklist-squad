@@ -66,7 +66,7 @@ else if (checkSet is not null)
                     <h4 class="list-name">@list.ListName</h4>
                 </div>
                 <div class="list-progress-mini">
-                    <span>@listCompleted/@listTotal</span>
+                    <span>@listCompleted/@listTotal — @(listTotal > 0 ? (int)Math.Round(100.0 * listCompleted / listTotal) : 0)%</span>
                 </div>
             </button>
 
@@ -90,7 +90,7 @@ else if (checkSet is not null)
                                     <h5 class="category-title">@category.CategoryText</h5>
                                 </div>
                                 <div class="category-progress-mini">
-                                    <span>@catCompleted/@catTotal</span>
+                                    <span>@catCompleted/@catTotal — @(catTotal > 0 ? (int)Math.Round(100.0 * catCompleted / catTotal) : 0)%</span>
                                 </div>
                             </button>
 

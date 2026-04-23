@@ -1,3 +1,5 @@
+using Microsoft.EntityFrameworkCore;
+
 namespace CheckList.Web.Data;
 
 /// <summary>
@@ -9,8 +11,8 @@ public static class DatabaseSchemaService
 {
     public static async Task ApplySchemaUpdatesAsync(IServiceProvider services, ILogger logger)
     {
-        using var scope = services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<CheckListDbContext>();
+        var factory = services.GetRequiredService<IDbContextFactory<CheckListDbContext>>();
+        await using var db = await factory.CreateDbContextAsync();
 
         try
         {

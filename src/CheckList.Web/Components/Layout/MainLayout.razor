@@ -1,5 +1,6 @@
 @inherits LayoutComponentBase
 @using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.EntityFrameworkCore
 @using CheckList.Web.Data
 @using CheckList.Web.Data.Entities
 
@@ -95,7 +96,7 @@
 
 @code {
     [Inject] private IUserIdentity UserIdentity { get; set; } = default!;
-    [Inject] private CheckListDbContext DbContext { get; set; } = default!;
+    [Inject] private IDbContextFactory<CheckListDbContext> DbFactory { get; set; } = default!;
     [CascadingParameter] private Task<AuthenticationState> AuthStateTask { get; set; } = default!;
 
     private bool menuOpen;
@@ -110,13 +111,14 @@
 
             if (UserIdentity.IsAuthenticated && !string.IsNullOrEmpty(UserIdentity.UserId))
             {
+                await using var db = await DbFactory.CreateDbContextAsync();
                 var now = DateTime.UtcNow;
-                var appUser = await DbContext.AppUsers.FindAsync(UserIdentity.UserId);
+                var appUser = await db.AppUsers.FindAsync(UserIdentity.UserId);
                 if (appUser is null)
-                    DbContext.AppUsers.Add(new AppUser { UserId = UserIdentity.UserId, DisplayName = UserIdentity.NickName ?? UserIdentity.UserId, Email = UserIdentity.Email, CreateDateTime = now, LastLoginDateTime = now });
+                    db.AppUsers.Add(new AppUser { UserId = UserIdentity.UserId, DisplayName = UserIdentity.NickName ?? UserIdentity.UserId, Email = UserIdentity.Email, CreateDateTime = now, LastLoginDateTime = now });
                 else
                     appUser.LastLoginDateTime = now;
-                await DbContext.SaveChangesAsync();
+                await db.SaveChangesAsync();
             }
         }
     }

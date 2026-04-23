@@ -48,6 +48,12 @@ public class SharingService(ISharingRepository sharingRepo, CheckListDbContext d
         // Validate invite
         if (invite.Status != "pending")
         {
+            // If this user already accepted this invite, treat as success (idempotent)
+            if (invite.AcceptedByUserId == acceptorUserId)
+            {
+                var sender = await db.AppUsers.FindAsync(invite.SenderUserId);
+                return new SharingInviteResult(true, null, sender?.DisplayName ?? "your partner");
+            }
             return new SharingInviteResult(false, "This invite has already been used or revoked.");
         }
 

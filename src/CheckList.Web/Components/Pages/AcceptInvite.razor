@@ -72,12 +72,17 @@
     [Inject] private NavigationManager Navigation { get; set; } = default!;
 
     private bool processing;
+    private bool hasProcessed;
     private SharingInviteResult? result;
 
     protected override async Task OnInitializedAsync()
     {
+        // Guard against Blazor Server prerender calling this twice
+        if (hasProcessed) return;
+
         if (UserIdentity.IsAuthenticated)
         {
+            hasProcessed = true;
             await ProcessInvite();
         }
     }

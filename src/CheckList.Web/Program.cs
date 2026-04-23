@@ -22,9 +22,12 @@ builder.Services.AddAuthorization(options =>
     options.FallbackPolicy = null; // Don't force auth globally — individual pages use [Authorize]
 });
 
-// EF Core
-builder.Services.AddDbContext<CheckListDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+// EF Core — AddDbContextFactory also registers CheckListDbContext as a scoped service,
+// so components that inject CheckListDbContext directly still work.
+builder.Services.AddDbContextFactory<CheckListDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
+           .ConfigureWarnings(w => w.Ignore(
+               Microsoft.EntityFrameworkCore.Diagnostics.SqlServerEventId.SavepointsDisabledBecauseOfMARS)));
 
 // Repositories
 builder.Services.AddScoped<ITemplateRepository, TemplateRepository>();
