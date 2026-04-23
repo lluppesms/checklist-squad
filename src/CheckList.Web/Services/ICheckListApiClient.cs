@@ -6,8 +6,9 @@ public interface ICheckListApiClient
 {
     Task<List<TemplateSetSummaryDto>> GetTemplatesAsync();
     Task<TemplateSetDto?> GetTemplateAsync(int setId);
-    Task<CheckSetDto?> ActivateCheckSetAsync(int templateSetId, string ownerName, List<int>? selectedListIds = null, string? customName = null);
+    Task<CheckSetDto?> ActivateCheckSetAsync(int templateSetId, string ownerName, List<int>? selectedListIds = null, string? customName = null, string? ownerId = null);
     Task<List<CheckSetSummaryDto>> GetActiveCheckSetsAsync();
+    Task<List<CheckSetSummaryDto>> GetActiveCheckSetsForUserAsync(string userId);
     Task<CheckSetDto?> GetCheckSetAsync(int setId);
     Task<CheckActionDto?> ToggleActionAsync(int actionId, string userName);
     Task DeleteCheckSetAsync(int setId);

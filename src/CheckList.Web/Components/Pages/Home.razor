@@ -1,4 +1,6 @@
 @page "/"
+@using Microsoft.AspNetCore.Components.Authorization
+@inject IUserIdentity UserIdentity
 
 <PageTitle>RigRoll</PageTitle>
 
@@ -21,59 +23,38 @@
         </p>
     </div>
 
-    @if (UserIdentity.HasNickName)
-    {
-        <div class="welcome-card">
-            <p class="welcome-text">
-                Welcome back, <strong>@UserIdentity.NickName</strong>! Ready to roll? 🚐
-            </p>
-        </div>
+    <AuthorizeView>
+        <Authorized>
+            <div class="welcome-card">
+                <p class="welcome-text">
+                    Welcome back, <strong>@UserIdentity.NickName</strong>! Ready to roll? 🚐
+                </p>
+            </div>
 
-        <div class="quick-links">
-            <a href="templates" class="quick-link-card">
-                <i class="bi bi-card-checklist"></i>
-                <div>
-                    <h5>The Blueprints</h5>
-                    <p>Choose your mission. Load a pro setup/teardown blueprint or build your own custom checklist.</p>
-                </div>
-            </a>
-            <a href="checklists" class="quick-link-card">
-                <i class="bi bi-clipboard-check"></i>
-                <div>
-                    <h5>The Active Mission</h5>
-                    <p>Jump back into your live lists. See what the crew has finished and what's left before it's time to relax.</p>
-                </div>
-            </a>
-        </div>
-    }
-    else if (checkedStorage)
-    {
-        <div class="welcome-card">
-            <p class="welcome-text">Enter your name above to get started! ⛺</p>
-        </div>
-    }
+            <div class="quick-links">
+                <a href="templates" class="quick-link-card">
+                    <i class="bi bi-card-checklist"></i>
+                    <div>
+                        <h5>The Blueprints</h5>
+                        <p>Choose your mission. Load a pro setup/teardown blueprint or build your own custom checklist.</p>
+                    </div>
+                </a>
+                <a href="checklists" class="quick-link-card">
+                    <i class="bi bi-clipboard-check"></i>
+                    <div>
+                        <h5>The Active Mission</h5>
+                        <p>Jump back into your live lists. See what the crew has finished and what's left before it's time to relax.</p>
+                    </div>
+                </a>
+            </div>
+        </Authorized>
+        <NotAuthorized>
+            <div class="welcome-card">
+                <p class="welcome-text">Sign in to access your checklists and collaborate with your crew! ⛺</p>
+                <a href="/account/login" class="btn btn-primary mt-2">
+                    <i class="bi bi-box-arrow-in-right"></i> Sign in with Microsoft
+                </a>
+            </div>
+        </NotAuthorized>
+    </AuthorizeView>
 </div>
-
-@code {
-    [Inject] private IUserIdentity UserIdentity { get; set; } = default!;
-    [Inject] private IJSRuntime JS { get; set; } = default!;
-
-    private bool checkedStorage;
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            if (!UserIdentity.HasNickName)
-            {
-                var saved = await JS.InvokeAsync<string?>("nicknameStorage.get");
-                if (!string.IsNullOrWhiteSpace(saved))
-                {
-                    UserIdentity.SetNickName(saved);
-                }
-            }
-            checkedStorage = true;
-            StateHasChanged();
-        }
-    }
-}

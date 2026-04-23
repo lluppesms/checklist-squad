@@ -26,6 +26,68 @@ public sealed class CheckRepositoryTests
         Assert.AreEqual(0, result.Count);
     }
 
+    // GetActiveSetsForUserAsync
+    [TestMethod]
+    public async Task GetActiveSetsForUserAsync_ReturnsOwnedSets()
+    {
+        var set = DbContextHelper.SeedCheckSet(_db, "My Set");
+        set.OwnerId = "user-abc";
+        _db.SaveChanges();
+
+        var result = await _repo.GetActiveSetsForUserAsync("user-abc");
+
+        Assert.AreEqual(1, result.Count);
+        Assert.AreEqual("My Set", result[0].SetName);
+    }
+
+    [TestMethod]
+    public async Task GetActiveSetsForUserAsync_DoesNotReturnOtherUserSets()
+    {
+        var set = DbContextHelper.SeedCheckSet(_db, "Their Set");
+        set.OwnerId = "user-other";
+        _db.SaveChanges();
+
+        var result = await _repo.GetActiveSetsForUserAsync("user-abc");
+
+        Assert.AreEqual(0, result.Count);
+    }
+
+    [TestMethod]
+    public async Task GetActiveSetsForUserAsync_ReturnsSharedSets()
+    {
+        var set = DbContextHelper.SeedCheckSet(_db, "Shared Set");
+        set.OwnerId = "user-owner";
+        _db.SaveChanges();
+
+        _db.AppUsers.Add(new AppUser
+        {
+            UserId = "user-guest",
+            DisplayName = "Guest",
+            CreateDateTime = DateTime.UtcNow,
+            LastLoginDateTime = DateTime.UtcNow
+        });
+        _db.CheckSetShares.Add(new CheckSetShare
+        {
+            CheckSetId = set.SetId,
+            SharedWithUserId = "user-guest",
+            Role = "user",
+            CreateDateTime = DateTime.UtcNow
+        });
+        _db.SaveChanges();
+
+        var result = await _repo.GetActiveSetsForUserAsync("user-guest");
+
+        Assert.AreEqual(1, result.Count);
+        Assert.AreEqual("Shared Set", result[0].SetName);
+    }
+
+    [TestMethod]
+    public async Task GetActiveSetsForUserAsync_ReturnsEmpty_WhenNoSets()
+    {
+        var result = await _repo.GetActiveSetsForUserAsync("user-abc");
+        Assert.AreEqual(0, result.Count);
+    }
+
     [TestMethod]
     public async Task GetAllActiveSetsAsync_ReturnsOnlyActiveSets()
     {
@@ -241,6 +303,26 @@ public sealed class CheckRepositoryTests
 
         var fromDb = await _db.CheckSets.FindAsync(result.SetId);
         Assert.IsNotNull(fromDb);
+    }
+
+    [TestMethod]
+    public async Task ActivateFromTemplateAsync_StoresOwnerId_WhenProvided()
+    {
+        var template = DbContextHelper.SeedTemplateSet(_db);
+
+        var result = await _repo.ActivateFromTemplateAsync(template.SetId, "Camper", null, null, "user-xyz");
+
+        Assert.AreEqual("user-xyz", result.OwnerId);
+    }
+
+    [TestMethod]
+    public async Task ActivateFromTemplateAsync_OwnerId_IsNull_WhenNotProvided()
+    {
+        var template = DbContextHelper.SeedTemplateSet(_db);
+
+        var result = await _repo.ActivateFromTemplateAsync(template.SetId, "Camper");
+
+        Assert.IsNull(result.OwnerId);
     }
 
     // DeleteSetAsync

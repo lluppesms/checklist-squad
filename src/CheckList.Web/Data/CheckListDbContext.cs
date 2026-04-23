@@ -12,6 +12,8 @@ public class CheckListDbContext : DbContext
     public DbSet<CheckListEntity> CheckLists => Set<CheckListEntity>();
     public DbSet<CheckCategory> CheckCategories => Set<CheckCategory>();
     public DbSet<CheckAction> CheckActions => Set<CheckAction>();
+    public DbSet<AppUser> AppUsers => Set<AppUser>();
+    public DbSet<CheckSetShare> CheckSetShares => Set<CheckSetShare>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -23,6 +25,7 @@ public class CheckListDbContext : DbContext
             e.Property(x => x.SetName).HasMaxLength(255).IsRequired();
             e.Property(x => x.SetDscr).HasMaxLength(1000).IsRequired();
             e.Property(x => x.OwnerName).HasMaxLength(256).IsRequired();
+            e.Property(x => x.OwnerId).HasMaxLength(256);
             e.Property(x => x.ActiveInd).HasMaxLength(1).IsRequired().HasDefaultValue("Y");
             e.Property(x => x.SortOrder).HasDefaultValue(50);
             e.Property(x => x.CreateDateTime).HasDefaultValueSql("GETDATE()");
@@ -87,6 +90,7 @@ public class CheckListDbContext : DbContext
             e.Property(x => x.SetName).HasMaxLength(255).IsRequired();
             e.Property(x => x.SetDscr).HasMaxLength(1000);
             e.Property(x => x.OwnerName).HasMaxLength(256).IsRequired();
+            e.Property(x => x.OwnerId).HasMaxLength(256);
             e.Property(x => x.ActiveInd).HasMaxLength(1).IsRequired().HasDefaultValue("Y");
             e.Property(x => x.SortOrder).HasDefaultValue(50);
             e.Property(x => x.CreateDateTime).HasDefaultValueSql("GETDATE()");
@@ -142,6 +146,32 @@ public class CheckListDbContext : DbContext
             e.Property(x => x.ChangeDateTime).HasDefaultValueSql("GETDATE()");
             e.Property(x => x.ChangeUserName).HasMaxLength(255).HasDefaultValue("UNKNOWN");
             e.HasOne(x => x.Category).WithMany(c => c.CheckActions).HasForeignKey(x => x.CategoryId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // AppUser
+        modelBuilder.Entity<AppUser>(e =>
+        {
+            e.ToTable("AppUser");
+            e.HasKey(x => x.UserId);
+            e.Property(x => x.UserId).HasMaxLength(256).IsRequired();
+            e.Property(x => x.DisplayName).HasMaxLength(256).IsRequired();
+            e.Property(x => x.Email).HasMaxLength(256);
+            e.Property(x => x.CreateDateTime).HasDefaultValueSql("GETDATE()");
+            e.Property(x => x.LastLoginDateTime).HasDefaultValueSql("GETDATE()");
+        });
+
+        // CheckSetShare
+        modelBuilder.Entity<CheckSetShare>(e =>
+        {
+            e.ToTable("CheckSetShare");
+            e.HasKey(x => x.ShareId);
+            e.Property(x => x.SharedWithUserId).HasMaxLength(256).IsRequired();
+            e.Property(x => x.Role).HasMaxLength(50).IsRequired().HasDefaultValue("user");
+            e.Property(x => x.CreateDateTime).HasDefaultValueSql("GETDATE()");
+            e.Property(x => x.CreateUserName).HasMaxLength(255).HasDefaultValue("UNKNOWN");
+            e.HasOne(x => x.CheckSet).WithMany(s => s.CheckSetShares).HasForeignKey(x => x.CheckSetId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.SharedWithUser).WithMany(u => u.CheckSetShares).HasForeignKey(x => x.SharedWithUserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(x => new { x.CheckSetId, x.SharedWithUserId }).IsUnique();
         });
     }
 }

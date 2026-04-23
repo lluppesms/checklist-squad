@@ -1,20 +1,26 @@
+@using Microsoft.AspNetCore.Components.Authorization
+
 <nav class="sidebar-nav" aria-label="Main navigation">
     <NavLink class="nav-item" href="" Match="NavLinkMatch.All" @onclick="NotifyNavigated">
         <i class="bi bi-house"></i>
         <span>Home</span>
     </NavLink>
-    <NavLink class="nav-item" href="templates" @onclick="NotifyNavigated">
-        <i class="bi bi-card-checklist"></i>
-        <span>Blueprints</span>
-    </NavLink>
-    <NavLink class="nav-item" href="checklists" @onclick="NotifyNavigated">
-        <i class="bi bi-clipboard-check"></i>
-        <span>Active Missions</span>
-    </NavLink>
-    <NavLink class="nav-item" href="import-export" @onclick="NotifyNavigated">
-        <i class="bi bi-arrow-down-up"></i>
-        <span>Import/Export</span>
-    </NavLink>
+    <AuthorizeView>
+        <Authorized>
+            <NavLink class="nav-item" href="templates" @onclick="NotifyNavigated">
+                <i class="bi bi-card-checklist"></i>
+                <span>Blueprints</span>
+            </NavLink>
+            <NavLink class="nav-item" href="checklists" @onclick="NotifyNavigated">
+                <i class="bi bi-clipboard-check"></i>
+                <span>Active Missions</span>
+            </NavLink>
+            <NavLink class="nav-item" href="import-export" @onclick="NotifyNavigated">
+                <i class="bi bi-arrow-down-up"></i>
+                <span>Import/Export</span>
+            </NavLink>
+        </Authorized>
+    </AuthorizeView>
     <NavLink class="nav-item" href="about" @onclick="NotifyNavigated">
         <i class="bi bi-info-circle"></i>
         <span>About</span>

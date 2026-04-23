@@ -25,9 +25,9 @@ public class CheckListService(
         return set?.ToDto();
     }
 
-    public async Task<CheckSetDto?> ActivateCheckSetAsync(int templateSetId, string ownerName, List<int>? selectedListIds = null, string? customName = null)
+    public async Task<CheckSetDto?> ActivateCheckSetAsync(int templateSetId, string ownerName, List<int>? selectedListIds = null, string? customName = null, string? ownerId = null)
     {
-        var checkSet = await checkRepo.ActivateFromTemplateAsync(templateSetId, ownerName, selectedListIds, customName);
+        var checkSet = await checkRepo.ActivateFromTemplateAsync(templateSetId, ownerName, selectedListIds, customName, ownerId);
         await hubContext.Clients.All.CheckSetActivated(checkSet.SetId, checkSet.SetName);
         return checkSet.ToDto();
     }
@@ -35,6 +35,12 @@ public class CheckListService(
     public async Task<List<CheckSetSummaryDto>> GetActiveCheckSetsAsync()
     {
         var sets = await checkRepo.GetAllActiveSetsAsync();
+        return sets.Select(s => s.ToSummaryDto()).ToList();
+    }
+
+    public async Task<List<CheckSetSummaryDto>> GetActiveCheckSetsForUserAsync(string userId)
+    {
+        var sets = await checkRepo.GetActiveSetsForUserAsync(userId);
         return sets.Select(s => s.ToSummaryDto()).ToList();
     }
 

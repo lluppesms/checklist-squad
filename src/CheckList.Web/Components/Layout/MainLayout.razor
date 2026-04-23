@@ -1,4 +1,5 @@
 @inherits LayoutComponentBase
+@using Microsoft.AspNetCore.Components.Authorization
 
 <div class="app-layout">
     <!-- Top Navbar -->
@@ -11,12 +12,26 @@
                 <i class="bi bi-clipboard-check me-2"></i>RigRoll
             </a>
             <div class="ms-auto d-flex align-items-center gap-2">
-                @if (UserIdentity.HasNickName)
-                {
-                    <span class="user-badge d-none d-sm-inline">
-                        <i class="bi bi-person-fill"></i> @UserIdentity.NickName
-                    </span>
-                }
+                <AuthorizeView>
+                    <Authorized>
+                        @if (UserIdentity.HasNickName)
+                        {
+                            <span class="user-badge d-none d-sm-inline">
+                                <i class="bi bi-person-fill"></i> @UserIdentity.NickName
+                            </span>
+                        }
+                        <form method="post" action="/account/logout" class="d-inline">
+                            <button type="submit" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-box-arrow-right"></i> <span class="d-none d-sm-inline">Sign out</span>
+                            </button>
+                        </form>
+                    </Authorized>
+                    <NotAuthorized>
+                        <a href="/account/login" class="btn btn-sm btn-primary">
+                            <i class="bi bi-box-arrow-in-right"></i> <span class="d-none d-sm-inline">Sign in</span>
+                        </a>
+                    </NotAuthorized>
+                </AuthorizeView>
             </div>
         </div>
     </nav>
@@ -51,22 +66,24 @@
             <i class="bi bi-house"></i>
             <span>Home</span>
         </NavLink>
-        <NavLink class="bottom-nav-item" href="templates">
-            <i class="bi bi-card-checklist"></i>
-            <span>Blueprints</span>
-        </NavLink>
-        <NavLink class="bottom-nav-item" href="checklists">
-            <i class="bi bi-clipboard-check"></i>
-            <span>Checklists</span>
-        </NavLink>
+        <AuthorizeView>
+            <Authorized>
+                <NavLink class="bottom-nav-item" href="templates">
+                    <i class="bi bi-card-checklist"></i>
+                    <span>Blueprints</span>
+                </NavLink>
+                <NavLink class="bottom-nav-item" href="checklists">
+                    <i class="bi bi-clipboard-check"></i>
+                    <span>Checklists</span>
+                </NavLink>
+            </Authorized>
+        </AuthorizeView>
         <NavLink class="bottom-nav-item" href="about">
             <i class="bi bi-info-circle"></i>
             <span>About</span>
         </NavLink>
     </nav>
 </div>
-
-<NicknamePrompt />
 
 <div id="blazor-error-ui" data-nosnippet>
     An unhandled error has occurred.
@@ -76,8 +93,19 @@
 
 @code {
     [Inject] private IUserIdentity UserIdentity { get; set; } = default!;
+    [CascadingParameter] private Task<AuthenticationState> AuthStateTask { get; set; } = default!;
 
     private bool menuOpen;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateTask;
+        var user = authState.User;
+        if (user.Identity?.IsAuthenticated == true)
+        {
+            UserIdentity.SetAuthenticatedUser(user);
+        }
+    }
 
     private void ToggleMenu() => menuOpen = !menuOpen;
 }

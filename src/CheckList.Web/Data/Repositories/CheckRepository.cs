@@ -2,6 +2,19 @@ namespace CheckList.Web.Data.Repositories;
 
 public class CheckRepository(CheckListDbContext db) : ICheckRepository
 {
+    public async Task<List<CheckSet>> GetActiveSetsForUserAsync(string userId)
+    {
+        return await db.CheckSets
+            .Where(s => s.ActiveInd == "Y" &&
+                        (s.OwnerId == userId ||
+                         s.CheckSetShares.Any(sh => sh.SharedWithUserId == userId)))
+            .OrderByDescending(s => s.CreateDateTime)
+            .ThenBy(s => s.SortOrder)
+            .ThenBy(s => s.SetName)
+            .AsNoTracking()
+            .ToListAsync();
+    }
+
     public async Task<List<CheckSet>> GetAllActiveSetsAsync()
     {
         return await db.CheckSets
@@ -41,7 +54,7 @@ public class CheckRepository(CheckListDbContext db) : ICheckRepository
         return action;
     }
 
-    public async Task<CheckSet> ActivateFromTemplateAsync(int templateSetId, string ownerName, List<int>? selectedListIds = null, string? customName = null)
+    public async Task<CheckSet> ActivateFromTemplateAsync(int templateSetId, string ownerName, List<int>? selectedListIds = null, string? customName = null, string? ownerId = null)
     {
         var template = await db.TemplateSets
             .Include(s => s.TemplateLists.OrderBy(l => l.SortOrder))
@@ -71,6 +84,7 @@ public class CheckRepository(CheckListDbContext db) : ICheckRepository
             SetName = setName,
             SetDscr = template.SetDscr,
             OwnerName = ownerName,
+            OwnerId = ownerId,
             ActiveInd = "Y",
             SortOrder = template.SortOrder,
             CreateDateTime = now,
