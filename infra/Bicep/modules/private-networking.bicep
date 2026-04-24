@@ -1,6 +1,6 @@
 // --------------------------------------------------------------------------------
 // Private Networking Module
-// Creates the VNet with subnets and Private DNS Zones for SQL and Key Vault
+// Creates the VNet with subnets and Private DNS Zone for SQL
 // Only deployed when enablePrivateNetworking is true (controlled by caller)
 // --------------------------------------------------------------------------------
 
@@ -68,20 +68,6 @@ module sqlDnsZoneModule 'br/public:avm/res/network/private-dns-zone:0.8.1' = {
   }
 }
 
-module kvDnsZoneModule 'br/public:avm/res/network/private-dns-zone:0.8.1' = {
-  name: 'kvDnsZone${deploymentSuffix}'
-  params: {
-    name: 'privatelink.vaultcore.azure.net'
-    tags: tags
-    virtualNetworkLinks: [
-      {
-        virtualNetworkResourceId: vnetModule.outputs.resourceId
-        registrationEnabled: false
-      }
-    ]
-  }
-}
-
 // --------------------------------------------------------------------------------
 // Outputs
 // --------------------------------------------------------------------------------
@@ -89,4 +75,3 @@ output vnetResourceId string = vnetModule.outputs.resourceId
 output webAppSubnetResourceId string = vnetModule.outputs.subnetResourceIds[0]  // snet-webapp
 output peSubnetResourceId string = vnetModule.outputs.subnetResourceIds[1]      // snet-pe
 output sqlDnsZoneResourceId string = sqlDnsZoneModule.outputs.resourceId
-output kvDnsZoneResourceId string = kvDnsZoneModule.outputs.resourceId

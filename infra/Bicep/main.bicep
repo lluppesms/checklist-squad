@@ -54,9 +54,6 @@ param sqlAdminLoginUserSid string = ''
 @description('The AAD admin login tenant ID.')
 param sqlAdminLoginTenantId string = ''
 
-@description('The Key Vault owner user ID (object ID).')
-param adminUserId string = ''
-
 @description('The Entra ID (Azure AD) tenant ID for app authentication.')
 param azureAdTenantId string = ''
 
@@ -111,7 +108,7 @@ module resourceNames 'resourcenames.bicep' = {
 // --------------------------------------------------------------------------------
 // Monitoring: Log Analytics + Application Insights
 // --------------------------------------------------------------------------------
-module monitoringModule 'monitoring.bicep' = {
+module monitoringModule 'modules/monitoring.bicep' = {
   name: 'monitoring${deploymentSuffix}'
   params: {
     logAnalyticsName: resourceNames.outputs.logAnalyticsWorkspaceName
@@ -125,7 +122,7 @@ module monitoringModule 'monitoring.bicep' = {
 // --------------------------------------------------------------------------------
 // Networking: VNet + Private DNS Zones — conditional on enablePrivateNetworking
 // --------------------------------------------------------------------------------
-module networkingModule 'private-networking.bicep' = if (enablePrivateNetworking) {
+module networkingModule 'modules/private-networking.bicep' = if (enablePrivateNetworking) {
   name: 'networking${deploymentSuffix}'
   params: {
     vnetName: resourceNames.outputs.vnetName
@@ -141,7 +138,7 @@ module networkingModule 'private-networking.bicep' = if (enablePrivateNetworking
 // --------------------------------------------------------------------------------
 // Database: Azure SQL Server + Database — new deployment
 // --------------------------------------------------------------------------------
-module sqlServerModule 'sql-server.bicep' = if (deployNewServer && !websiteOnly) {
+module sqlServerModule 'modules/sql-server.bicep' = if (deployNewServer && !websiteOnly) {
   name: 'sqlServer${deploymentSuffix}'
   params: {
     sqlServerName: resourceNames.outputs.sqlServerName
@@ -164,7 +161,7 @@ module sqlServerModule 'sql-server.bicep' = if (deployNewServer && !websiteOnly)
 // --------------------------------------------------------------------------------
 // Web App: App Service Plan + Web App
 // --------------------------------------------------------------------------------
-module webAppModule 'web-app.bicep' = {
+module webAppModule 'modules/web-app.bicep' = {
   name: 'webapp${deploymentSuffix}'
   params: {
     webSiteName: resourceNames.outputs.webSiteName
@@ -189,30 +186,10 @@ module webAppModule 'web-app.bicep' = {
 }
 
 // --------------------------------------------------------------------------------
-// Security: Key Vault with RBAC
-// --------------------------------------------------------------------------------
-module keyVaultModule 'key-vault.bicep' = {
-  name: 'keyvault${deploymentSuffix}'
-  params: {
-    keyVaultName: resourceNames.outputs.keyVaultName
-    location: location
-    tags: commonTags
-    deploymentSuffix: deploymentSuffix
-    logAnalyticsResourceId: monitoringModule.outputs.logAnalyticsResourceId
-    enablePrivateNetworking: enablePrivateNetworking
-    peSubnetResourceId: enablePrivateNetworking ? networkingModule!.outputs.peSubnetResourceId : ''
-    kvDnsZoneResourceId: enablePrivateNetworking ? networkingModule!.outputs.kvDnsZoneResourceId : ''
-    webAppPrincipalId: webAppModule.outputs.systemAssignedMIPrincipalId
-    adminUserId: adminUserId
-  }
-}
-
-// --------------------------------------------------------------------------------
 // Outputs
 // --------------------------------------------------------------------------------
 output webAppName string = webAppModule.outputs.webAppName
 output webAppHostName string = webAppModule.outputs.webAppHostName
 output webAppUrl string = 'https://${webAppModule.outputs.webAppDefaultHostname}'
 output sqlServerFqdn string = !websiteOnly ? '${sqlServerNameResolved}.database.windows.net' : ''
-output keyVaultName string = keyVaultModule.outputs.keyVaultName
 output appInsightsName string = monitoringModule.outputs.appInsightsName

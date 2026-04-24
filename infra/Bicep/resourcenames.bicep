@@ -26,7 +26,4 @@ output webSiteAppInsightsName string     = '${webSiteName}-${resourceAbbreviatio
 output sqlServerName string              = toLower('${sanitizedAppNameInstance}${resourceAbbreviations.sqlAbbreviation}${sanitizedEnvironment}')
 output userAssignedIdentityName string   = toLower('${sanitizedAppNameInstance}-app-${resourceAbbreviations.managedIdentity}')
 
-// Key Vaults can only be 24 characters long
-output keyVaultName string               = take('${sanitizedAppNameInstance}${resourceAbbreviations.keyVaultAbbreviation}${sanitizedEnvironment}', 24)
-
 output vnetName string                   = toLower('${sanitizedAppInstanceNameWithDashes}-${sanitizedEnvironment}-vnet')

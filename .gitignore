@@ -21,3 +21,5 @@ src/CheckList.Tests/TestResults/
 src/CheckList.PlaywrightTests/TestResults/
 src/CheckList.Database/bin/Debug/CheckList.Database.dacpac
 src/CheckList.Database/CheckList.Database.dbmdl
+infra/Bicep/main.json
+infra/Bicep/main.parameters.json
