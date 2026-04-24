@@ -42,7 +42,20 @@ steps:
         scriptType: 'pscore'
         scriptLocation: 'inlineScript'
         inlineScript: |
-          $agentIp = (Invoke-RestMethod -Uri "https://api.ipify.org" -TimeoutSec 10).Trim()
+          # Retry ipify with backoff to avoid rate limiting
+          $agentIp = $null
+          foreach ($attempt in 1..5) {
+            try {
+              $agentIp = (Invoke-RestMethod -Uri "https://api.ipify.org" -TimeoutSec 10).Trim()
+              break
+            } catch {
+              Write-Host "Attempt $attempt to get public IP failed: $_"
+              if ($attempt -lt 5) { Start-Sleep -Seconds (2 * $attempt) }
+            }
+          }
+          if (-not $agentIp) {
+            $agentIp = (Invoke-RestMethod -Uri "https://ifconfig.me/ip" -TimeoutSec 10).Trim()
+          }
           Write-Host "Agent public IP: $agentIp"
           Write-Host "##vso[task.setvariable variable=agentPublicIp]$agentIp"
           $serverName = "${{ parameters.fqdnServerName }}" -replace '\.database\.windows\.net$', ''

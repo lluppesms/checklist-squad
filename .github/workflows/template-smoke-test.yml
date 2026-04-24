@@ -1,5 +1,5 @@
 # ------------------------------------------------------------------------------------------------------------------------
-# Reusable Workflow: Run a Playwright Test
+# Reusable Workflow: Run .NET Playwright Smoke Tests
 # ------------------------------------------------------------------------------------------------------------------------
 name: z_template_smoke_test
 run-name: Run Smoke Test
@@ -9,97 +9,70 @@ on:
       envCode:
         required: true
         type: string
-      testPath:
-        required: true
-        type: string
-      testConfig:
+      testProject:
         required: false
         type: string
-        default: 'playwright.config.cicd.ts'
-      testType:
-        required: false
-        type: string
-        default: 'ui'
+        default: ''
 
 # ------------------------------------------------------------------------------------------------------------------------
 jobs:
   run-smoke-test:
-    timeout-minutes: 60
+    timeout-minutes: 30
     runs-on: ubuntu-latest
     permissions:
-      contents: write
-      issues: read
+      contents: read
       checks: write
-      pull-requests: read
     env:
       envCode: ${{ inputs.envCode }}
-      configFileName: 'playwright.config.cicd.ts'
-      PLAYWRIGHT_TEST_PATH: './${{ inputs.testPath }}'
-      PLAYWRIGHT_RESULTS_PATH: 'test-results-${{ inputs.testType }}/playwright-results-${{ inputs.testType }}-${{ inputs.envCode }}.xml'
-      PLAYWRIGHT_BASE_URL: 'https://${{ vars.APP_NAME }}-${{ inputs.envCode }}.azurewebsites.net'
+      APP_URL: 'https://${{ vars.APP_NAME }}-${{ inputs.envCode }}.azurewebsites.net'
 
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Display Variables
       run: |-
         echo "envCode=${{ inputs.envCode }}"
-        echo "PLAYWRIGHT_TEST_PATH=${{ env.PLAYWRIGHT_TEST_PATH }}"
-        echo "PLAYWRIGHT_RESULTS_PATH=${{ env.PLAYWRIGHT_RESULTS_PATH }}"
-        echo "PLAYWRIGHT_BASE_URL=${{ env.PLAYWRIGHT_BASE_URL }}"
-        echo "---------------------------------"
-        echo "##[group]All Variables:"
-        echo "Environments:"
-        echo '${{ toJSON(env) }}'
-        echo "Variables:"
-        echo '${{ toJSON(vars) }}'
-        echo "Secrets:"
-        echo '${{ toJSON(secrets) }}'
-        echo "##[endgroup]"
-        echo "---------------------------------"
-        echo "##[group]Directory of ${{ github.workspace  }}"
-        tree -R ${{ github.workspace  }}
-        echo "##[endgroup]"
+        echo "APP_URL=${{ env.APP_URL }}"
+        echo "testProject=${{ inputs.testProject }}"
       continue-on-error: true
 
-    - name: Replace Tokens in Config
-      uses: qetza/replacetokens-action@v1
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
       with:
-        sources: './${{ env.configFileName }}; !local/ => ${{ env.configFileName }}'
-        variables: '[${{ toJSON(env) }},${{ toJSON(vars) }},${{ toJSON(secrets) }}]'
+        dotnet-version: '10.0.x'
 
-    - name: Display Config File
-      run: |-
-        echo "##[group]Contents of ${{ env.configFileName }}"
-        cat ${{ env.configFileName }}
-        echo "##[endgroup]"
-      continue-on-error: true
+    - name: Restore Test Project
+      run: dotnet restore ${{ inputs.testProject }}
 
-    - name: Install Node
-      uses: actions/setup-node@v4
-      with:
-        node-version: lts/*
+    - name: Build Test Project
+      run: dotnet build ${{ inputs.testProject }} --no-restore
 
-    - name: Install Dependencies
-      run: npm ci
+    - name: Install Playwright Browsers
+      run: |
+        pwsh -Command "& { dotnet tool install --global Microsoft.Playwright.CLI 2>/dev/null; exit 0 }"
+        pwsh ${{ github.workspace }}/src/CheckList.PlaywrightTests/bin/Debug/net10.0/playwright.ps1 install --with-deps chromium
 
-    - name: Install Playwright
-      run: npx playwright install --with-deps
-
-    - name: Run Playwright Tests
-      run: npx playwright test ${{ inputs.testPath }} --config ${{ env.configFileName }}
-
-    - name: Save Test Results Artifact
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: playwright-report
-        path: playwright-report/
-        retention-days: 30
+    - name: Run Playwright Smoke Tests
+      run: |
+        dotnet test ${{ inputs.testProject }} \
+          --no-build \
+          --logger "trx;LogFileName=smoke-test-results.trx" \
+          --results-directory TestResults
+      env:
+        APP_URL: ${{ env.APP_URL }}
 
     - name: Publish Test Results
       uses: EnricoMi/publish-unit-test-result-action@v2
+      if: always()
       with:
-        files: |
-          **/${{ env.PLAYWRIGHT_RESULTS_PATH }}
+        files: TestResults/**/*.trx
+        check_name: 'Smoke Tests (${{ inputs.envCode }})'
       continue-on-error: true
+
+    - name: Upload Test Results Artifact
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: smoke-test-results-${{ inputs.envCode }}
+        path: TestResults/
+        retention-days: 30

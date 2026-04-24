@@ -112,14 +112,28 @@ jobs:
         id: add-firewall
         shell: pwsh
         run: |
-          $runnerIp = (Invoke-RestMethod -Uri "https://api.ipify.org" -TimeoutSec 10).Trim()
+          # Retry ipify with backoff to avoid rate limiting
+          $runnerIp = $null
+          foreach ($attempt in 1..5) {
+            try {
+              $runnerIp = (Invoke-RestMethod -Uri "https://api.ipify.org" -TimeoutSec 10).Trim()
+              break
+            } catch {
+              Write-Host "Attempt $attempt to get public IP failed: $_"
+              if ($attempt -lt 5) { Start-Sleep -Seconds (2 * $attempt) }
+            }
+          }
+          if (-not $runnerIp) {
+            # Fallback to alternative service
+            $runnerIp = (Invoke-RestMethod -Uri "https://ifconfig.me/ip" -TimeoutSec 10).Trim()
+          }
           echo "runner-ip=$runnerIp" >> $env:GITHUB_OUTPUT
           Write-Host "Runner public IP: $runnerIp"
           Write-Host "Adding temporary firewall rule to server ${{ env.sqlServerName }} in ${{ env.resourceGroupName }}..."
           az sql server firewall-rule create `
             --resource-group "${{ env.resourceGroupName }}" `
             --server "${{ env.sqlServerName }}" `
-            --name "gha-runner-temp-${{ github.run_id }}" `
+            --name "gha-runner-temp-${{ github.run_id }}-sql-${{ github.job }}" `
             --start-ip-address $runnerIp `
             --end-ip-address $runnerIp
           Write-Host "Firewall rule added successfully."
@@ -227,7 +241,7 @@ jobs:
           az sql server firewall-rule delete `
             --resource-group "${{ env.resourceGroupName }}" `
             --server "${{ env.sqlServerName }}" `
-            --name "gha-runner-temp-${{ github.run_id }}"
+            --name "gha-runner-temp-${{ github.run_id }}-sql-${{ github.job }}"
           Write-Host "Firewall rule removed successfully."
 
       - name: Azure Logout
