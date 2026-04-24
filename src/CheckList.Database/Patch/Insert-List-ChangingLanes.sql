@@ -26,14 +26,9 @@ DECLARE
 	@Category2DId int,
 	@Category2EId int
 
-
 SET	@Set2Name = 'Changing Lanes Check Lists'
 
-DELETE FROM [CheckList].[TemplateAction] Where CategoryId IN (Select tl.ListId From TemplateSet ts INNER JOIN TemplateList tl on ts.SetId = tl.SetId INNER JOIN TemplateCategory tc on tc.ListId = tl.ListId Where SetName = @Set2Name)
-DELETE FROM [CheckList].[TemplateCategory] Where ListId IN (Select tl.ListId From TemplateSet ts INNER JOIN TemplateList tl on ts.SetId = tl.SetId Where SetName = @Set2Name)
-DELETE FROM [CheckList].[TemplateList] Where SetId IN (Select SetId From TemplateSet ts Where SetName = @Set2Name)
 DELETE FROM [CheckList].[TemplateSet] Where SetName = @Set2Name
-
 
 Insert into [CheckList].[TemplateSet](SetName, SetDscr, OwnerName) Values (@Set2Name, '', @OwnerName)
 	SET @Set2Id = SCOPE_IDENTITY()

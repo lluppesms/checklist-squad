@@ -20,9 +20,6 @@ DECLARE
 
 SET @Set1Name = 'Lyle''s Check Lists'
 
-DELETE FROM [CheckList].[TemplateAction] Where CategoryId IN (Select tl.ListId From TemplateSet ts INNER JOIN TemplateList tl on ts.SetId = tl.SetId INNER JOIN TemplateCategory tc on tc.ListId = tl.ListId Where SetName = @Set1Name)
-DELETE FROM [CheckList].[TemplateCategory] Where ListId IN (Select tl.ListId From TemplateSet ts INNER JOIN TemplateList tl on ts.SetId = tl.SetId Where SetName = @Set1Name)
-DELETE FROM [CheckList].[TemplateList] Where SetId IN (Select SetId From TemplateSet ts Where SetName = @Set1Name)
 DELETE FROM [CheckList].[TemplateSet] Where SetName = @Set1Name
 
 Insert into [CheckList].[TemplateSet] (SetName, SetDscr, OwnerName) Values (@Set1Name, '', 'LLUPPES')

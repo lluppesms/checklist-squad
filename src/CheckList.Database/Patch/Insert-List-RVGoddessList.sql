@@ -12,9 +12,6 @@ DECLARE
 
 SET	@Set3Name = 'RV Goddess - Setup Tasks'
 
-DELETE FROM [CheckList].[TemplateAction] Where CategoryId IN (Select tl.ListId From TemplateSet ts INNER JOIN TemplateList tl on ts.SetId = tl.SetId INNER JOIN TemplateCategory tc on tc.ListId = tl.ListId Where SetName = @Set3Name)
-DELETE FROM [CheckList].[TemplateCategory] Where ListId IN (Select tl.ListId From TemplateSet ts INNER JOIN TemplateList tl on ts.SetId = tl.SetId Where SetName = @Set3Name)
-DELETE FROM [CheckList].[TemplateList] Where SetId IN (Select SetId From TemplateSet ts Where SetName = @Set3Name)
 DELETE FROM [CheckList].[TemplateSet] Where SetName = @Set3Name
 
 Insert into [CheckList].[TemplateSet](SetName, SetDscr, OwnerName) Values (@Set3Name, '', @OwnerName)

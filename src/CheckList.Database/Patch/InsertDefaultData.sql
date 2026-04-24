@@ -11,14 +11,14 @@ BEGIN
   PRINT 'Removing previous set of data...'
   DELETE FROM [CheckList].[CheckSet]
   DELETE FROM [CheckList].[TemplateSet]
-  DBCC CHECKIDENT('CheckAction', RESEED, 1)
-  DBCC CHECKIDENT('CheckCategory', RESEED, 1)
-  DBCC CHECKIDENT('CheckList', RESEED, 1)
-  DBCC CHECKIDENT('CheckSet', RESEED, 1)
-  DBCC CHECKIDENT('TemplateAction', RESEED, 1)
-  DBCC CHECKIDENT('TemplateCategory', RESEED, 1)
-  DBCC CHECKIDENT('TemplateList', RESEED, 1)
-  DBCC CHECKIDENT('TemplateSet', RESEED, 1)
+  DBCC CHECKIDENT('[CheckList].[CheckAction]', RESEED, 0)
+  DBCC CHECKIDENT('[CheckList].[CheckCategory]', RESEED, 0)
+  DBCC CHECKIDENT('[CheckList].[CheckList]', RESEED, 0)
+  DBCC CHECKIDENT('[CheckList].[CheckSet]', RESEED, 0)
+  DBCC CHECKIDENT('[CheckList].[TemplateAction]', RESEED, 0)
+  DBCC CHECKIDENT('[CheckList].[TemplateCategory]', RESEED, 0)
+  DBCC CHECKIDENT('[CheckList].[TemplateList]', RESEED, 0)
+  DBCC CHECKIDENT('[CheckList].[TemplateSet]', RESEED, 0)
 END
 
 -- ----------------------------------------------------------------------
@@ -42,9 +42,9 @@ DECLARE
 
 SET @Set1Name = 'Lyle''s Check Lists'
 
-DELETE FROM [CheckList].[TemplateAction] Where CategoryId IN (Select tl.ListId From TemplateSet ts INNER JOIN TemplateList tl on ts.SetId = tl.SetId INNER JOIN TemplateCategory tc on tc.ListId = tl.ListId Where SetName = @Set1Name)
-DELETE FROM [CheckList].[TemplateCategory] Where ListId IN (Select tl.ListId From TemplateSet ts INNER JOIN TemplateList tl on ts.SetId = tl.SetId Where SetName = @Set1Name)
-DELETE FROM [CheckList].[TemplateList] Where SetId IN (Select SetId From TemplateSet ts Where SetName = @Set1Name)
+DELETE FROM [CheckList].[TemplateAction] Where CategoryId IN (Select tl.ListId FROM [CheckList].[TemplateSet] ts INNER JOIN [CheckList].[TemplateList] tl on ts.SetId = tl.SetId INNER JOIN [CheckList].[TemplateCategory] tc on tc.ListId = tl.ListId Where SetName = @Set1Name)
+DELETE FROM [CheckList].[TemplateCategory] Where ListId IN (Select tl.ListId FROM [CheckList].[TemplateSet] ts INNER JOIN [CheckList].[TemplateList] tl on ts.SetId = tl.SetId Where SetName = @Set1Name)
+DELETE FROM [CheckList].[TemplateList] Where SetId IN (Select SetId FROM [CheckList].[TemplateSet] ts Where SetName = @Set1Name)
 DELETE FROM [CheckList].[TemplateSet] Where SetName = @Set1Name
 
 Insert into [CheckList].[TemplateSet] (SetName, SetDscr, OwnerName) Values (@Set1Name, '', 'LLUPPES')
@@ -281,9 +281,9 @@ DECLARE
 
 SET	@Set2Name = 'Changing Lanes Check Lists'
 
-DELETE FROM [CheckList].[TemplateAction] Where CategoryId IN (Select tl.ListId From TemplateSet ts INNER JOIN TemplateList tl on ts.SetId = tl.SetId INNER JOIN TemplateCategory tc on tc.ListId = tl.ListId Where SetName = @Set2Name)
-DELETE FROM [CheckList].[TemplateCategory] Where ListId IN (Select tl.ListId From TemplateSet ts INNER JOIN TemplateList tl on ts.SetId = tl.SetId Where SetName = @Set2Name)
-DELETE FROM [CheckList].[TemplateList] Where SetId IN (Select SetId From TemplateSet ts Where SetName = @Set2Name)
+DELETE FROM [CheckList].[TemplateAction] Where CategoryId IN (Select tl.ListId FROM [CheckList].[TemplateSet] ts INNER JOIN [CheckList].[TemplateList] tl on ts.SetId = tl.SetId INNER JOIN [CheckList].[TemplateCategory] tc on tc.ListId = tl.ListId Where SetName = @Set2Name)
+DELETE FROM [CheckList].[TemplateCategory] Where ListId IN (Select tl.ListId FROM [CheckList].[TemplateSet] ts INNER JOIN [CheckList].[TemplateList] tl on ts.SetId = tl.SetId Where SetName = @Set2Name)
+DELETE FROM [CheckList].[TemplateList] Where SetId IN (Select SetId FROM [CheckList].[TemplateSet] ts Where SetName = @Set2Name)
 DELETE FROM [CheckList].[TemplateSet] Where SetName = @Set2Name
 
 
@@ -416,9 +416,9 @@ DECLARE
 
 SET	@Set3Name = 'RV Goddess - Setup Tasks'
 
-DELETE FROM [CheckList].[TemplateAction] Where CategoryId IN (Select tl.ListId From TemplateSet ts INNER JOIN TemplateList tl on ts.SetId = tl.SetId INNER JOIN TemplateCategory tc on tc.ListId = tl.ListId Where SetName = @Set3Name)
-DELETE FROM [CheckList].[TemplateCategory] Where ListId IN (Select tl.ListId From TemplateSet ts INNER JOIN TemplateList tl on ts.SetId = tl.SetId Where SetName = @Set3Name)
-DELETE FROM [CheckList].[TemplateList] Where SetId IN (Select SetId From TemplateSet ts Where SetName = @Set3Name)
+DELETE FROM [CheckList].[TemplateAction] Where CategoryId IN (Select tl.ListId FROM [CheckList].[TemplateSet] ts INNER JOIN [CheckList].[TemplateList] tl on ts.SetId = tl.SetId INNER JOIN [CheckList].[TemplateCategory] tc on tc.ListId = tl.ListId Where SetName = @Set3Name)
+DELETE FROM [CheckList].[TemplateCategory] Where ListId IN (Select tl.ListId FROM [CheckList].[TemplateSet] ts INNER JOIN [CheckList].[TemplateList] tl on ts.SetId = tl.SetId Where SetName = @Set3Name)
+DELETE FROM [CheckList].[TemplateList] Where SetId IN (Select SetId FROM [CheckList].[TemplateSet] ts Where SetName = @Set3Name)
 DELETE FROM [CheckList].[TemplateSet] Where SetName = @Set3Name
 
 Insert into [CheckList].[TemplateSet](SetName, SetDscr, OwnerName) Values (@Set3Name, '', @OwnerName)
@@ -487,4 +487,3 @@ From [CheckList].[TemplateSet] s
 INNER JOIN [CheckList].[TemplateList] l on s.SetId = l.SetId
 INNER JOIN [CheckList].[TemplateCategory] c on c.ListId = l.ListId
 INNER JOIN [CheckList].[TemplateAction] a on a.CategoryId = c.CategoryId
-Where s.SetName = @Set1Name
