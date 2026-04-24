@@ -109,7 +109,7 @@ runs:
           echo "${PROJECT}_testDirectory=$TEST_DIR" >> $GITHUB_OUTPUT
           echo "${PROJECT}_testProjectName=$TEST_PROJECT" >> $GITHUB_OUTPUT
           echo "${PROJECT}_playwrightDirectory=$PLAYWRIGHT_DIR" >> $GITHUB_OUTPUT
-          echo "${PROJECT}_playwrightProjectName=$PLAYWRIGHT_PROJECT" >> $GITHUB
+          echo "${PROJECT}_playwrightProjectName=$PLAYWRIGHT_PROJECT" >> $GITHUB_OUTPUT
           
           echo "   shortName: $SHORT_NAME"
           echo "   rootDirectory: $ROOT_DIR"
