@@ -49,6 +49,11 @@ gh secret set KEYVAULT_OWNER_USERID -b 'yourAccountSid'
 gh secret set AZUREAD_APP_TENANT_ID -b '<yourEntraIdTenantId>'
 gh secret set AZUREAD_APP_CLIENT_ID -b '<yourAppRegistrationClientId>'
 gh secret set AZUREAD_APP_DOMAIN -b '<yourDomain.onmicrosoft.com>'
+
+gh variable set ENABLE_PRIVATE_NETWORKING -b 'true'
+gh variable set VNET_ADDRESS_PREFIX -b '10.0.0.0/16'
+gh variable set WEBAPP_SUBNET_PREFIX -b '10.0.1.0/24'
+gh variable set PE_SUBNET_PREFIX -b '10.0.2.0/24'
 ```
 
 ---
@@ -83,6 +88,10 @@ gh secret set AZUREAD_APP_DOMAIN -b '<yourDomain.onmicrosoft.com>'
 | `APP_NAME` | Application name used as the basis for all Azure resource names | `checklist` |
 | `RESOURCE_GROUP_LOCATION` | Azure region for resource deployment | `centralus` |
 | `INSTANCE_NUMBER` | Numeric instance suffix to make resource names unique | `1` |
+| `ENABLE_PRIVATE_NETWORKING` | Enable VNet, private endpoints, and disable public access on backend services | `true` |
+| `VNET_ADDRESS_PREFIX` | Address space for the Virtual Network | `10.0.0.0/16` |
+| `WEBAPP_SUBNET_PREFIX` | Subnet prefix for Web App VNet integration | `10.0.1.0/24` |
+| `PE_SUBNET_PREFIX` | Subnet prefix for private endpoints (SQL, Key Vault, etc.) | `10.0.2.0/24` |
 
 ---
 
