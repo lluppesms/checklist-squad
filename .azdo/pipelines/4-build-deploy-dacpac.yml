@@ -41,6 +41,10 @@ parameters:
       - SVC_PRINCIPAL
       - LOCAL_SQL
     default: SVC_PRINCIPAL
+  - name: addFirewallRule
+    displayName: Temporarily add agent IP to SQL firewall?
+    type: boolean
+    default: true
 
 # ----------------------------------------------------------------------------------------------------
 variables:
@@ -59,6 +63,7 @@ stages:
       appSolutionName: $(sqlAppSolutionName)
       appProjectName: $(sqlAppProjectName)
       loginAccountType: ${{ parameters.loginAccountType }}
+      addFirewallRule: ${{ parameters.addFirewallRule }}
 
 - ${{ if eq(parameters.deployToEnvironment, 'DEV-QA-PROD') }}:
   - template: stages/dacpac-deploy-stages.yml
@@ -68,3 +73,4 @@ stages:
       appSolutionName: $(sqlAppSolutionName)
       appProjectName: $(sqlAppProjectName)
       loginAccountType: ${{ parameters.loginAccountType }}
+      addFirewallRule: ${{ parameters.addFirewallRule }}

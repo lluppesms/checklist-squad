@@ -34,6 +34,9 @@ parameters:
   default: ''
 - name: loginAccountType
   default: 'SVC_PRINCIPAL'
+- name: addFirewallRule
+  type: boolean
+  default: true
 
 # ------------------------------------------------------------------------------------------------------------------------
 jobs:
@@ -52,6 +55,8 @@ jobs:
       value: $(SQL_SERVER_NAME_PREFIX)$(INSTANCE_NUMBER)sql${{ lower(parameters.environmentName) }}
     - name: fqdnServerName
       value: $(sqlServerName).database.windows.net
+    - name: resourceGroupName
+      value: $(RESOURCE_GROUP_PREFIX)-$(INSTANCE_NUMBER)-${{ lower(parameters.environmentName) }}
 
     # Bring in environment common variable file
     - template: ../vars/var-service-connections.yml
@@ -109,6 +114,7 @@ jobs:
         sqlDatabaseName: $(SQL_DATABASE_NAME)
         sqlAdminUser: $(SQLADMIN_LOGIN_USERID)
         sqlAdminPassword: $(SQL_DATABASE_PASSWORD)
+        addFirewallRule: ${{ parameters.addFirewallRule }}
   - ${{ if eq(variables.environmentNameUpper, 'QA') }}:
     - template: ../steps/dacpac-deploy-steps.yml
       parameters:
@@ -120,6 +126,7 @@ jobs:
         sqlDatabaseName: $(SQL_DATABASE_NAME)
         sqlAdminUser: $(SQLADMIN_LOGIN_USERID)
         sqlAdminPassword: $(SQL_DATABASE_PASSWORD)
+        addFirewallRule: ${{ parameters.addFirewallRule }}
   - ${{ if eq(variables.environmentNameUpper, 'PROD') }}:
     - template: ../steps/dacpac-deploy-steps.yml
       parameters:
@@ -131,3 +138,4 @@ jobs:
         sqlDatabaseName: $(SQL_DATABASE_NAME)
         sqlAdminUser: $(SQLADMIN_LOGIN_USERID)
         sqlAdminPassword: $(SQL_DATABASE_PASSWORD)
+        addFirewallRule: ${{ parameters.addFirewallRule }}

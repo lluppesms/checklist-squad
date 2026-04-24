@@ -42,6 +42,11 @@ on:
         type: string
         default: ''
         description: 'Comma-separated SQLCMD variables (e.g. "AppIdentityName=myapp-dev")'
+      addFirewallRule:
+        required: false
+        type: boolean
+        default: true
+        description: 'Temporarily add the runner IP to the SQL Server firewall before running the script, then remove it.'
 
 # ------------------------------------------------------------------------------------------------------------------------
 jobs:
@@ -53,6 +58,7 @@ jobs:
     env:
       sqlServerName: '${{ vars.SQL_SERVER_NAME_PREFIX }}${{vars.INSTANCE_NUMBER}}sql${{ inputs.envCode }}'
       fqdnServerName: '${{ vars.SQL_SERVER_NAME_PREFIX }}${{vars.INSTANCE_NUMBER}}sql${{ inputs.envCode }}.database.windows.net'
+      resourceGroupName: ${{ vars.RESOURCE_GROUP_NAME || format('{0}-{1}-{2}', vars.RESOURCE_GROUP_PREFIX, inputs.envCode, vars.INSTANCE_NUMBER) }}
     permissions:
       id-token: write
     steps:
@@ -99,6 +105,24 @@ jobs:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      # Temporarily add the runner's public IP to the SQL Server firewall
+      - name: Add Runner IP to SQL Firewall
+        if: inputs.addFirewallRule
+        id: add-firewall
+        shell: pwsh
+        run: |
+          $runnerIp = (Invoke-RestMethod -Uri "https://api.ipify.org" -TimeoutSec 10).Trim()
+          echo "runner-ip=$runnerIp" >> $env:GITHUB_OUTPUT
+          Write-Host "Runner public IP: $runnerIp"
+          Write-Host "Adding temporary firewall rule to server ${{ env.sqlServerName }} in ${{ env.resourceGroupName }}..."
+          az sql server firewall-rule create `
+            --resource-group "${{ env.resourceGroupName }}" `
+            --server "${{ env.sqlServerName }}" `
+            --name "gha-runner-temp-${{ github.run_id }}" `
+            --start-ip-address $runnerIp `
+            --end-ip-address $runnerIp
+          Write-Host "Firewall rule added successfully."
 
       # ------------------------------------------------------------------------------------------------------------------------
       # Run SQL Script with Local SQL User/Password
@@ -193,6 +217,19 @@ jobs:
             -CopyResourceGroupName "${{ inputs.resourceGroupName }}" `
             -CopyServerName "${{ env.sqlServerName }}" `
             -CopyDatabaseName "${{ inputs.databaseCopyName }}"
+
+      # Always remove the temporary firewall rule, even if the script fails
+      - name: Remove Runner IP from SQL Firewall
+        if: always() && inputs.addFirewallRule && steps.add-firewall.outcome == 'success'
+        shell: pwsh
+        run: |
+          Write-Host "Removing temporary firewall rule from server ${{ env.sqlServerName }}..."
+          az sql server firewall-rule delete `
+            --resource-group "${{ env.resourceGroupName }}" `
+            --server "${{ env.sqlServerName }}" `
+            --name "gha-runner-temp-${{ github.run_id }}" `
+            --yes
+          Write-Host "Firewall rule removed successfully."
 
       - name: Azure Logout
         if: always()
