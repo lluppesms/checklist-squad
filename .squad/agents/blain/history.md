@@ -11,6 +11,29 @@
 
 <!-- Append new learnings below. Each entry is something lasting about the project. -->
 
+### 2026-04-24: Phase 1 — AVM Migration (Replace Local Bicep Modules)
+- **Replaced all 6 local Bicep modules** with Azure Verified Modules (AVM) from the public Bicep registry
+- **AVM module versions used:**
+  - `br/public:avm/res/operational-insights/workspace:0.15.0` — Log Analytics
+  - `br/public:avm/res/insights/component:0.7.1` — App Insights
+  - `br/public:avm/res/sql/server:0.21.1` — SQL Server (includes databases, firewallRules, auditSettings as child params)
+  - `br/public:avm/res/web/serverfarm:0.7.0` — App Service Plan
+  - `br/public:avm/res/web/site:0.22.0` — Web App (uses `configs` array with discriminated union for appsettings/logs)
+  - `br/public:avm/res/key-vault/vault:0.13.3` — Key Vault (RBAC mode, role assignments, secrets, diagnostics)
+- **Removed Azure SignalR Service entirely** — App uses in-process `AddSignalR()`, external SignalR was provisioned but never consumed. Removed module, KV secret, app setting, output.
+- **Key Vault switched to RBAC** — `enableRbacAuthorization: true` (AVM default). Web app managed identity gets `Key Vault Secrets User` role (4633458b-17de-408a-b874-0445c86b69e6). Admin user gets `Key Vault Administrator` (00482a5a-887f-4fb3-b363-3b7fe8e74483). Access policies dropped.
+- **B1 minimum SKU** — Dropped F1 from allowed values per decision.
+- **Existing-resource-reuse patterns preserved** — Conditional `deployNewServer` / `deployNewPlan` flags. Existing resources referenced via `existing` keyword. Connection string computed from known names (no module output dependency for existing servers).
+- **AVM module key differences from hand-rolled modules:**
+  - Key Vault: `enableVaultForDeployment` not `enabledForDeployment`; `enableVaultForTemplateDeployment` not `enabledForTemplateDeployment`
+  - Web/Site: App settings via `configs` array (discriminated union with `name: 'appsettings'`), not `appSettingsKeyValuePairs`; `applicationInsightResourceId` auto-wires App Insights
+  - Web/Serverfarm: `skuName` not `sku.name`; `kind: 'linux'` sets `reserved: true` automatically
+  - SQL/Server: `databases` array includes `availabilityZone: -1`, `sku` object; `auditSettings` is top-level param; `administrators` type has required fields (azureADOnlyAuthentication, login, principalType, sid)
+  - Operational-Insights: `dailyQuotaGb` is string type (not int)
+- **Files changed:** `main.bicep` (rewritten), `resourcenames.bicep` (SignalR output removed), `bicepconfig.json` (created)
+- **Files deleted:** 6 module files + 5 module directories under `infra/Bicep/modules/`
+- **Build status:** `az bicep build` passes with zero errors. Warnings are all non-blocking (BCP081 API type availability, hardcoded URL patterns carried from original code)
+
 ### 2026-04-22: SQL Database Schema Restructure from [dbo] to [CheckList]
 - **Restructured entire SQL Database Project** to use custom `[CheckList]` schema instead of default `[dbo]`
 - **Migration approach:** Created parallel `CheckList/` folder structure alongside existing `dbo/` folder (dbo files left for reference/rollback)

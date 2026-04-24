@@ -24,7 +24,6 @@ output webSiteName string                = webSiteName
 output webSiteAppServicePlanName string  = '${webSiteName}-${resourceAbbreviations.appServicePlanSuffix}'
 output webSiteAppInsightsName string     = '${webSiteName}-${resourceAbbreviations.appInsightsSuffix}'
 output sqlServerName string              = toLower('${sanitizedAppNameInstance}${resourceAbbreviations.sqlAbbreviation}${sanitizedEnvironment}')
-output signalRServiceName string         = toLower('${sanitizedAppInstanceNameWithDashes}-${resourceAbbreviations.signalRSuffix}-${sanitizedEnvironment}')
 output userAssignedIdentityName string   = toLower('${sanitizedAppNameInstance}-app-${resourceAbbreviations.managedIdentity}')
 
 // Key Vaults can only be 24 characters long
