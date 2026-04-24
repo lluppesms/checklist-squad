@@ -70,7 +70,11 @@ az pipelines variable-group create \
       EXISTING_SQLSERVER_RESOURCE_GROUP_NAME='' \
       AZUREAD_APP_TENANT_ID='yourEntraIdTenantId' \
       AZUREAD_APP_CLIENT_ID='yourAppRegistrationClientId' \
-      AZUREAD_APP_DOMAIN='yourDomain.onmicrosoft.com'
+      AZUREAD_APP_DOMAIN='yourDomain.onmicrosoft.com' \
+      ENABLE_PRIVATE_NETWORKING='true' \
+      VNET_ADDRESS_PREFIX='10.0.0.0/16' \
+      WEBAPP_SUBNET_PREFIX='10.0.1.0/24' \
+      PE_SUBNET_PREFIX='10.0.2.0/24'
 ```
 
 ### Variable Descriptions
@@ -95,3 +99,7 @@ az pipelines variable-group create \
 | `AZUREAD_APP_TENANT_ID` | Entra ID Tenant ID for app user authentication | `<GUID>` |
 | `AZUREAD_APP_CLIENT_ID` | App Registration client ID for user authentication (NOT the deploy SP) | `<GUID>` |
 | `AZUREAD_APP_DOMAIN` | Entra ID tenant domain | `myorg.onmicrosoft.com` |
+| `ENABLE_PRIVATE_NETWORKING` | Enable VNet, private endpoints, and disable public access on backend services | `true` |
+| `VNET_ADDRESS_PREFIX` | Address space for the Virtual Network | `10.0.0.0/16` |
+| `WEBAPP_SUBNET_PREFIX` | Subnet prefix for Web App VNet integration | `10.0.1.0/24` |
+| `PE_SUBNET_PREFIX` | Subnet prefix for private endpoints (SQL, Key Vault, etc.) | `10.0.2.0/24` |
