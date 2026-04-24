@@ -23,3 +23,7 @@ param adminUserId = '#{KEYVAULT_OWNER_USERID}#'
 param azureAdTenantId = '#{AZUREAD_APP_TENANT_ID}#'
 param azureAdClientId = '#{AZUREAD_APP_CLIENT_ID}#'
 param azureAdDomain = '#{AZUREAD_APP_DOMAIN}#'
+param vnetAddressPrefix = '#{VNET_ADDRESS_PREFIX}#'
+param webAppSubnetPrefix = '#{WEBAPP_SUBNET_PREFIX}#'
+param privateEndpointSubnetPrefix = '#{PE_SUBNET_PREFIX}#'
+param enablePrivateNetworking = #{ENABLE_PRIVATE_NETWORKING}#

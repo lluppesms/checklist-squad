@@ -28,3 +28,5 @@ output userAssignedIdentityName string   = toLower('${sanitizedAppNameInstance}-
 
 // Key Vaults can only be 24 characters long
 output keyVaultName string               = take('${sanitizedAppNameInstance}${resourceAbbreviations.keyVaultAbbreviation}${sanitizedEnvironment}', 24)
+
+output vnetName string                   = toLower('${sanitizedAppInstanceNameWithDashes}-${sanitizedEnvironment}-vnet')

@@ -66,6 +66,18 @@ param azureAdClientId string = ''
 @description('The Entra ID (Azure AD) tenant domain for app authentication (e.g. myorg.onmicrosoft.com).')
 param azureAdDomain string = ''
 
+@description('Address space for the VNet (used when enablePrivateNetworking is true).')
+param vnetAddressPrefix string = '10.0.0.0/16'
+
+@description('Subnet prefix for Web App VNet integration.')
+param webAppSubnetPrefix string = '10.0.1.0/24'
+
+@description('Subnet prefix for private endpoints.')
+param privateEndpointSubnetPrefix string = '10.0.2.0/24'
+
+@description('Enable private networking (VNet, private endpoints, disable public access on backend services).')
+param enablePrivateNetworking bool = true
+
 // calculated variables disguised as parameters
 param runDateTime string = utcNow()
 
@@ -133,6 +145,63 @@ module appInsightsModule 'br/public:avm/res/insights/component:0.7.1' = {
 }
 
 // --------------------------------------------------------------------------------
+// Networking: Virtual Network (AVM) — conditional on enablePrivateNetworking
+// --------------------------------------------------------------------------------
+module vnetModule 'br/public:avm/res/network/virtual-network:0.8.1' = if (enablePrivateNetworking) {
+  name: 'vnet${deploymentSuffix}'
+  params: {
+    name: resourceNames.outputs.vnetName
+    location: location
+    tags: commonTags
+    addressPrefixes: [
+      vnetAddressPrefix
+    ]
+    subnets: [
+      {
+        name: 'snet-webapp'
+        addressPrefix: webAppSubnetPrefix
+        delegation: 'Microsoft.Web/serverFarms'
+      }
+      {
+        name: 'snet-pe'
+        addressPrefix: privateEndpointSubnetPrefix
+      }
+    ]
+  }
+}
+
+// --------------------------------------------------------------------------------
+// Private DNS Zones (AVM) — conditional on enablePrivateNetworking
+// --------------------------------------------------------------------------------
+module sqlDnsZoneModule 'br/public:avm/res/network/private-dns-zone:0.8.1' = if (enablePrivateNetworking) {
+  name: 'sqlDnsZone${deploymentSuffix}'
+  params: {
+    name: 'privatelink.database.windows.net'
+    tags: commonTags
+    virtualNetworkLinks: [
+      {
+        virtualNetworkResourceId: vnetModule!.outputs.resourceId
+        registrationEnabled: false
+      }
+    ]
+  }
+}
+
+module kvDnsZoneModule 'br/public:avm/res/network/private-dns-zone:0.8.1' = if (enablePrivateNetworking) {
+  name: 'kvDnsZone${deploymentSuffix}'
+  params: {
+    name: 'privatelink.vaultcore.azure.net'
+    tags: commonTags
+    virtualNetworkLinks: [
+      {
+        virtualNetworkResourceId: vnetModule!.outputs.resourceId
+        registrationEnabled: false
+      }
+    ]
+  }
+}
+
+// --------------------------------------------------------------------------------
 // Database: Azure SQL Server + Database (AVM) — new deployment
 // --------------------------------------------------------------------------------
 module sqlServerModule 'br/public:avm/res/sql/server:0.21.1' = if (deployNewServer && !websiteOnly) {
@@ -142,7 +211,7 @@ module sqlServerModule 'br/public:avm/res/sql/server:0.21.1' = if (deployNewServ
     location: location
     tags: union(commonTags, { TemplateFile: '~sqlserver.bicep', SecurityControl: 'Ignore' })
     minimalTlsVersion: '1.2'
-    publicNetworkAccess: 'Enabled'
+    publicNetworkAccess: enablePrivateNetworking ? 'Disabled' : 'Enabled'
     administrators: sqlAdminLoginUserId != '' ? {
       azureADOnlyAuthentication: true
       login: sqlAdminLoginUserId
@@ -171,13 +240,26 @@ module sqlServerModule 'br/public:avm/res/sql/server:0.21.1' = if (deployNewServ
         ]
       }
     ]
-    firewallRules: [
+    firewallRules: enablePrivateNetworking ? [] : [
       {
         name: 'AllowAllWindowsAzureIps'
         startIpAddress: '0.0.0.0'
         endIpAddress: '0.0.0.0'
       }
     ]
+    privateEndpoints: enablePrivateNetworking ? [
+      {
+        service: 'sqlServer'
+        subnetResourceId: vnetModule!.outputs.subnetResourceIds[1] // snet-pe
+        privateDnsZoneGroup: {
+          privateDnsZoneGroupConfigs: [
+            {
+              privateDnsZoneResourceId: sqlDnsZoneModule!.outputs.resourceId
+            }
+          ]
+        }
+      }
+    ] : []
     auditSettings: {
       state: 'Enabled'
       retentionDays: 7
@@ -228,6 +310,7 @@ module webAppModule 'br/public:avm/res/web/site:0.22.0' = {
     location: location
     tags: commonTags
     serverFarmResourceId: appServicePlanResourceId
+    virtualNetworkSubnetResourceId: enablePrivateNetworking ? vnetModule!.outputs.subnetResourceIds[0] : '' // snet-webapp
     managedIdentities: {
       systemAssigned: true
     }
@@ -245,7 +328,7 @@ module webAppModule 'br/public:avm/res/web/site:0.22.0' = {
       {
         name: 'appsettings'
         applicationInsightResourceId: appInsightsModule.outputs.resourceId
-        properties: {
+        properties: union({
           ApplicationInsightsAgent_EXTENSION_VERSION: '~3'
           ASPNETCORE_ENVIRONMENT: environmentCode == 'prod' ? 'Production' : 'Development'
           ConnectionStrings__DefaultConnection: webAppConnectionString
@@ -255,7 +338,9 @@ module webAppModule 'br/public:avm/res/web/site:0.22.0' = {
           AzureAd__Domain: azureAdDomain
           AzureAd__CallbackPath: '/signin-oidc'
           AzureAd__SignedOutCallbackPath: '/signout-callback-oidc'
-        }
+        }, enablePrivateNetworking ? {
+          WEBSITE_VNET_ROUTE_ALL: '1'
+        } : {})
       }
       {
         name: 'logs'
@@ -306,11 +391,24 @@ module keyVaultModule 'br/public:avm/res/key-vault/vault:0.13.3' = {
     softDeleteRetentionInDays: 7
     enableVaultForDeployment: true
     enableVaultForTemplateDeployment: true
-    publicNetworkAccess: 'Enabled'
+    publicNetworkAccess: enablePrivateNetworking ? 'Disabled' : 'Enabled'
     networkAcls: {
-      defaultAction: 'Allow'
+      defaultAction: enablePrivateNetworking ? 'Deny' : 'Allow'
       bypass: 'AzureServices'
     }
+    privateEndpoints: enablePrivateNetworking ? [
+      {
+        service: 'vault'
+        subnetResourceId: vnetModule!.outputs.subnetResourceIds[1] // snet-pe
+        privateDnsZoneGroup: {
+          privateDnsZoneGroupConfigs: [
+            {
+              privateDnsZoneResourceId: kvDnsZoneModule!.outputs.resourceId
+            }
+          ]
+        }
+      }
+    ] : []
     secrets: !websiteOnly ? [
       {
         name: 'SqlConnectionString'
