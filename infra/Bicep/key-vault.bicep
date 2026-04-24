@@ -34,12 +34,6 @@ param webAppPrincipalId string
 @description('Object ID of the admin user (gets Key Vault Administrator role). Empty to skip.')
 param adminUserId string = ''
 
-@description('Array of secrets to store in the Key Vault.')
-param secrets array = []
-
-@description('Deploy only website infrastructure (controls whether secrets are stored).')
-param websiteOnly bool = false
-
 // --------------------------------------------------------------------------------
 // Key Vault with RBAC (AVM)
 // --------------------------------------------------------------------------------
@@ -72,7 +66,6 @@ module keyVaultModule 'br/public:avm/res/key-vault/vault:0.13.3' = {
         }
       }
     ] : []
-    secrets: !websiteOnly ? secrets : []
     roleAssignments: union(
       [
         {

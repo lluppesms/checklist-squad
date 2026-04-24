@@ -204,13 +204,6 @@ module keyVaultModule 'key-vault.bicep' = {
     kvDnsZoneResourceId: enablePrivateNetworking ? networkingModule!.outputs.kvDnsZoneResourceId : ''
     webAppPrincipalId: webAppModule.outputs.systemAssignedMIPrincipalId
     adminUserId: adminUserId
-    secrets: !websiteOnly ? [
-      {
-        name: 'SqlConnectionString'
-        value: webAppConnectionString
-      }
-    ] : []
-    websiteOnly: websiteOnly
   }
 }
 
