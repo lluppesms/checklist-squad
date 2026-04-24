@@ -145,59 +145,18 @@ module appInsightsModule 'br/public:avm/res/insights/component:0.7.1' = {
 }
 
 // --------------------------------------------------------------------------------
-// Networking: Virtual Network (AVM) — conditional on enablePrivateNetworking
+// Networking: VNet + Private DNS Zones — conditional on enablePrivateNetworking
 // --------------------------------------------------------------------------------
-module vnetModule 'br/public:avm/res/network/virtual-network:0.8.1' = if (enablePrivateNetworking) {
-  name: 'vnet${deploymentSuffix}'
+module networkingModule 'private-networking.bicep' = if (enablePrivateNetworking) {
+  name: 'networking${deploymentSuffix}'
   params: {
-    name: resourceNames.outputs.vnetName
+    vnetName: resourceNames.outputs.vnetName
     location: location
     tags: commonTags
-    addressPrefixes: [
-      vnetAddressPrefix
-    ]
-    subnets: [
-      {
-        name: 'snet-webapp'
-        addressPrefix: webAppSubnetPrefix
-        delegation: 'Microsoft.Web/serverFarms'
-      }
-      {
-        name: 'snet-pe'
-        addressPrefix: privateEndpointSubnetPrefix
-      }
-    ]
-  }
-}
-
-// --------------------------------------------------------------------------------
-// Private DNS Zones (AVM) — conditional on enablePrivateNetworking
-// --------------------------------------------------------------------------------
-module sqlDnsZoneModule 'br/public:avm/res/network/private-dns-zone:0.8.1' = if (enablePrivateNetworking) {
-  name: 'sqlDnsZone${deploymentSuffix}'
-  params: {
-    name: 'privatelink.database.windows.net'
-    tags: commonTags
-    virtualNetworkLinks: [
-      {
-        virtualNetworkResourceId: vnetModule!.outputs.resourceId
-        registrationEnabled: false
-      }
-    ]
-  }
-}
-
-module kvDnsZoneModule 'br/public:avm/res/network/private-dns-zone:0.8.1' = if (enablePrivateNetworking) {
-  name: 'kvDnsZone${deploymentSuffix}'
-  params: {
-    name: 'privatelink.vaultcore.azure.net'
-    tags: commonTags
-    virtualNetworkLinks: [
-      {
-        virtualNetworkResourceId: vnetModule!.outputs.resourceId
-        registrationEnabled: false
-      }
-    ]
+    vnetAddressPrefix: vnetAddressPrefix
+    webAppSubnetPrefix: webAppSubnetPrefix
+    privateEndpointSubnetPrefix: privateEndpointSubnetPrefix
+    deploymentSuffix: deploymentSuffix
   }
 }
 
@@ -250,11 +209,11 @@ module sqlServerModule 'br/public:avm/res/sql/server:0.21.1' = if (deployNewServ
     privateEndpoints: enablePrivateNetworking ? [
       {
         service: 'sqlServer'
-        subnetResourceId: vnetModule!.outputs.subnetResourceIds[1] // snet-pe
+        subnetResourceId: networkingModule!.outputs.peSubnetResourceId
         privateDnsZoneGroup: {
           privateDnsZoneGroupConfigs: [
             {
-              privateDnsZoneResourceId: sqlDnsZoneModule!.outputs.resourceId
+              privateDnsZoneResourceId: networkingModule!.outputs.sqlDnsZoneResourceId
             }
           ]
         }
@@ -310,7 +269,7 @@ module webAppModule 'br/public:avm/res/web/site:0.22.0' = {
     location: location
     tags: commonTags
     serverFarmResourceId: appServicePlanResourceId
-    virtualNetworkSubnetResourceId: enablePrivateNetworking ? vnetModule!.outputs.subnetResourceIds[0] : '' // snet-webapp
+    virtualNetworkSubnetResourceId: enablePrivateNetworking ? networkingModule!.outputs.webAppSubnetResourceId : '' // snet-webapp
     managedIdentities: {
       systemAssigned: true
     }
@@ -399,11 +358,11 @@ module keyVaultModule 'br/public:avm/res/key-vault/vault:0.13.3' = {
     privateEndpoints: enablePrivateNetworking ? [
       {
         service: 'vault'
-        subnetResourceId: vnetModule!.outputs.subnetResourceIds[1] // snet-pe
+        subnetResourceId: networkingModule!.outputs.peSubnetResourceId
         privateDnsZoneGroup: {
           privateDnsZoneGroupConfigs: [
             {
-              privateDnsZoneResourceId: kvDnsZoneModule!.outputs.resourceId
+              privateDnsZoneResourceId: networkingModule!.outputs.kvDnsZoneResourceId
             }
           ]
         }
