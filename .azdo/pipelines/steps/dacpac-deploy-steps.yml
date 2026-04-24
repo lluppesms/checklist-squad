@@ -98,8 +98,7 @@ steps:
           az sql server firewall-rule delete `
             --resource-group "$(resourceGroupName)" `
             --server "$serverName" `
-            --name "azdo-agent-temp-$(Build.BuildId)" `
-            --yes
+            --name "azdo-agent-temp-$(Build.BuildId)"
           Write-Host "Firewall rule removed successfully."
 
   # ------------------------------------------------------------------------------------------------------------------------

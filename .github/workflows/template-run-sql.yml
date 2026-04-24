@@ -227,8 +227,7 @@ jobs:
           az sql server firewall-rule delete `
             --resource-group "${{ env.resourceGroupName }}" `
             --server "${{ env.sqlServerName }}" `
-            --name "gha-runner-temp-${{ github.run_id }}" `
-            --yes
+            --name "gha-runner-temp-${{ github.run_id }}"
           Write-Host "Firewall rule removed successfully."
 
       - name: Azure Logout
