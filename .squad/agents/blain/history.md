@@ -11,6 +11,25 @@
 
 <!-- Append new learnings below. Each entry is something lasting about the project. -->
 
+### 2026-07-17: Phase 2 — Private Networking (VNet + Private Endpoints + DNS Zones)
+- **Added conditional private networking** to AVM Bicep templates, gated behind `enablePrivateNetworking` param (default: `true`)
+- **New AVM modules:**
+  - `br/public:avm/res/network/virtual-network:0.8.1` — VNet with two subnets
+  - `br/public:avm/res/network/private-dns-zone:0.8.1` — SQL and Key Vault DNS zones
+- **VNet layout:**
+  - `snet-webapp` (`10.0.1.0/24`) — delegated to `Microsoft.Web/serverFarms` for Web App VNet integration
+  - `snet-pe` (`10.0.2.0/24`) — no delegation, hosts private endpoints for SQL + Key Vault
+- **Private DNS Zones:** `privatelink.database.windows.net` and `privatelink.vaultcore.azure.net`, each linked to the VNet
+- **SQL Server changes:** `publicNetworkAccess: 'Disabled'`, `AllowAllWindowsAzureIps` firewall rule removed, inline PE on snet-pe with SQL DNS zone. SQL PE only created when `deployNewServer && enablePrivateNetworking` (can't add PE to external SQL server).
+- **Key Vault changes:** `publicNetworkAccess: 'Disabled'`, `networkAcls.defaultAction: 'Deny'`, inline PE on snet-pe with KV DNS zone
+- **Web App changes:** `virtualNetworkSubnetResourceId` set to snet-webapp, `WEBSITE_VNET_ROUTE_ALL=1` app setting added
+- **AVM VNet module key difference:** Property is `virtualNetworkSubnetResourceId` (not `virtualNetworkSubnetId`) on web/site module
+- **All networking resources are conditional** — when `enablePrivateNetworking=false`, deployment behaves identically to Phase 1 (public access)
+- **New params:** `vnetAddressPrefix`, `webAppSubnetPrefix`, `privateEndpointSubnetPrefix`, `enablePrivateNetworking`
+- **Pipeline variables needed:** `VNET_ADDRESS_PREFIX`, `WEBAPP_SUBNET_PREFIX`, `PE_SUBNET_PREFIX`, `ENABLE_PRIVATE_NETWORKING`
+- **Files changed:** `main.bicep` (+104 lines), `resourcenames.bicep` (vnetName output), `main.bicepparam` (4 new tokens)
+- **Build status:** `az bicep build` passes with zero errors. Same pre-existing warnings as Phase 1.
+
 ### 2026-04-24: Phase 1 — AVM Migration (Replace Local Bicep Modules)
 - **Replaced all 6 local Bicep modules** with Azure Verified Modules (AVM) from the public Bicep registry
 - **AVM module versions used:**
