@@ -2,7 +2,8 @@
 .app-layout {
     display: flex;
     flex-direction: column;
-    min-height: 100vh;
+    height: 100vh;
+    overflow: hidden;
     background-color: var(--bg-primary);
 }
 
@@ -60,6 +61,8 @@
 .app-body {
     display: flex;
     flex: 1;
+    min-height: 0;
+    overflow: hidden;
 }
 
 /* ========== Desktop Sidebar ========== */
@@ -68,9 +71,6 @@
     background-color: var(--sidebar-bg);
     border-right: 1px solid var(--border-color);
     flex-direction: column;
-    position: sticky;
-    top: 3.5rem;
-    height: calc(100vh - 3.5rem);
     overflow-y: auto;
 }
 
@@ -95,6 +95,7 @@
 .main-content {
     flex: 1;
     min-width: 0;
+    overflow-y: auto;
 }
 
 .content-area {
