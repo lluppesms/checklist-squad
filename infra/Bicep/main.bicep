@@ -91,7 +91,8 @@ var deployNewServer = empty(existingSqlServerName)
 
 // SQL connection string (computed from known names, not module outputs)
 var sqlServerNameResolved = deployNewServer ? resourceNames.outputs.sqlServerName : existingSqlServerName
-var webAppConnectionString = !websiteOnly ? 'Server=tcp:${sqlServerNameResolved}.database.windows.net,1433;Initial Catalog=${sqlDatabaseName};Encrypt=True;TrustServerCertificate=False;Connection Timeout=120;Authentication="Active Directory Default";' : ''
+var sqlDatabaseHost = environment().suffixes.sqlServerHostname
+var webAppConnectionString = !websiteOnly ? 'Server=tcp:${sqlServerNameResolved}.${sqlDatabaseHost},1433;Initial Catalog=${sqlDatabaseName};Encrypt=True;TrustServerCertificate=False;Connection Timeout=120;Authentication="Active Directory Default";' : ''
 
 // --------------------------------------------------------------------------------
 // Resource Names
@@ -191,5 +192,5 @@ module webAppModule 'modules/web-app.bicep' = {
 output webAppName string = webAppModule.outputs.webAppName
 output webAppHostName string = webAppModule.outputs.webAppHostName
 output webAppUrl string = 'https://${webAppModule.outputs.webAppDefaultHostname}'
-output sqlServerFqdn string = !websiteOnly ? '${sqlServerNameResolved}.database.windows.net' : ''
+output sqlServerFqdn string = !websiteOnly ? '${sqlServerNameResolved}.${sqlDatabaseHost}' : ''
 output appInsightsName string = monitoringModule.outputs.appInsightsName

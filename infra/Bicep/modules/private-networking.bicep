@@ -57,7 +57,7 @@ module vnetModule 'br/public:avm/res/network/virtual-network:0.8.1' = {
 module sqlDnsZoneModule 'br/public:avm/res/network/private-dns-zone:0.8.1' = {
   name: 'sqlDnsZone${deploymentSuffix}'
   params: {
-    name: 'privatelink.database.windows.net'
+    name: 'privatelink${environment().suffixes.sqlServerHostname}'
     tags: tags
     virtualNetworkLinks: [
       {
