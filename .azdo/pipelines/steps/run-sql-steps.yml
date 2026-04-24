@@ -21,9 +21,47 @@ parameters:
   - name: sqlCmdVariables
     type: object
     default: []
+  - name: addFirewallRule
+    type: boolean
+    default: true
 
 # ------------------------------------------------------------------------------------------------------------------------
 steps:
+  # Temporarily add the agent's public IP to the SQL Server firewall
+  - ${{ if eq(parameters.addFirewallRule, true) }}:
+    - task: AzureCLI@2
+      displayName: 'Add Agent IP to SQL Firewall'
+      name: addFirewall
+      inputs:
+        azureSubscription: ${{ parameters.serviceConnectionName }}
+        scriptType: 'pscore'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          # Retry ipify with backoff to avoid rate limiting
+          $agentIp = $null
+          foreach ($attempt in 1..5) {
+            try {
+              $agentIp = (Invoke-RestMethod -Uri "https://api.ipify.org" -TimeoutSec 10).Trim()
+              break
+            } catch {
+              Write-Host "Attempt $attempt to get public IP failed: $_"
+              if ($attempt -lt 5) { Start-Sleep -Seconds (2 * $attempt) }
+            }
+          }
+          if (-not $agentIp) {
+            $agentIp = (Invoke-RestMethod -Uri "https://ifconfig.me/ip" -TimeoutSec 10).Trim()
+          }
+          Write-Host "Agent public IP: $agentIp"
+          Write-Host "##vso[task.setvariable variable=agentPublicIp]$agentIp"
+          $serverName = "${{ parameters.fqdnServerName }}" -replace '\.database\.windows\.net$', ''
+          Write-Host "Adding temporary firewall rule to server $serverName in $(resourceGroupName)..."
+          az sql server firewall-rule create `
+            --resource-group "$(resourceGroupName)" `
+            --server "$serverName" `
+            --name "azdo-agent-temp-$(Build.BuildId)-sql" `
+            --start-ip-address $agentIp `
+            --end-ip-address $agentIp
+          Write-Host "Firewall rule added successfully."
   # ------------------------------------------------------------------------------------------------------------------------
   # Run SQL Script with Local SQL User/Password (using Invoke-Sqlcmd)
   # ------------------------------------------------------------------------------------------------------------------------
@@ -106,3 +144,21 @@ steps:
           Invoke-Sqlcmd @sqlParams | Out-File -FilePath "${{ parameters.logFullFileName }}"
         errorActionPreference: 'continue'
       continueOnError: true
+
+  # Always remove the temporary firewall rule
+  - ${{ if eq(parameters.addFirewallRule, true) }}:
+    - task: AzureCLI@2
+      displayName: 'Remove Agent IP from SQL Firewall'
+      condition: always()
+      inputs:
+        azureSubscription: ${{ parameters.serviceConnectionName }}
+        scriptType: 'pscore'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          $serverName = "${{ parameters.fqdnServerName }}" -replace '\.database\.windows\.net$', ''
+          Write-Host "Removing temporary firewall rule from server $serverName..."
+          az sql server firewall-rule delete `
+            --resource-group "$(resourceGroupName)" `
+            --server "$serverName" `
+            --name "azdo-agent-temp-$(Build.BuildId)-sql"
+          Write-Host "Firewall rule removed successfully."

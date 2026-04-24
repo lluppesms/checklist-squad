@@ -26,8 +26,8 @@ on:
         options:
           - 'build-deploy'
           - 'build-only'
-      createDefaultData:
-        description: Create Default Data?
+      addFirewallRule:
+        description: Temporarily add runner IP to SQL firewall?
         type: boolean
         default: true
 
@@ -72,6 +72,7 @@ jobs:
       artifactName: 'dacpac'
       appProjectName: ${{ needs.load-config.outputs.sql_projectName }}
       loginAccountType: ${{ inputs.loginAccountType }}
+      addFirewallRule: ${{ inputs.addFirewallRule }}
     secrets: inherit
 
   # ----------------------------------------------------------------------------------------------------
@@ -90,21 +91,5 @@ jobs:
       sqlFileName: 'Add-App-User-Rights.sql'
       loginAccountType: ${{ inputs.loginAccountType }}
       sqlCmdVariables: 'AppIdentityName=${{ vars.APP_NAME }}${{ vars.INSTANCE_NUMBER }}-${{ inputs.deployEnvironment }}'
-    secrets: inherit
-
-  # ----------------------------------------------------------------------------------------------------
-  # Deploy Default Data
-  # ----------------------------------------------------------------------------------------------------
-  run-sql:
-    name: Deploy default data
-    uses: ./.github/workflows/template-run-sql.yml
-    needs: [load-config, deploy]
-    if: ${{ inputs.createDefaultData }}
-    permissions:
-      id-token: write  
-    with:
-      envCode: ${{ inputs.deployEnvironment }}
-      sqlFolderName: '${{ needs.load-config.outputs.sql_rootDirectory }}/Patch'
-      sqlFileName: 'InsertDefaultData.sql'
-      loginAccountType: 'SVC_PRINCIPAL'
+      addFirewallRule: ${{ inputs.addFirewallRule }}
     secrets: inherit

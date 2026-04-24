@@ -27,92 +27,13 @@ outputs:
   web_testProjectName:
     description: 'Web test project name'
     value: ${{ steps.load.outputs.web_testProjectName }}
+  web_playwrightDirectory:
+    description: 'Web Playwright directory'
+    value: ${{ steps.load.outputs.web_playwrightDirectory }}
+  web_playwrightProjectName:
+    description: 'Web Playwright project name'
+    value: ${{ steps.load.outputs.web_playwrightProjectName }}
   
-  # Function project
-  function_shortName:
-    description: 'Function project short name'
-    value: ${{ steps.load.outputs.function_shortName }}
-  function_rootDirectory:
-    description: 'Function project root directory'
-    value: ${{ steps.load.outputs.function_rootDirectory }}
-  function_projectName:
-    description: 'Function project name'
-    value: ${{ steps.load.outputs.function_projectName }}
-  function_testDirectory:
-    description: 'Function test directory'
-    value: ${{ steps.load.outputs.function_testDirectory }}
-  function_testProjectName:
-    description: 'Function test project name'
-    value: ${{ steps.load.outputs.function_testProjectName }}
-
-  # Console project
-  console_shortName:
-    description: 'Console project short name'
-    value: ${{ steps.load.outputs.console_shortName }}
-  console_rootDirectory:
-    description: 'Console project root directory'
-    value: ${{ steps.load.outputs.console_rootDirectory }}
-  console_projectName:
-    description: 'Console project name'
-    value: ${{ steps.load.outputs.console_projectName }}
-  console_testDirectory:
-    description: 'Console test directory'
-    value: ${{ steps.load.outputs.console_testDirectory }}
-  console_testProjectName:
-    description: 'Console test project name'
-    value: ${{ steps.load.outputs.console_testProjectName }}
-
-  # MCP project
-  mcp_shortName:
-    description: 'MCP project short name'
-    value: ${{ steps.load.outputs.mcp_shortName }}
-  mcp_rootDirectory:
-    description: 'MCP project root directory'
-    value: ${{ steps.load.outputs.mcp_rootDirectory }}
-  mcp_projectName:
-    description: 'MCP project name'
-    value: ${{ steps.load.outputs.mcp_projectName }}
-  mcp_testDirectory:
-    description: 'MCP test directory'
-    value: ${{ steps.load.outputs.mcp_testDirectory }}
-  mcp_testProjectName:
-    description: 'MCP test project name'
-    value: ${{ steps.load.outputs.mcp_testProjectName }}
-
-  # MCP SSE project
-  mcpsse_shortName:
-    description: 'MCP SSE project short name'
-    value: ${{ steps.load.outputs.mcpsse_shortName }}
-  mcpsse_rootDirectory:
-    description: 'MCP SSE project root directory'
-    value: ${{ steps.load.outputs.mcpsse_rootDirectory }}
-  mcpsse_projectName:
-    description: 'MCP SSE project name'
-    value: ${{ steps.load.outputs.mcpsse_projectName }}
-  mcpsse_testDirectory:
-    description: 'MCP SSE test directory'
-    value: ${{ steps.load.outputs.mcpsse_testDirectory }}
-  mcpsse_testProjectName:
-    description: 'MCP SSE test project name'
-    value: ${{ steps.load.outputs.mcpsse_testProjectName }}
-
-  # Analyzer project
-  analyzer_shortName:
-    description: 'Analyzer project short name'
-    value: ${{ steps.load.outputs.analyzer_shortName }}
-  analyzer_rootDirectory:
-    description: 'Analyzer project root directory'
-    value: ${{ steps.load.outputs.analyzer_rootDirectory }}
-  analyzer_projectName:
-    description: 'Analyzer project name'
-    value: ${{ steps.load.outputs.analyzer_projectName }}
-  analyzer_testDirectory:
-    description: 'Analyzer test directory'
-    value: ${{ steps.load.outputs.analyzer_testDirectory }}
-  analyzer_testProjectName:
-    description: 'Analyzer test project name'
-    value: ${{ steps.load.outputs.analyzer_testProjectName }}
-
   # SQL project
   sql_shortName:
     description: 'SQL project short name'
@@ -132,6 +53,12 @@ outputs:
   sql_testProjectName:
     description: 'SQL test project name'
     value: ${{ steps.load.outputs.sql_testProjectName }}
+  sql_playwrightDirectory:
+    description: 'SQL Playwright directory'
+    value: ${{ steps.load.outputs.sql_playwrightDirectory }}
+  sql_playwrightProjectName:
+    description: 'SQL Playwright project name'
+    value: ${{ steps.load.outputs.sql_playwrightProjectName }}
 
   # List of all project keys
   projectKeys:
@@ -169,8 +96,10 @@ runs:
           ROOT_DIR=$(yq ".projects.${PROJECT}.rootDirectory // \"\"" "$CONFIG_FILE")
           PROJECT_NAME=$(yq ".projects.${PROJECT}.projectName // \"\"" "$CONFIG_FILE")
           SOLUTION_NAME=$(yq ".projects.${PROJECT}.solutionName // \"\"" "$CONFIG_FILE")
-          TEST_DIR=$(yq ".projects.${PROJECT}.testDirectory // \"\"" "$CONFIG_FILE")
+          TEST_DIR=$(yq ".projects.${PROJECT}.testDirectory // \"\"" "$CONFIG_FILE")    
           TEST_PROJECT=$(yq ".projects.${PROJECT}.testProjectName // \"\"" "$CONFIG_FILE")
+          PLAYWRIGHT_DIR=$(yq ".projects.${PROJECT}.playwrightDirectory // \"\"" "$CONFIG_FILE")
+          PLAYWRIGHT_PROJECT=$(yq ".projects.${PROJECT}.playwrightProjectName // \"\"" "$CONFIG_FILE")
           
           # Output with project prefix
           echo "${PROJECT}_shortName=$SHORT_NAME" >> $GITHUB_OUTPUT
@@ -179,6 +108,8 @@ runs:
           echo "${PROJECT}_solutionName=$SOLUTION_NAME" >> $GITHUB_OUTPUT
           echo "${PROJECT}_testDirectory=$TEST_DIR" >> $GITHUB_OUTPUT
           echo "${PROJECT}_testProjectName=$TEST_PROJECT" >> $GITHUB_OUTPUT
+          echo "${PROJECT}_playwrightDirectory=$PLAYWRIGHT_DIR" >> $GITHUB_OUTPUT
+          echo "${PROJECT}_playwrightProjectName=$PLAYWRIGHT_PROJECT" >> $GITHUB_OUTPUT
           
           echo "   shortName: $SHORT_NAME"
           echo "   rootDirectory: $ROOT_DIR"

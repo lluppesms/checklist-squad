@@ -17,8 +17,7 @@
 # Local configuration files with secrets
 # Keep templates (appsettings.json) in repo, but ignore local overrides
 appsettings.*.json
-old-source/CheckList.Core/appsettings.*.json
+src/CheckList.Tests/TestResults/
+src/CheckList.PlaywrightTests/TestResults/
 src/CheckList.Database/bin/Debug/CheckList.Database.dacpac
 src/CheckList.Database/CheckList.Database.dbmdl
-
-src/CheckList.Database/bin/Debug/CheckList.Database.dacpac

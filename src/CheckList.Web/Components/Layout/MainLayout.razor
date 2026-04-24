@@ -86,6 +86,17 @@
             <span>About</span>
         </NavLink>
     </nav>
+
+    <!-- Footer -->
+    <footer class="app-footer d-none d-md-flex">
+        <span>&copy; @thisYear Luppes Consulting, Inc.</span>
+        <a href="http://www.luppes.com/Privacy" target="_blank">Privacy</a>
+        <a href="http://www.luppes.com/License" target="_blank">License</a>
+        @if (buildInfo is not null)
+        {
+            <span class="build-info" title="@FormatBuildDate(buildInfo.BuildDate)">@buildInfo.BuildNumber</span>
+        }
+    </footer>
 </div>
 
 <div id="blazor-error-ui" data-nosnippet>
@@ -97,12 +108,17 @@
 @code {
     [Inject] private IUserIdentity UserIdentity { get; set; } = default!;
     [Inject] private IDbContextFactory<CheckListDbContext> DbFactory { get; set; } = default!;
+    [Inject] private IBuildInfoService BuildInfoService { get; set; } = default!;
     [CascadingParameter] private Task<AuthenticationState> AuthStateTask { get; set; } = default!;
 
     private bool menuOpen;
+    private int thisYear = DateTime.Today.Year;
+    private BuildInfo? buildInfo;
 
     protected override async Task OnInitializedAsync()
     {
+        buildInfo = await BuildInfoService.GetBuildInfoAsync();
+
         var authState = await AuthStateTask;
         var user = authState.User;
         if (user.Identity?.IsAuthenticated == true)
@@ -124,4 +140,13 @@
     }
 
     private void ToggleMenu() => menuOpen = !menuOpen;
+
+    private string FormatBuildDate(string? buildDate)
+    {
+        if (DateTime.TryParse(buildDate, out var date))
+        {
+            return $"Compiled {date:yyyy-MM-dd HH:mm:ss}";
+        }
+        return buildDate ?? string.Empty;
+    }
 }

@@ -15,6 +15,9 @@ parameters:
   default: ''
 - name: loginAccountType
   default: 'SVC_PRINCIPAL'
+- name: addFirewallRule
+  type: boolean
+  default: true
 
 # ----------------------------------------------------------------------------------------------------
 stages:
@@ -43,6 +46,7 @@ stages:
         artifactName: 'dacpac'
         appProjectName: ${{ parameters.appProjectName }}
         loginAccountType: ${{ parameters.loginAccountType }}
+        addFirewallRule: ${{ parameters.addFirewallRule }}
 
   # Grant App Service Managed Identity access to the database after DACPAC deploy
   - stage: Grant${{ environmentName }}Identity
@@ -56,5 +60,6 @@ stages:
         sqlFileName: 'Add-App-User-Rights.sql'
         runInDatabase: $(SQL_DATABASE_NAME)
         loginAccountType: ${{ parameters.loginAccountType }}
+        addFirewallRule: ${{ parameters.addFirewallRule }}
         sqlCmdVariables:
           - 'AppIdentityName=$(APP_NAME)$(INSTANCE_NUMBER)-${{ lower(environmentName) }}'

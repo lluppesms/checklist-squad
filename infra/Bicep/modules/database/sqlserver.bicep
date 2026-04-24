@@ -18,7 +18,8 @@ param workspaceId string = ''
 
 // --------------------------------------------------------------------------------
 var templateTag = { TemplateFile: '~sqlserver.bicep' }
-var tags = union(commonTags, templateTag)
+var securityTag = { SecurityControl: 'Ignore' }
+var tags = union(commonTags, templateTag, securityTag)
 
 // Tier configuration based on environment
 var sqlSkuName = environmentCode == 'prod' ? 'S1' : 'Basic'

@@ -18,6 +18,9 @@ parameters:
     default: ''
   - name: sqlAdminPassword
     default: ''
+  - name: addFirewallRule
+    type: boolean
+    default: true
 
 # ------------------------------------------------------------------------------------------------------------------------
 steps:
@@ -29,6 +32,42 @@ steps:
       artifactName: '${{ parameters.artifactName }}'
       downloadPath: '$(System.ArtifactsDirectory)'
 
+  # Temporarily add the agent's public IP to the SQL Server firewall
+  - ${{ if eq(parameters.addFirewallRule, true) }}:
+    - task: AzureCLI@2
+      displayName: 'Add Agent IP to SQL Firewall'
+      name: addFirewall
+      inputs:
+        azureSubscription: ${{ parameters.serviceConnectionName }}
+        scriptType: 'pscore'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          # Retry ipify with backoff to avoid rate limiting
+          $agentIp = $null
+          foreach ($attempt in 1..5) {
+            try {
+              $agentIp = (Invoke-RestMethod -Uri "https://api.ipify.org" -TimeoutSec 10).Trim()
+              break
+            } catch {
+              Write-Host "Attempt $attempt to get public IP failed: $_"
+              if ($attempt -lt 5) { Start-Sleep -Seconds (2 * $attempt) }
+            }
+          }
+          if (-not $agentIp) {
+            $agentIp = (Invoke-RestMethod -Uri "https://ifconfig.me/ip" -TimeoutSec 10).Trim()
+          }
+          Write-Host "Agent public IP: $agentIp"
+          Write-Host "##vso[task.setvariable variable=agentPublicIp]$agentIp"
+          $serverName = "${{ parameters.fqdnServerName }}" -replace '\.database\.windows\.net$', ''
+          Write-Host "Adding temporary firewall rule to server $serverName in $(resourceGroupName)..."
+          az sql server firewall-rule create `
+            --resource-group "$(resourceGroupName)" `
+            --server "$serverName" `
+            --name "azdo-agent-temp-$(Build.BuildId)" `
+            --start-ip-address $agentIp `
+            --end-ip-address $agentIp
+          Write-Host "Firewall rule added successfully."
+
   # this "servicePrincipal" login type logs in using some identity magic
   - ${{ if eq(lower(parameters.loginAccountType), 'svc_principal') }}:
     - task: SqlAzureDacpacDeployment@1
@@ -38,7 +77,7 @@ steps:
         ServerName: ${{ parameters.fqdnServerName }}
         DatabaseName: ${{ parameters.sqlDatabaseName }}
         DacpacFile: '$(System.ArtifactsDirectory)\${{ parameters.artifactName }}\${{ parameters.appProjectName }}.dacpac'
-        AuthenticationType: 'servicePrincipal' # 'server' | 'aadAuthenticationPassword' | 'aadAuthenticationIntegrated' | 'connectionString' | 'servicePrincipal'.  Default: server
+        AuthenticationType: 'servicePrincipal'
         DeleteFirewallRule: false
       continueOnError: true
 
@@ -51,11 +90,29 @@ steps:
         ServerName: ${{ parameters.fqdnServerName }}
         DatabaseName: ${{ parameters.sqlDatabaseName }}
         DacpacFile: '$(System.ArtifactsDirectory)\${{ parameters.artifactName }}\${{ parameters.appProjectName }}.dacpac'
-        AuthenticationType: 'server' # 'server' | 'aadAuthenticationPassword' | 'aadAuthenticationIntegrated' | 'connectionString' | 'servicePrincipal'.  Default: server
+        AuthenticationType: 'server'
         SqlUsername: '${{ parameters.sqlAdminUser }}'
         SqlPassword: '${{ parameters.sqlAdminPassword }}'
         DeleteFirewallRule: false
       continueOnError: true
+
+  # Always remove the temporary firewall rule
+  - ${{ if eq(parameters.addFirewallRule, true) }}:
+    - task: AzureCLI@2
+      displayName: 'Remove Agent IP from SQL Firewall'
+      condition: always()
+      inputs:
+        azureSubscription: ${{ parameters.serviceConnectionName }}
+        scriptType: 'pscore'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          $serverName = "${{ parameters.fqdnServerName }}" -replace '\.database\.windows\.net$', ''
+          Write-Host "Removing temporary firewall rule from server $serverName..."
+          az sql server firewall-rule delete `
+            --resource-group "$(resourceGroupName)" `
+            --server "$serverName" `
+            --name "azdo-agent-temp-$(Build.BuildId)"
+          Write-Host "Firewall rule removed successfully."
 
   # ------------------------------------------------------------------------------------------------------------------------
   # Additional References:

@@ -30,6 +30,11 @@ on:
         required: false
         type: string
         default: 'SVC_PRINCIPAL'
+      addFirewallRule:
+        required: false
+        type: boolean
+        default: true
+        description: 'Temporarily add the runner IP to the SQL Server firewall before deploying, then remove it.'
 
 # ------------------------------------------------------------------------------------------------------------------------
 jobs:
@@ -41,6 +46,7 @@ jobs:
     env:
       sqlServerName: '${{ vars.SQL_SERVER_NAME_PREFIX }}${{vars.INSTANCE_NUMBER}}sql${{ inputs.envCode }}'
       fqdnServerName: '${{ vars.SQL_SERVER_NAME_PREFIX }}${{vars.INSTANCE_NUMBER}}sql${{ inputs.envCode }}.database.windows.net'
+      resourceGroupName: ${{ vars.RESOURCE_GROUP_NAME || format('{0}-{1}-{2}', vars.RESOURCE_GROUP_PREFIX, inputs.envCode, vars.INSTANCE_NUMBER) }}
     permissions:
       id-token: write
     steps:
@@ -62,9 +68,11 @@ jobs:
           echo "vars.INSTANCE_NUMBER=${{ vars.INSTANCE_NUMBER }}"
           echo "env.sqlServerName=${{ env.sqlServerName }}"
           echo "env.fqdnServerName=${{ env.fqdnServerName }}"
+          echo "env.resourceGroupName=${{ env.resourceGroupName }}"
           echo "Server: vars.SQL_SERVER_NAME_PREFIX=${{ vars.SQL_SERVER_NAME_PREFIX }}"
           echo "Database: inputs.sqlDatabaseName=${{ vars.SQL_DATABASE_NAME }}"
           echo "Project: inputs.appProjectName=${{ inputs.appProjectName }}"
+          echo "addFirewallRule=${{ inputs.addFirewallRule }}"
 
       - name: Azure Login (Reusable Action)
         uses: ./.github/actions/login-action
@@ -72,6 +80,38 @@ jobs:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      # Temporarily add the runner's public IP to the SQL Server firewall
+      - name: Add Runner IP to SQL Firewall
+        if: inputs.addFirewallRule
+        id: add-firewall
+        shell: pwsh
+        run: |
+          # Retry ipify with backoff to avoid rate limiting
+          $runnerIp = $null
+          foreach ($attempt in 1..5) {
+            try {
+              $runnerIp = (Invoke-RestMethod -Uri "https://api.ipify.org" -TimeoutSec 10).Trim()
+              break
+            } catch {
+              Write-Host "Attempt $attempt to get public IP failed: $_"
+              if ($attempt -lt 5) { Start-Sleep -Seconds (2 * $attempt) }
+            }
+          }
+          if (-not $runnerIp) {
+            # Fallback to alternative service
+            $runnerIp = (Invoke-RestMethod -Uri "https://ifconfig.me/ip" -TimeoutSec 10).Trim()
+          }
+          echo "runner-ip=$runnerIp" >> $env:GITHUB_OUTPUT
+          Write-Host "Runner public IP: $runnerIp"
+          Write-Host "Adding temporary firewall rule to server ${{ env.sqlServerName }} in ${{ env.resourceGroupName }}..."
+          az sql server firewall-rule create `
+            --resource-group "${{ env.resourceGroupName }}" `
+            --server "${{ env.sqlServerName }}" `
+            --name "gha-runner-temp-${{ github.run_id }}-dacpac" `
+            --start-ip-address $runnerIp `
+            --end-ip-address $runnerIp
+          Write-Host "Firewall rule added successfully."
 
       # Deploy using Service Principal (Entra ID authentication)
       # For details on how to authenticate, see: https://github.com/Azure/sql-action/blob/master/CONNECTION.md#azure-active-directory-managed-identity-authentication
@@ -91,6 +131,18 @@ jobs:
           connection-string: 'Server=${{ env.fqdnServerName }};Database=${{ vars.SQL_DATABASE_NAME }};User Id=${{ secrets.SQL_ADMIN_USER }};Password=${{ secrets.SQL_ADMIN_PASSWORD }};'
           path: './dacpac/${{ inputs.appProjectName }}.dacpac'
           action: 'publish'
+
+      # Always remove the temporary firewall rule, even if the deploy fails
+      - name: Remove Runner IP from SQL Firewall
+        if: always() && inputs.addFirewallRule && steps.add-firewall.outcome == 'success'
+        shell: pwsh
+        run: |
+          Write-Host "Removing temporary firewall rule from server ${{ env.sqlServerName }}..."
+          az sql server firewall-rule delete `
+            --resource-group "${{ env.resourceGroupName }}" `
+            --server "${{ env.sqlServerName }}" `
+            --name "gha-runner-temp-${{ github.run_id }}-dacpac"
+          Write-Host "Firewall rule removed successfully."
 
       - name: Azure Logout
         if: always()

@@ -52,6 +52,7 @@ builder.Services.AddScoped<ICheckListApiClient, CheckListService>();
 builder.Services.AddScoped<IUserIdentity, UserIdentityService>();
 builder.Services.AddScoped<ISharingService, SharingService>();
 builder.Services.AddScoped<IEmailService, NoOpEmailService>();
+builder.Services.AddSingleton<IBuildInfoService, BuildInfoService>();
 
 var app = builder.Build();
 

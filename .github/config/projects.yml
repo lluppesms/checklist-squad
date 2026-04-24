@@ -22,14 +22,8 @@ projects:
     projectName: 'CheckList.Web'
     testDirectory: 'src/CheckList.Tests'
     testProjectName: 'CheckList.Tests'
-
-  # API Application
-  api:
-    shortName: 'api'
-    rootDirectory: 'src/CheckList.Api'
-    projectName: 'CheckList.Api'
-    testDirectory: ''
-    testProjectName: ''
+    playwrightDirectory: 'src/CheckList.PlaywrightTests'
+    playwrightProjectName: 'CheckList.PlaywrightTests'
 
   # SQL Database Project
   sql:
@@ -39,3 +33,5 @@ projects:
     solutionName: 'CheckList.Database'
     testDirectory: ''
     testProjectName: ''
+    playwrightDirectory: ''
+    playwrightProjectName: ''
