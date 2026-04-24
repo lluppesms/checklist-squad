@@ -156,6 +156,38 @@ Added editable name field to ListSelectionDialog so users can customize the chec
 
 **Trade-offs:** Value tuple used for callback instead of a dedicated record type — simpler for a two-field payload, but if more activation options are added later, consider refactoring to a typed record.
 
+---
+
+### Bicep Infrastructure: Migrate to Azure Verified Modules (Phase 1)
+**Author:** Blain (DevOps)  
+**Date:** 2026-04-24  
+**Status:** Implemented
+
+Replaced 6 local Bicep modules with Azure Verified Modules (AVM) equivalents to improve maintainability, security, and alignment with Microsoft best practices:
+- Removed Azure SignalR Service module (unused after API/Web merge)
+- Switched Key Vault from access policies to RBAC
+- Dropped F1 from allowed App Service Plan SKUs (production-ready tiers only)
+- Created `bicepconfig.json` with AVM public registry alias
+- Deleted all local module files in `modules/` directory
+
+**AVM Versions Adopted:**
+- Log Analytics `0.15.0`
+- App Insights `0.7.1`
+- SQL Server `0.21.1`
+- App Service Plan `0.7.0`
+- Web App `0.22.0`
+- Key Vault `0.13.3`
+
+**Rationale:**
+- AVM modules are maintained by Microsoft and updated regularly
+- Encapsulates Azure best practices (diagnostics, monitoring, security)
+- Consistent naming and parameter conventions across team
+- Reduces custom code maintenance burden
+
+**Trade-offs:** Dependency on external Microsoft registry; versioning managed via `bicepconfig.json`. All future Bicep changes must target AVM-compatible patterns.
+
+**Impact:** Infrastructure is more maintainable and secure. Deployment pipelines remain unchanged. Phase 2 targets private networking and endpoint isolation.
+
 ## Governance
 
 - All meaningful changes require team consensus
