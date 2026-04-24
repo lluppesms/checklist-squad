@@ -52,6 +52,19 @@ A connection string with `User Id=CheckListAppUser` succeeds or fails based on:
 
 To truly restrict the CheckList application to only its schema, follow these steps:
 
+### Deploy Identity (CI/CD — DACPAC Publishing)
+
+Use a **separate** principal for deployments so the running app never has DDL permissions:
+
+```sql
+CREATE SCHEMA [CheckList] AUTHORIZATION [dbo];
+GO
+CREATE USER [devops-pipeline-user] FROM EXTERNAL PROVIDER;
+ALTER ROLE db_ddladmin ADD MEMBER [devops-pipeline-user];
+GRANT ALTER ON SCHEMA::[CheckList] TO [devops-pipeline-user];
+GRANT CREATE TABLE TO [devops-pipeline-user];
+```
+
 ### App Identity (Managed Identity — Runtime)
 
 Grant schema-scoped permissions only. **Do not** use `db_datareader` or `db_datawriter` — those are database-wide and defeat schema isolation.
@@ -68,17 +81,6 @@ Repeat the same pattern for each app sharing the database:
 CREATE USER [lsq-reporting-dev] FROM EXTERNAL PROVIDER;
 GRANT SELECT, INSERT, UPDATE, DELETE ON SCHEMA::[Reporting] TO [lsq-reporting-dev];
 GRANT EXECUTE ON SCHEMA::[Reporting] TO [lsq-reporting-dev];
-```
-
-### Deploy Identity (CI/CD — DACPAC Publishing)
-
-Use a **separate** principal for deployments so the running app never has DDL permissions:
-
-```sql
-CREATE USER [devops-pipeline-user] FROM EXTERNAL PROVIDER;
-ALTER ROLE db_ddladmin ADD MEMBER [devops-pipeline-user];
-GRANT ALTER ON SCHEMA::[CheckList] TO [devops-pipeline-user];
-GRANT CREATE TABLE TO [devops-pipeline-user];
 ```
 
 ### Connection String
