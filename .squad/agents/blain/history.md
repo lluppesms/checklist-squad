@@ -11,7 +11,20 @@
 
 <!-- Append new learnings below. Each entry is something lasting about the project. -->
 
-### 2026-07-17: Phase 2 — Private Networking (VNet + Private Endpoints + DNS Zones)
+### 2026-07-17: Phase 3 — Extract Reusable Bicep Modules
+- **Extracted 4 modules** from main.bicep: `monitoring.bicep`, `sql-server.bicep`, `web-app.bicep`, `key-vault.bicep`
+- **main.bicep is now ~226 lines** — a clean orchestration file calling 6 modules (resourcenames, monitoring, private-networking, sql-server, web-app, key-vault)
+- **Module design:** Each module is self-contained with `@description()` on all params, typed outputs, and reusable across projects
+- **What moved into modules:**
+  - SQL SKU vars (sqlSkuName/Tier/Capacity) → sql-server.bicep
+  - deployNewPlan conditional + existing plan reference → web-app.bicep
+  - All AVM module calls with their configs (firewall rules, audit settings, siteConfig, RBAC, diagnostics, private endpoints)
+- **What stayed in main.bicep:** All params, resourceNames module, conditional deploy flags (deployNewServer), connection string computation, networking module call, cross-module wiring, outputs
+- **Cross-module wiring pattern:** monitoring outputs feed into sql-server, web-app, and key-vault; networking outputs conditionally feed PE/subnet IDs; web-app principal ID feeds into key-vault
+- **AVM module versions unchanged** — same versions as Phase 1
+- **Build status:** `az bicep build` passes with zero errors. Same pre-existing warnings (BCP081, hardcoded URLs)
+
+### 2026-07-17: Phase 2 — Private Networking(VNet + Private Endpoints + DNS Zones)
 - **Added conditional private networking** to AVM Bicep templates, gated behind `enablePrivateNetworking` param (default: `true`)
 - **New AVM modules:**
   - `br/public:avm/res/network/virtual-network:0.8.1` — VNet with two subnets
