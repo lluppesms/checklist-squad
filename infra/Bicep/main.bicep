@@ -89,14 +89,8 @@ var commonTags = {
   Environment: environmentCode
 }
 
-// SQL tier configuration based on environment
-var sqlSkuName = environmentCode == 'prod' ? 'S1' : 'Basic'
-var sqlSkuTier = environmentCode == 'prod' ? 'Standard' : 'Basic'
-var sqlSkuCapacity = environmentCode == 'prod' ? 20 : 5
-
 // Conditional deploy flags
 var deployNewServer = empty(existingSqlServerName)
-var deployNewPlan = empty(servicePlanName)
 
 // SQL connection string (computed from known names, not module outputs)
 var sqlServerNameResolved = deployNewServer ? resourceNames.outputs.sqlServerName : existingSqlServerName
@@ -115,32 +109,16 @@ module resourceNames 'resourcenames.bicep' = {
 }
 
 // --------------------------------------------------------------------------------
-// Monitoring: Log Analytics Workspace (AVM)
+// Monitoring: Log Analytics + Application Insights
 // --------------------------------------------------------------------------------
-module logAnalyticsModule 'br/public:avm/res/operational-insights/workspace:0.15.0' = {
-  name: 'logAnalytics${deploymentSuffix}'
+module monitoringModule 'monitoring.bicep' = {
+  name: 'monitoring${deploymentSuffix}'
   params: {
-    name: resourceNames.outputs.logAnalyticsWorkspaceName
+    logAnalyticsName: resourceNames.outputs.logAnalyticsWorkspaceName
+    appInsightsName: resourceNames.outputs.webSiteAppInsightsName
     location: location
     tags: commonTags
-    skuName: 'PerGB2018'
-    dataRetention: 30
-    dailyQuotaGb: '1'
-  }
-}
-
-// --------------------------------------------------------------------------------
-// Monitoring: Application Insights (AVM)
-// --------------------------------------------------------------------------------
-module appInsightsModule 'br/public:avm/res/insights/component:0.7.1' = {
-  name: 'appInsights${deploymentSuffix}'
-  params: {
-    name: resourceNames.outputs.webSiteAppInsightsName
-    location: location
-    tags: commonTags
-    kind: 'web'
-    applicationType: 'web'
-    workspaceResourceId: logAnalyticsModule.outputs.resourceId
+    deploymentSuffix: deploymentSuffix
   }
 }
 
@@ -161,254 +139,87 @@ module networkingModule 'private-networking.bicep' = if (enablePrivateNetworking
 }
 
 // --------------------------------------------------------------------------------
-// Database: Azure SQL Server + Database (AVM) — new deployment
+// Database: Azure SQL Server + Database — new deployment
 // --------------------------------------------------------------------------------
-module sqlServerModule 'br/public:avm/res/sql/server:0.21.1' = if (deployNewServer && !websiteOnly) {
+module sqlServerModule 'sql-server.bicep' = if (deployNewServer && !websiteOnly) {
   name: 'sqlServer${deploymentSuffix}'
   params: {
-    name: resourceNames.outputs.sqlServerName
-    location: location
-    tags: union(commonTags, { TemplateFile: '~sqlserver.bicep', SecurityControl: 'Ignore' })
-    minimalTlsVersion: '1.2'
-    publicNetworkAccess: enablePrivateNetworking ? 'Disabled' : 'Enabled'
-    administrators: sqlAdminLoginUserId != '' ? {
-      azureADOnlyAuthentication: true
-      login: sqlAdminLoginUserId
-      principalType: 'Group'
-      sid: sqlAdminLoginUserSid
-      tenantId: sqlAdminLoginTenantId
-    } : null
-    databases: [
-      {
-        name: sqlDatabaseName
-        sku: {
-          name: sqlSkuName
-          tier: sqlSkuTier
-          capacity: sqlSkuCapacity
-        }
-        collation: 'SQL_Latin1_General_CP1_CI_AS'
-        maxSizeBytes: 2147483648 // 2 GB
-        availabilityZone: -1
-        diagnosticSettings: [
-          {
-            workspaceResourceId: logAnalyticsModule.outputs.resourceId
-            logCategoriesAndGroups: [
-              { category: 'SQLSecurityAuditEvents' }
-            ]
-          }
-        ]
-      }
-    ]
-    firewallRules: enablePrivateNetworking ? [] : [
-      {
-        name: 'AllowAllWindowsAzureIps'
-        startIpAddress: '0.0.0.0'
-        endIpAddress: '0.0.0.0'
-      }
-    ]
-    privateEndpoints: enablePrivateNetworking ? [
-      {
-        service: 'sqlServer'
-        subnetResourceId: networkingModule!.outputs.peSubnetResourceId
-        privateDnsZoneGroup: {
-          privateDnsZoneGroupConfigs: [
-            {
-              privateDnsZoneResourceId: networkingModule!.outputs.sqlDnsZoneResourceId
-            }
-          ]
-        }
-      }
-    ] : []
-    auditSettings: {
-      state: 'Enabled'
-      retentionDays: 7
-      auditActionsAndGroups: [
-        'SUCCESSFUL_DATABASE_AUTHENTICATION_GROUP'
-        'FAILED_DATABASE_AUTHENTICATION_GROUP'
-        'BATCH_COMPLETED_GROUP'
-      ]
-      isAzureMonitorTargetEnabled: true
-    }
-  }
-}
-
-
-// --------------------------------------------------------------------------------
-// App Service Plan (AVM) — new deployment
-// --------------------------------------------------------------------------------
-module appServicePlanModule 'br/public:avm/res/web/serverfarm:0.7.0' = if (deployNewPlan) {
-  name: 'appServicePlan${deploymentSuffix}'
-  params: {
-    name: resourceNames.outputs.webSiteAppServicePlanName
+    sqlServerName: resourceNames.outputs.sqlServerName
+    sqlDatabaseName: sqlDatabaseName
     location: location
     tags: commonTags
-    skuName: webSiteSku
-    skuCapacity: 1
-    kind: webAppKind == 'linux' ? 'linux' : 'app'
-    reserved: webAppKind == 'linux'
-    zoneRedundant: false
+    deploymentSuffix: deploymentSuffix
+    environmentCode: environmentCode
+    sqlAdminLoginUserId: sqlAdminLoginUserId
+    sqlAdminLoginUserSid: sqlAdminLoginUserSid
+    sqlAdminLoginTenantId: sqlAdminLoginTenantId
+    logAnalyticsResourceId: monitoringModule.outputs.logAnalyticsResourceId
+    enablePrivateNetworking: enablePrivateNetworking
+    peSubnetResourceId: enablePrivateNetworking ? networkingModule!.outputs.peSubnetResourceId : ''
+    sqlDnsZoneResourceId: enablePrivateNetworking ? networkingModule!.outputs.sqlDnsZoneResourceId : ''
   }
 }
 
-// Existing App Service Plan reference (when reusing)
-resource existingAppServicePlan 'Microsoft.Web/serverfarms@2024-11-01' existing = if (!deployNewPlan) {
-  name: servicePlanName
-  scope: resourceGroup(servicePlanResourceGroupName == '' ? resourceGroup().name : servicePlanResourceGroupName)
-}
-
-var appServicePlanResourceId = deployNewPlan ? appServicePlanModule!.outputs.resourceId : existingAppServicePlan!.id
 
 // --------------------------------------------------------------------------------
-// Web App (AVM)
+// Web App: App Service Plan + Web App
 // --------------------------------------------------------------------------------
-module webAppModule 'br/public:avm/res/web/site:0.22.0' = {
+module webAppModule 'web-app.bicep' = {
   name: 'webapp${deploymentSuffix}'
   params: {
-    name: resourceNames.outputs.webSiteName
-    kind: webAppKind == 'linux' ? 'app,linux' : 'app'
+    webSiteName: resourceNames.outputs.webSiteName
+    appServicePlanName: resourceNames.outputs.webSiteAppServicePlanName
     location: location
     tags: commonTags
-    serverFarmResourceId: appServicePlanResourceId
-    virtualNetworkSubnetResourceId: enablePrivateNetworking ? networkingModule!.outputs.webAppSubnetResourceId : '' // snet-webapp
-    managedIdentities: {
-      systemAssigned: true
-    }
-    httpsOnly: true
-    clientAffinityEnabled: false
-    siteConfig: {
-      alwaysOn: true
-      minTlsVersion: '1.2'
-      ftpsState: 'FtpsOnly'
-      webSocketsEnabled: true
-      remoteDebuggingEnabled: false
-      linuxFxVersion: webAppKind == 'linux' ? 'DOTNETCORE|10.0' : null
-    }
-    configs: [
-      {
-        name: 'appsettings'
-        applicationInsightResourceId: appInsightsModule.outputs.resourceId
-        properties: union({
-          ApplicationInsightsAgent_EXTENSION_VERSION: '~3'
-          ASPNETCORE_ENVIRONMENT: environmentCode == 'prod' ? 'Production' : 'Development'
-          ConnectionStrings__DefaultConnection: webAppConnectionString
-          AzureAd__Instance: 'https://login.microsoftonline.com/'
-          AzureAd__TenantId: azureAdTenantId
-          AzureAd__ClientId: azureAdClientId
-          AzureAd__Domain: azureAdDomain
-          AzureAd__CallbackPath: '/signin-oidc'
-          AzureAd__SignedOutCallbackPath: '/signout-callback-oidc'
-        }, enablePrivateNetworking ? {
-          WEBSITE_VNET_ROUTE_ALL: '1'
-        } : {})
-      }
-      {
-        name: 'logs'
-        properties: {
-          applicationLogs: {
-            fileSystem: {
-              level: 'Warning'
-            }
-          }
-          httpLogs: {
-            fileSystem: {
-              retentionInMb: 40
-              enabled: true
-            }
-          }
-          failedRequestsTracing: {
-            enabled: true
-          }
-          detailedErrorMessages: {
-            enabled: true
-          }
-        }
-      }
-    ]
-    diagnosticSettings: [
-      {
-        workspaceResourceId: logAnalyticsModule.outputs.resourceId
-        logCategoriesAndGroups: [
-          { category: 'AppServiceIPSecAuditLogs' }
-          { category: 'AppServiceAuditLogs' }
-        ]
-      }
-    ]
+    deploymentSuffix: deploymentSuffix
+    webSiteSku: webSiteSku
+    webAppKind: webAppKind
+    servicePlanName: servicePlanName
+    servicePlanResourceGroupName: servicePlanResourceGroupName
+    appInsightsResourceId: monitoringModule.outputs.appInsightsResourceId
+    logAnalyticsResourceId: monitoringModule.outputs.logAnalyticsResourceId
+    webAppConnectionString: webAppConnectionString
+    azureAdTenantId: azureAdTenantId
+    azureAdClientId: azureAdClientId
+    azureAdDomain: azureAdDomain
+    environmentCode: environmentCode
+    enablePrivateNetworking: enablePrivateNetworking
+    webAppSubnetResourceId: enablePrivateNetworking ? networkingModule!.outputs.webAppSubnetResourceId : ''
   }
 }
 
 // --------------------------------------------------------------------------------
-// Security: Key Vault with RBAC (AVM)
+// Security: Key Vault with RBAC
 // --------------------------------------------------------------------------------
-module keyVaultModule 'br/public:avm/res/key-vault/vault:0.13.3' = {
+module keyVaultModule 'key-vault.bicep' = {
   name: 'keyvault${deploymentSuffix}'
   params: {
-    name: resourceNames.outputs.keyVaultName
+    keyVaultName: resourceNames.outputs.keyVaultName
     location: location
     tags: commonTags
-    enableRbacAuthorization: true
-    enablePurgeProtection: true
-    softDeleteRetentionInDays: 7
-    enableVaultForDeployment: true
-    enableVaultForTemplateDeployment: true
-    publicNetworkAccess: enablePrivateNetworking ? 'Disabled' : 'Enabled'
-    networkAcls: {
-      defaultAction: enablePrivateNetworking ? 'Deny' : 'Allow'
-      bypass: 'AzureServices'
-    }
-    privateEndpoints: enablePrivateNetworking ? [
-      {
-        service: 'vault'
-        subnetResourceId: networkingModule!.outputs.peSubnetResourceId
-        privateDnsZoneGroup: {
-          privateDnsZoneGroupConfigs: [
-            {
-              privateDnsZoneResourceId: networkingModule!.outputs.kvDnsZoneResourceId
-            }
-          ]
-        }
-      }
-    ] : []
+    deploymentSuffix: deploymentSuffix
+    logAnalyticsResourceId: monitoringModule.outputs.logAnalyticsResourceId
+    enablePrivateNetworking: enablePrivateNetworking
+    peSubnetResourceId: enablePrivateNetworking ? networkingModule!.outputs.peSubnetResourceId : ''
+    kvDnsZoneResourceId: enablePrivateNetworking ? networkingModule!.outputs.kvDnsZoneResourceId : ''
+    webAppPrincipalId: webAppModule.outputs.systemAssignedMIPrincipalId
+    adminUserId: adminUserId
     secrets: !websiteOnly ? [
       {
         name: 'SqlConnectionString'
         value: webAppConnectionString
       }
     ] : []
-    roleAssignments: union(
-      [
-        {
-          principalId: webAppModule.outputs.systemAssignedMIPrincipalId!
-          roleDefinitionIdOrName: '4633458b-17de-408a-b874-0445c86b69e6' // Key Vault Secrets User
-          principalType: 'ServicePrincipal'
-        }
-      ], adminUserId != '' ? [
-        {
-          principalId: adminUserId
-          roleDefinitionIdOrName: '00482a5a-887f-4fb3-b363-3b7fe8e74483' // Key Vault Administrator
-          principalType: 'User'
-        }
-      ] : []
-    )
-    diagnosticSettings: [
-      {
-        workspaceResourceId: logAnalyticsModule.outputs.resourceId
-        logCategoriesAndGroups: [
-          { category: 'AuditEvent' }
-        ]
-        metricCategories: [
-          { category: 'AllMetrics' }
-        ]
-      }
-    ]
+    websiteOnly: websiteOnly
   }
 }
 
 // --------------------------------------------------------------------------------
 // Outputs
 // --------------------------------------------------------------------------------
-output webAppName string = webAppModule.outputs.name
-output webAppHostName string = webAppModule.outputs.defaultHostname
-output webAppUrl string = 'https://${webAppModule.outputs.defaultHostname}'
+output webAppName string = webAppModule.outputs.webAppName
+output webAppHostName string = webAppModule.outputs.webAppHostName
+output webAppUrl string = 'https://${webAppModule.outputs.webAppDefaultHostname}'
 output sqlServerFqdn string = !websiteOnly ? '${sqlServerNameResolved}.database.windows.net' : ''
-output keyVaultName string = keyVaultModule.outputs.name
-output appInsightsName string = appInsightsModule.outputs.name
+output keyVaultName string = keyVaultModule.outputs.keyVaultName
+output appInsightsName string = monitoringModule.outputs.appInsightsName
