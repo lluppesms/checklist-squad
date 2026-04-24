@@ -1,4 +1,5 @@
 @page "/about"
+@inject IBuildInfoService BuildInfoService
 
 <PageTitle>About — RigRoll</PageTitle>
 
@@ -70,4 +71,29 @@
             campfire. 🏕️🔥
         </p>
     </div>
+
+    @if (buildInfo is not null)
+    {
+        <div class="build-info-card">
+            <div class="build-info-content">
+                @if (!string.IsNullOrEmpty(buildInfo.BuildNumber))
+                {
+                    <span class="build-info-item">Build @buildInfo.BuildNumber</span>
+                }
+                @if (!string.IsNullOrEmpty(buildInfo.BuildDate) && DateTime.TryParse(buildInfo.BuildDate, out var date))
+                {
+                    <span class="build-info-item">Compiled @date.ToString("yyyy-MM-dd")</span>
+                }
+            </div>
+        </div>
+    }
 </div>
+
+@code {
+    private BuildInfo? buildInfo;
+
+    protected override async Task OnInitializedAsync()
+    {
+        buildInfo = await BuildInfoService.GetBuildInfoAsync();
+    }
+}
