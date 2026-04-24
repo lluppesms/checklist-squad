@@ -171,7 +171,7 @@ module webAppModule 'modules/webapp/webapp.bicep' = {
     customAppSettings: {
       ASPNETCORE_ENVIRONMENT: environmentCode == 'prod' ? 'Production' : 'Development'
       ConnectionStrings__DefaultConnection: webAppConnectionString
-      Azure__SignalR__ConnectionString: signalRModule.outputs.signalRConnectionString
+      Azure__SignalR__ConnectionString: '@Microsoft.KeyVault(VaultName=${resourceNames.outputs.keyVaultName};SecretName=SignalRConnectionString)'
       AzureAd__Instance: 'https://login.microsoftonline.com/'
       AzureAd__TenantId: azureAdTenantId
       AzureAd__ClientId: azureAdClientId
