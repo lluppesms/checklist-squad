@@ -14,6 +14,7 @@ How to decide who handles what.
 | Code review | Dutch | Review PRs, check quality, suggest improvements |
 | Testing | Hawkins | Write tests, find edge cases, verify fixes |
 | Scope & priorities | Dutch | What to build next, trade-offs, decisions |
+| Presentations, slides, reveal.js, visual storytelling | Billy | Slide decks, tech narratives, project overviews |
 | Session logging | Scribe | Automatic — never needs routing |
 
 ## Issue Routing
