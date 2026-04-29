@@ -1,5 +1,6 @@
 // --------------------------------------------------------------------------------
 // Main Bicep file that creates all of the Azure Resources for one environment
+// Uses Azure Verified Modules (AVM) from the Bicep public registry
 // --------------------------------------------------------------------------------
 // To deploy this Bicep manually:
 //   az login
@@ -32,7 +33,7 @@ param servicePlanResourceGroupName string = ''
 param webAppKind string = 'linux'
 
 @description('The SKU for the App Service Plan when creating a new one.')
-@allowed(['F1','B1','B2','S1','S2','S3'])
+@allowed(['B1','B2','S1','S2','S3'])
 param webSiteSku string = 'B1'
 
 @description('The name of the SQL database.')
@@ -53,9 +54,6 @@ param sqlAdminLoginUserSid string = ''
 @description('The AAD admin login tenant ID.')
 param sqlAdminLoginTenantId string = ''
 
-@description('The Key Vault owner user ID (object ID).')
-param adminUserId string = ''
-
 @description('The Entra ID (Azure AD) tenant ID for app authentication.')
 param azureAdTenantId string = ''
 
@@ -64,6 +62,18 @@ param azureAdClientId string = ''
 
 @description('The Entra ID (Azure AD) tenant domain for app authentication (e.g. myorg.onmicrosoft.com).')
 param azureAdDomain string = ''
+
+@description('Address space for the VNet (used when enablePrivateNetworking is true).')
+param vnetAddressPrefix string = '10.0.0.0/16'
+
+@description('Subnet prefix for Web App VNet integration.')
+param webAppSubnetPrefix string = '10.0.1.0/24'
+
+@description('Subnet prefix for private endpoints.')
+param privateEndpointSubnetPrefix string = '10.0.2.0/24'
+
+@description('Enable private networking (VNet, private endpoints, disable public access on backend services).')
+param enablePrivateNetworking bool = true
 
 // calculated variables disguised as parameters
 param runDateTime string = utcNow()
@@ -75,6 +85,14 @@ var commonTags = {
   Application: appName
   Environment: environmentCode
 }
+
+// Conditional deploy flags
+var deployNewServer = empty(existingSqlServerName)
+
+// SQL connection string (computed from known names, not module outputs)
+var sqlServerNameResolved = deployNewServer ? resourceNames.outputs.sqlServerName : existingSqlServerName
+var sqlDatabaseHost = environment().suffixes.sqlServerHostname
+var webAppConnectionString = !websiteOnly ? 'Server=tcp:${sqlServerNameResolved}.${sqlDatabaseHost},1433;Initial Catalog=${sqlDatabaseName};Encrypt=True;TrustServerCertificate=False;Connection Timeout=120;Authentication="Active Directory Default";' : ''
 
 // --------------------------------------------------------------------------------
 // Resource Names
@@ -89,115 +107,82 @@ module resourceNames 'resourcenames.bicep' = {
 }
 
 // --------------------------------------------------------------------------------
-// Monitoring: Log Analytics + App Insights
+// Monitoring: Log Analytics + Application Insights
 // --------------------------------------------------------------------------------
-module monitorModule 'modules/monitor/monitor.bicep' = {
-  name: 'monitor${deploymentSuffix}'
+module monitoringModule 'modules/monitoring.bicep' = {
+  name: 'monitoring${deploymentSuffix}'
   params: {
-    logAnalyticsWorkspaceName: resourceNames.outputs.logAnalyticsWorkspaceName
+    logAnalyticsName: resourceNames.outputs.logAnalyticsWorkspaceName
     appInsightsName: resourceNames.outputs.webSiteAppInsightsName
     location: location
-    commonTags: commonTags
+    tags: commonTags
+    deploymentSuffix: deploymentSuffix
   }
 }
 
 // --------------------------------------------------------------------------------
-// Database: Azure SQL Server + Database
+// Networking: VNet + Private DNS Zones — conditional on enablePrivateNetworking
 // --------------------------------------------------------------------------------
-module databaseModule 'modules/database/sqlserver.bicep' = if (!websiteOnly) {
-  name: 'database${deploymentSuffix}'
+module networkingModule 'modules/private-networking.bicep' = if (enablePrivateNetworking) {
+  name: 'networking${deploymentSuffix}'
+  params: {
+    vnetName: resourceNames.outputs.vnetName
+    location: location
+    tags: commonTags
+    vnetAddressPrefix: vnetAddressPrefix
+    webAppSubnetPrefix: webAppSubnetPrefix
+    privateEndpointSubnetPrefix: privateEndpointSubnetPrefix
+    deploymentSuffix: deploymentSuffix
+  }
+}
+
+// --------------------------------------------------------------------------------
+// Database: Azure SQL Server + Database — new deployment
+// --------------------------------------------------------------------------------
+module sqlServerModule 'modules/sql-server.bicep' = if (deployNewServer && !websiteOnly) {
+  name: 'sqlServer${deploymentSuffix}'
   params: {
     sqlServerName: resourceNames.outputs.sqlServerName
     sqlDatabaseName: sqlDatabaseName
-    existingSqlServerName: existingSqlServerName
-    existingSqlServerResourceGroupName: existingSqlServerResourceGroupName
     location: location
-    commonTags: commonTags
+    tags: commonTags
+    deploymentSuffix: deploymentSuffix
     environmentCode: environmentCode
-    adAdminLoginUserId: sqlAdminLoginUserId
-    adAdminLoginUserSid: sqlAdminLoginUserSid
-    adAdminLoginTenantId: sqlAdminLoginTenantId
-    workspaceId: monitorModule.outputs.logAnalyticsWorkspaceId
+    sqlAdminLoginUserId: sqlAdminLoginUserId
+    sqlAdminLoginUserSid: sqlAdminLoginUserSid
+    sqlAdminLoginTenantId: sqlAdminLoginTenantId
+    logAnalyticsResourceId: monitoringModule.outputs.logAnalyticsResourceId
+    enablePrivateNetworking: enablePrivateNetworking
+    peSubnetResourceId: enablePrivateNetworking ? networkingModule!.outputs.peSubnetResourceId : ''
+    sqlDnsZoneResourceId: enablePrivateNetworking ? networkingModule!.outputs.sqlDnsZoneResourceId : ''
   }
 }
 
-// --------------------------------------------------------------------------------
-// SignalR Service
-// --------------------------------------------------------------------------------
-module signalRModule 'modules/signalr/signalr.bicep' = {
-  name: 'signalr${deploymentSuffix}'
-  params: {
-    signalRServiceName: resourceNames.outputs.signalRServiceName
-    location: location
-    commonTags: commonTags
-    environmentCode: environmentCode
-  }
-}
 
 // --------------------------------------------------------------------------------
-// App Service Plan (new or existing)
+// Web App: App Service Plan + Web App
 // --------------------------------------------------------------------------------
-module appServicePlanModule 'modules/webapp/websiteserviceplan.bicep' = {
-  name: 'appServicePlan${deploymentSuffix}'
-  params: {
-    location: location
-    commonTags: commonTags
-    sku: webSiteSku
-    appServicePlanName: servicePlanName == '' ? resourceNames.outputs.webSiteAppServicePlanName : servicePlanName
-    existingServicePlanName: servicePlanName
-    existingServicePlanResourceGroupName: servicePlanResourceGroupName
-    webAppKind: webAppKind
-  }
-}
-
-// --------------------------------------------------------------------------------
-// Web App
-// --------------------------------------------------------------------------------
-var webAppConnectionString = !websiteOnly ? databaseModule!.outputs.connectionString : ''
-
-module webAppModule 'modules/webapp/webapp.bicep' = {
+module webAppModule 'modules/web-app.bicep' = {
   name: 'webapp${deploymentSuffix}'
   params: {
     webSiteName: resourceNames.outputs.webSiteName
+    appServicePlanName: resourceNames.outputs.webSiteAppServicePlanName
     location: location
-    commonTags: commonTags
-    environmentCode: environmentCode
-    appInsightsConnectionString: monitorModule.outputs.appInsightsConnectionString
-    appInsightsInstrumentationKey: monitorModule.outputs.appInsightsInstrumentationKey
-    workspaceId: monitorModule.outputs.logAnalyticsWorkspaceId
-    appServicePlanName: appServicePlanModule.outputs.name
-    appServicePlanResourceGroupName: appServicePlanModule.outputs.resourceGroupName
+    tags: commonTags
+    deploymentSuffix: deploymentSuffix
+    webSiteSku: webSiteSku
     webAppKind: webAppKind
-    customAppSettings: {
-      ASPNETCORE_ENVIRONMENT: environmentCode == 'prod' ? 'Production' : 'Development'
-      ConnectionStrings__DefaultConnection: webAppConnectionString
-      Azure__SignalR__ConnectionString: '@Microsoft.KeyVault(VaultName=${resourceNames.outputs.keyVaultName};SecretName=SignalRConnectionString)'
-      AzureAd__Instance: 'https://login.microsoftonline.com/'
-      AzureAd__TenantId: azureAdTenantId
-      AzureAd__ClientId: azureAdClientId
-      AzureAd__Domain: azureAdDomain
-      AzureAd__CallbackPath: '/signin-oidc'
-      AzureAd__SignedOutCallbackPath: '/signout-callback-oidc'
-    }
-  }
-}
-
-// --------------------------------------------------------------------------------
-// Security: Key Vault with secrets
-// --------------------------------------------------------------------------------
-module keyVaultModule 'modules/security/keyvault.bicep' = {
-  name: 'keyvault${deploymentSuffix}'
-  params: {
-    keyVaultName: resourceNames.outputs.keyVaultName
-    location: location
-    commonTags: commonTags
-    keyVaultOwnerUserId: adminUserId
-    applicationUserObjectIds: [webAppModule.outputs.principalId]
-    workspaceId: monitorModule.outputs.logAnalyticsWorkspaceId
-    sqlConnectionString: webAppConnectionString
-    signalRConnectionString: signalRModule.outputs.signalRConnectionString
-    publicNetworkAccess: 'Enabled'
-    allowNetworkAccess: 'Allow'
+    servicePlanName: servicePlanName
+    servicePlanResourceGroupName: servicePlanResourceGroupName
+    appInsightsResourceId: monitoringModule.outputs.appInsightsResourceId
+    logAnalyticsResourceId: monitoringModule.outputs.logAnalyticsResourceId
+    webAppConnectionString: webAppConnectionString
+    azureAdTenantId: azureAdTenantId
+    azureAdClientId: azureAdClientId
+    azureAdDomain: azureAdDomain
+    environmentCode: environmentCode
+    enablePrivateNetworking: enablePrivateNetworking
+    webAppSubnetResourceId: enablePrivateNetworking ? networkingModule!.outputs.webAppSubnetResourceId : ''
   }
 }
 
@@ -205,9 +190,7 @@ module keyVaultModule 'modules/security/keyvault.bicep' = {
 // Outputs
 // --------------------------------------------------------------------------------
 output webAppName string = webAppModule.outputs.webAppName
-output webAppHostName string = webAppModule.outputs.defaultHostName
-output webAppUrl string = 'https://${webAppModule.outputs.defaultHostName}'
-output sqlServerFqdn string = !websiteOnly ? databaseModule!.outputs.serverFqdn : ''
-output keyVaultName string = keyVaultModule.outputs.name
-output signalRHostName string = signalRModule.outputs.signalRHostName
-output appInsightsName string = monitorModule.outputs.appInsightsName
+output webAppHostName string = webAppModule.outputs.webAppHostName
+output webAppUrl string = 'https://${webAppModule.outputs.webAppDefaultHostname}'
+output sqlServerFqdn string = !websiteOnly ? '${sqlServerNameResolved}.${sqlDatabaseHost}' : ''
+output appInsightsName string = monitoringModule.outputs.appInsightsName

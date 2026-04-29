@@ -17,6 +17,7 @@
 | Mac | Backend Dev | `.squad/agents/mac/charter.md` | 🔧 Active |
 | Hawkins | Tester | `.squad/agents/hawkins/charter.md` | 🧪 Active |
 | Blain | DevOps | `.squad/agents/blain/charter.md` | ⚙️ Active |
+| Billy | Presentation Designer | `.squad/agents/billy/charter.md` | 🎨 Active |
 | Scribe | Scribe | `.squad/agents/scribe/charter.md` | 📋 Active |
 | Ralph | Work Monitor | `.squad/agents/ralph/charter.md` | 🔄 Active |
 | @copilot | Coding Agent | `copilot-instructions.md` | 🤖 Active |

@@ -1,0 +1,1013 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RigRoll: Real-Time Shared Checklists for RV Camping</title>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5/dist/reset.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5/dist/reveal.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5/dist/theme/black.css" id="theme" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5/plugin/highlight/monokai.css" />
+    <style>
+        :root {
+            --forest: #2f5d50;
+            --pine: #3f7a5f;
+            --sage: #95b89b;
+            --sky: #7eb6d9;
+            --earth: #9a6b44;
+            --sand: #efe5d0;
+            --cream: #f7f3ea;
+            --ink: #14211b;
+            --card: rgba(13, 22, 18, 0.72);
+            --card-border: rgba(255, 255, 255, 0.11);
+            --muted: #bfd0c2;
+            --accent: #f5c26b;
+            --danger: #f18f6c;
+        }
+
+        body {
+            background:
+                radial-gradient(circle at top right, rgba(126, 182, 217, 0.20), transparent 24%),
+                radial-gradient(circle at top left, rgba(245, 194, 107, 0.14), transparent 22%),
+                linear-gradient(160deg, #112019 0%, #1f342a 48%, #101915 100%);
+        }
+
+        .reveal {
+            font-family: "Segoe UI", Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+            color: var(--cream);
+        }
+
+        .reveal .slides {
+            text-align: left;
+        }
+
+        .reveal h1,
+        .reveal h2,
+        .reveal h3,
+        .reveal h4 {
+            color: #ffffff;
+            text-transform: none;
+            letter-spacing: -0.03em;
+            margin-bottom: 0.45em;
+        }
+
+        .reveal h1 {
+            font-size: 2.2em;
+        }
+
+        .reveal h2 {
+            font-size: 1.5em;
+        }
+
+        .reveal p,
+        .reveal li,
+        .reveal td,
+        .reveal th {
+            font-size: 0.8em;
+            line-height: 1.4;
+            color: var(--cream);
+        }
+
+        .reveal strong,
+        .accent {
+            color: var(--accent);
+        }
+
+        .reveal a {
+            color: #b9e5ff;
+        }
+
+        .slide-shell {
+            background: var(--card);
+            border: 1px solid var(--card-border);
+            border-radius: 28px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+            padding: 1.2rem 1.4rem;
+            backdrop-filter: blur(4px);
+        }
+
+        .title-shell {
+            padding: 1.6rem;
+        }
+
+        .eyebrow {
+            display: inline-block;
+            padding: 0.24rem 0.7rem;
+            border-radius: 999px;
+            font-size: 0.42em;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--muted);
+            margin-bottom: 0.9rem;
+        }
+
+        .hero-grid,
+        .two-col,
+        .three-col,
+        .metrics,
+        .icon-row,
+        .roadmap-grid,
+        .team-grid {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .hero-grid,
+        .two-col {
+            grid-template-columns: 1.2fr 0.8fr;
+            align-items: center;
+        }
+
+        .three-col,
+        .team-grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .metrics {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            margin-top: 1rem;
+        }
+
+        .roadmap-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .icon-row {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            margin-top: 1rem;
+        }
+
+        .pill,
+        .metric,
+        .panel,
+        .feature-card,
+        .step-card,
+        .team-card,
+        .roadmap-card,
+        .quote-card {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            padding: 0.8rem 0.95rem;
+        }
+
+        .metric-value {
+            display: block;
+            font-size: 1.2em;
+            font-weight: 700;
+            color: #ffffff;
+        }
+
+        .metric-label,
+        .muted,
+        .small {
+            color: var(--muted);
+            font-size: 0.52em;
+        }
+
+        .pill-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.45rem;
+            margin: 0.8rem 0 0;
+        }
+
+        .pill {
+            padding: 0.35rem 0.65rem;
+            border-radius: 999px;
+            font-size: 0.48em;
+            color: #ffffff;
+        }
+
+        ul.clean {
+            list-style: none;
+            margin: 0.4rem 0 0;
+            padding: 0;
+        }
+
+        ul.clean li {
+            margin: 0.35rem 0;
+            padding-left: 1rem;
+            position: relative;
+        }
+
+        ul.clean li::before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            color: var(--accent);
+        }
+
+        .problem-list li::before {
+            color: var(--danger);
+        }
+
+        .feature-card h3,
+        .step-card h3,
+        .team-card h3,
+        .roadmap-card h3,
+        .panel h3 {
+            font-size: 0.75em;
+            margin-bottom: 0.35rem;
+        }
+
+        .feature-card p,
+        .step-card p,
+        .team-card p,
+        .roadmap-card p,
+        .panel p,
+        .quote-card p {
+            font-size: 0.56em;
+            color: var(--muted);
+            margin: 0;
+        }
+
+        .kicker {
+            color: var(--sky);
+            font-weight: 600;
+            font-size: 0.62em;
+            margin-bottom: 0.25rem;
+        }
+
+        .diagram-frame {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 22px;
+            padding: 0.85rem;
+            margin-top: 0.8rem;
+        }
+
+        .mermaid {
+            font-size: 0.7rem;
+        }
+
+        .code-sample {
+            font-size: 0.44em;
+            border-radius: 18px;
+            margin-top: 0.6rem;
+        }
+
+        .quote-card {
+            border-left: 4px solid var(--accent);
+        }
+
+        table.stack-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 0.5rem;
+        }
+
+        .stack-table th,
+        .stack-table td {
+            padding: 0.42rem 0.35rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            text-align: left;
+        }
+
+        .stack-table th {
+            color: var(--muted);
+            font-size: 0.5em;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .centered {
+            text-align: center;
+        }
+
+        .large-emoji {
+            font-size: 3em;
+            line-height: 1;
+        }
+
+        .footer-note {
+            margin-top: 0.8rem;
+            font-size: 0.44em;
+            color: var(--muted);
+        }
+
+        .logo-lockup {
+            display: flex;
+            align-items: center;
+            gap: 0.7rem;
+            margin-bottom: 1.1rem;
+        }
+
+        .logo-badge {
+            width: 68px;
+            height: 68px;
+            border-radius: 20px;
+            background: linear-gradient(160deg, var(--forest), var(--sky));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3em;
+            box-shadow: 0 14px 30px rgba(0, 0, 0, 0.25);
+        }
+
+        .tagline {
+            font-size: 0.7em;
+            color: var(--muted);
+            max-width: 12em;
+        }
+
+        .reveal .progress span {
+            background: var(--accent);
+        }
+
+        .reveal .controls {
+            color: var(--accent);
+        }
+
+        @media (max-width: 1100px) {
+            .hero-grid,
+            .two-col,
+            .three-col,
+            .team-grid,
+            .metrics,
+            .icon-row,
+            .roadmap-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media print {
+            @page {
+                size: landscape;
+                margin: 0.5in;
+            }
+
+            body,
+            .reveal,
+            .reveal .slides,
+            .reveal .slide-background {
+                background: #ffffff !important;
+            }
+
+            .reveal section,
+            .slide-shell,
+            .title-shell,
+            .panel,
+            .feature-card,
+            .step-card,
+            .team-card,
+            .roadmap-card,
+            .quote-card,
+            .pill,
+            .metric,
+            .diagram-frame {
+                background: #ffffff !important;
+                color: #1d2a21 !important;
+                border-color: #cfd8d2 !important;
+                box-shadow: none !important;
+            }
+
+            .reveal h1,
+            .reveal h2,
+            .reveal h3,
+            .reveal h4,
+            .reveal p,
+            .reveal li,
+            .reveal td,
+            .reveal th,
+            .metric-label,
+            .muted,
+            .small,
+            .feature-card p,
+            .step-card p,
+            .team-card p,
+            .roadmap-card p,
+            .panel p,
+            .quote-card p,
+            .footer-note,
+            .reveal a {
+                color: #1d2a21 !important;
+            }
+
+            .reveal pre code {
+                color: #1d2a21 !important;
+                background: #f4f6f4 !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="reveal">
+        <div class="slides">
+            <section>
+                <div class="slide-shell title-shell">
+                    <div class="hero-grid">
+                        <div>
+                            <div class="eyebrow">Billy · Presentation Designer</div>
+                            <div class="logo-lockup">
+                                <div class="logo-badge">🏕️</div>
+                                <div>
+                                    <h1>RigRoll</h1>
+                                    <div class="tagline">Real-time shared checklists for RV camping setup and teardown.</div>
+                                </div>
+                            </div>
+                            <h2>Stop shouting across the campsite. Start RigRolling.</h2>
+                            <p>Built for two people coordinating dozens of steps, in order, from their phones.</p>
+                            <div class="pill-row">
+                                <div class="pill">Blazor Server</div>
+                                <div class="pill">SignalR Sync</div>
+                                <div class="pill">Azure SQL</div>
+                                <div class="pill">Azure App Service</div>
+                            </div>
+                        </div>
+                        <div class="quote-card">
+                            <div class="kicker">Presentation arc</div>
+                            <ul class="clean">
+                                <li>Problem → campsite coordination chaos</li>
+                                <li>Solution → shared, ordered, real-time checklists</li>
+                                <li>Technology → single-app .NET architecture on Azure</li>
+                                <li>Delivery → modern infra, CI/CD, and AI-assisted teamwork</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="footer-note">Repo: github.com/lluppesms/checklist-squad · Reference patterns: github.com/lluppesms/dadabase.demo</div>
+                </div>
+                <aside class="notes">
+                    Open with the human story. RigRoll exists because campsite setup is chaotic, sequential, and collaborative. This talk moves from lived pain to a production-ready technical solution.
+                </aside>
+            </section>
+
+            <section>
+                <div class="slide-shell">
+                    <div class="eyebrow">The problem</div>
+                    <h2>RV setup is a coordination problem disguised as a checklist</h2>
+                    <div class="two-col">
+                        <div>
+                            <ul class="clean problem-list">
+                                <li>Two people are moving in parallel across the campsite.</li>
+                                <li>Tasks must happen in the <strong>right order</strong>, not just eventually.</li>
+                                <li>Paper lists and memory fail when one person cannot see what changed.</li>
+                                <li>Miscommunication creates rework, delays, and avoidable mistakes.</li>
+                            </ul>
+                            <div class="pill-row">
+                                <div class="pill">Who did what?</div>
+                                <div class="pill">What is next?</div>
+                                <div class="pill">Is it safe to move on?</div>
+                            </div>
+                        </div>
+                        <div class="centered">
+                            <div class="large-emoji">🚐 📋 📱📱</div>
+                            <p class="muted">The real enemy is stale information.</p>
+                        </div>
+                    </div>
+                </div>
+                <aside class="notes">
+                    Emphasize that this is not a generic todo list. RV workflows are shared, safety-sensitive, and sequence-aware. The product value starts with eliminating stale status.
+                </aside>
+            </section>
+
+            <section>
+                <div class="slide-shell">
+                    <div class="eyebrow">Why it matters</div>
+                    <h2>Setup and teardown fail in predictable ways</h2>
+                    <div class="three-col">
+                        <div class="feature-card">
+                            <h3>Distributed work</h3>
+                            <p>One partner is inside. The other is outside. Neither has the full picture.</p>
+                        </div>
+                        <div class="feature-card">
+                            <h3>Ordered dependencies</h3>
+                            <p>Disconnecting, leveling, retracting, and securing all have logical sequence constraints.</p>
+                        </div>
+                        <div class="feature-card">
+                            <h3>Mobile context</h3>
+                            <p>The product has to work on phones, in motion, with quick glanceable feedback.</p>
+                        </div>
+                    </div>
+                    <div class="quote-card" style="margin-top:1rem;">
+                        <p><strong>Design target:</strong> give both people a shared source of truth that updates fast enough to trust during real work.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section>
+                <div class="slide-shell">
+                    <div class="eyebrow">The solution</div>
+                    <h2>RigRoll turns a reusable template into a live shared trip checklist</h2>
+                    <div class="metrics">
+                        <div class="metric">
+                            <span class="metric-value">1</span>
+                            <span class="metric-label">Pick a template set</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-value">2</span>
+                            <span class="metric-label">Activate only needed lists</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-value">3</span>
+                            <span class="metric-label">Share with your partner</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-value">4</span>
+                            <span class="metric-label">See check-offs instantly</span>
+                        </div>
+                    </div>
+                    <div class="two-col" style="margin-top:1rem;">
+                        <div class="panel">
+                            <div class="kicker">Product promise</div>
+                            <p>Every trip starts from a known-good process, but each trip can still be named, tailored, and shared in seconds.</p>
+                        </div>
+                        <div class="panel">
+                            <div class="kicker">User outcome</div>
+                            <p>Less yelling, fewer missed steps, faster confidence that the rig is actually ready.</p>
+                        </div>
+                    </div>
+                </div>
+                <aside class="notes">
+                    This is the product slide for non-technical audiences. Focus on the handoff from reusable process to live shared execution.
+                </aside>
+            </section>
+
+            <section>
+                <div class="slide-shell">
+                    <div class="eyebrow">Key features</div>
+                    <h2>Built for repeatable process and real-time teamwork</h2>
+                    <div class="three-col">
+                        <div class="feature-card">
+                            <h3>Templated checklists</h3>
+                            <p>Arrival, departure, interior, exterior, and vehicle tasks start as reusable templates.</p>
+                        </div>
+                        <div class="feature-card">
+                            <h3>Selective activation</h3>
+                            <p>Create a fresh copy for this trip and only activate the lists you need.</p>
+                        </div>
+                        <div class="feature-card">
+                            <h3>Editable checklist names</h3>
+                            <p>Use helpful trip-specific names instead of fixed template titles.</p>
+                        </div>
+                        <div class="feature-card">
+                            <h3>Real-time sync</h3>
+                            <p>SignalR keeps both phones aligned when tasks are checked or users join.</p>
+                        </div>
+                        <div class="feature-card">
+                            <h3>Mobile-first UI</h3>
+                            <p>Fast, focused pages designed for phone use at the campsite.</p>
+                        </div>
+                        <div class="feature-card">
+                            <h3>Sharing + portability</h3>
+                            <p>Checklist sharing is modeled in data, and Import/Export supports portability.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section>
+                <div class="slide-shell">
+                    <div class="eyebrow">How it works</div>
+                    <h2>From template library to live synchronized execution</h2>
+                    <div class="diagram-frame">
+                        <pre class="mermaid">
+flowchart LR
+    A[Template Set] --> B[Select lists to activate]
+    B --> C[Create trip-specific CheckSet]
+    C --> D[Share with partner]
+    D --> E[Open checklist on both phones]
+    E --> F[Check off tasks]
+    F --> G[SignalR pushes updates instantly]
+    G --> H[Both users stay aligned]
+                        </pre>
+                    </div>
+                    <div class="pill-row">
+                        <div class="pill">Template → Instance</div>
+                        <div class="pill">Shared ownership</div>
+                        <div class="pill">Instant feedback loop</div>
+                    </div>
+                </div>
+                <aside class="notes">
+                    Walk this left to right. The important transition is from template content to a trip-specific active checklist, then from action to immediate shared visibility.
+                </aside>
+            </section>
+
+            <section>
+                <div class="slide-shell">
+                    <div class="eyebrow">Architecture overview</div>
+                    <h2>Single-app architecture keeps delivery simple and collaboration fast</h2>
+                    <div class="diagram-frame">
+                        <pre class="mermaid">
+flowchart TB
+    subgraph User Devices
+        A[Phone A]
+        B[Phone B]
+    end
+
+    subgraph Azure App Service
+        C[Blazor Server UI]
+        D[ASP.NET Core API Controllers]
+        E[SignalR Hub]
+        F[Services + Repositories]
+    end
+
+    subgraph Data Layer
+        G[(Azure SQL Database)]
+    end
+
+    subgraph Dev Experience
+        H[.NET Aspire AppHost]
+    end
+
+    A --> C
+    B --> C
+    A <-->|WebSocket / SignalR| E
+    B <-->|WebSocket / SignalR| E
+    C --> F
+    D --> F
+    E --> F
+    F --> G
+    H -. local orchestration .-> C
+                        </pre>
+                    </div>
+                    <p class="footer-note">Deliberate choice: merge the API into the Blazor app for simpler deployment and zero internal HTTP hop overhead.</p>
+                </div>
+            </section>
+
+            <section>
+                <div class="slide-shell">
+                    <div class="eyebrow">Technology stack</div>
+                    <h2>Modern .NET on Azure, optimized for one deployable app</h2>
+                    <table class="stack-table">
+                        <thead>
+                            <tr>
+                                <th>Layer</th>
+                                <th>Technology</th>
+                                <th>Why it fits</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Experience</td>
+                                <td>Blazor Server on .NET 10</td>
+                                <td>Strong C# productivity with fast iteration for interactive UI.</td>
+                            </tr>
+                            <tr>
+                                <td>Real-time</td>
+                                <td>SignalR hub in-process</td>
+                                <td>Low-latency state sharing without a separate messaging tier.</td>
+                            </tr>
+                            <tr>
+                                <td>Data</td>
+                                <td>EF Core + Azure SQL</td>
+                                <td>Structured relational model with schema isolation via <strong>[CheckList]</strong>.</td>
+                            </tr>
+                            <tr>
+                                <td>Security</td>
+                                <td>Microsoft Entra ID</td>
+                                <td>Enterprise identity with stable user IDs for sharing relationships.</td>
+                            </tr>
+                            <tr>
+                                <td>Ops</td>
+                                <td>App Service + Bicep + AVM</td>
+                                <td>Repeatable Azure deployments using verified building blocks.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <aside class="notes">
+                    This is a good slide to connect technical choices back to product needs: speed, trust, manageable deployment, and straightforward auth.
+                </aside>
+            </section>
+
+            <section>
+                <div class="slide-shell">
+                    <div class="eyebrow">Tech deep dive</div>
+                    <h2>SignalR is the trust layer for shared progress</h2>
+                    <div class="two-col">
+                        <div>
+                            <ul class="clean">
+                                <li>Users join a checklist-specific group: <strong>checkset-{id}</strong>.</li>
+                                <li>Changes broadcast only to the relevant collaborators.</li>
+                                <li>Join events help the UI feel live, social, and safe to trust.</li>
+                            </ul>
+                            <div class="panel" style="margin-top:0.8rem;">
+                                <div class="kicker">Why it matters</div>
+                                <p>If one partner checks off a step, the other should never wonder whether their screen is stale.</p>
+                            </div>
+                        </div>
+                        <div>
+                            <pre><code class="language-csharp code-sample">public class CheckListHub : Hub&lt;ICheckListHubClient&gt;
+{
+    public async Task JoinCheckSet(int checkSetId, string userName)
+    {
+        var groupName = $"checkset-{checkSetId}";
+        await Groups.AddToGroupAsync(Context.ConnectionId, groupName);
+        await Clients.OthersInGroup(groupName)
+            .UserJoined(userName, checkSetId);
+    }
+}</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section>
+                <div class="slide-shell">
+                    <div class="eyebrow">Tech deep dive</div>
+                    <h2>Data model and auth support safe sharing</h2>
+                    <div class="two-col">
+                        <div class="panel">
+                            <h3>EF Core + schema discipline</h3>
+                            <ul class="clean">
+                                <li>Database objects live under the <strong>[CheckList]</strong> schema.</li>
+                                <li>Entities include AppUser, CheckSet, TemplateSet, CheckAction, and CheckSetShare.</li>
+                                <li>Sharing is explicit: <strong>SharedWithUserId</strong> + role-based relationship data.</li>
+                            </ul>
+                        </div>
+                        <div class="panel">
+                            <h3>Microsoft Entra ID</h3>
+                            <ul class="clean">
+                                <li>Authentication uses <strong>Microsoft.Identity.Web</strong>.</li>
+                                <li><strong>AppUser</strong> uses the Entra object ID as the primary key.</li>
+                                <li>Identity becomes the anchor for invitations, sharing, and auditability.</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="footer-note">Result: a clean path from enterprise identity to checklist collaboration.</div>
+                </div>
+                <aside class="notes">
+                    Stress that the sharing model is not bolted on. It is represented directly in the core entities and keyed to Entra identity.
+                </aside>
+            </section>
+
+            <section>
+                <div class="slide-shell">
+                    <div class="eyebrow">Infrastructure</div>
+                    <h2>Azure deployment stays repeatable and understandable</h2>
+                    <div class="diagram-frame">
+                        <pre class="mermaid">
+flowchart LR
+    A[GitHub / Azure DevOps] --> B[Bicep + AVM deployment]
+    B --> C[Azure Resource Group]
+    C --> D[Azure App Service]
+    C --> E[(Azure SQL Database)]
+    C --> F[Monitoring]
+    C --> G[Private networking modules]
+    D --> E
+                        </pre>
+                    </div>
+                    <div class="icon-row">
+                        <div class="feature-card">
+                            <h3>Infra as code</h3>
+                            <p>Bicep modules organize web app, SQL, networking, monitoring, and resource naming.</p>
+                        </div>
+                        <div class="feature-card">
+                            <h3>AVM-based</h3>
+                            <p>Azure Verified Modules replace bespoke plumbing with proven templates.</p>
+                        </div>
+                        <div class="feature-card">
+                            <h3>Hosted simply</h3>
+                            <p>One primary web deployment on App Service keeps operations lightweight.</p>
+                        </div>
+                        <div class="feature-card">
+                            <h3>Data durability</h3>
+                            <p>Azure SQL backs the relational workflow and collaboration model.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section>
+                <div class="slide-shell">
+                    <div class="eyebrow">Delivery pipeline</div>
+                    <h2>CI/CD uses layered templates instead of one giant workflow</h2>
+                    <div class="metrics">
+                        <div class="metric">
+                            <span class="metric-value">9</span>
+                            <span class="metric-label">Primary GitHub Actions workflows</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-value">8</span>
+                            <span class="metric-label">Reusable GitHub workflow templates</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-value">6</span>
+                            <span class="metric-label">Azure DevOps entry pipelines</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-value">3</span>
+                            <span class="metric-label">Stage templates for environment flow</span>
+                        </div>
+                    </div>
+                    <div class="two-col" style="margin-top:1rem;">
+                        <div class="panel">
+                            <div class="kicker">GitHub Actions</div>
+                            <p>Deploy Bicep, build and deploy the web app, deploy DACPACs, run SQL, scan code, and smoke test.</p>
+                        </div>
+                        <div class="panel">
+                            <div class="kicker">Azure DevOps</div>
+                            <p>Mirrors the same delivery model with jobs, steps, stages, and shared environment variables.</p>
+                        </div>
+                    </div>
+                </div>
+                <aside class="notes">
+                    This slide is about operational maturity. The template strategy matters because it keeps build, deploy, and database flows consistent without becoming unreadable.
+                </aside>
+            </section>
+
+            <section>
+                <div class="slide-shell">
+                    <div class="eyebrow">Development approach</div>
+                    <h2>Fast local feedback, strong patterns, and measurable quality</h2>
+                    <div class="three-col">
+                        <div class="feature-card">
+                            <h3>.NET Aspire</h3>
+                            <p>AppHost orchestrates the local experience so developers can run the solution as a cohesive system.</p>
+                        </div>
+                        <div class="feature-card">
+                            <h3>Golden reference repo</h3>
+                            <p><strong>dadabase.demo</strong> provides proven patterns for pipelines, Bicep, and delivery conventions.</p>
+                        </div>
+                        <div class="feature-card">
+                            <h3>Test posture</h3>
+                            <p>Current coverage is roughly <strong>94.5% line</strong> and <strong>92% branch</strong> with 144+ MSTest cases.</p>
+                        </div>
+                    </div>
+                    <div class="quote-card" style="margin-top:1rem;">
+                        <p><strong>Guiding principle:</strong> simplify the runtime shape, then invest in repeatability around it.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section>
+                <div class="slide-shell">
+                    <div class="eyebrow">AI-powered development</div>
+                    <h2>The Squad system adds specialized AI roles around the codebase</h2>
+                    <div class="team-grid">
+                        <div class="team-card">
+                            <h3>Dutch</h3>
+                            <p>Lead and architectural accuracy.</p>
+                        </div>
+                        <div class="team-card">
+                            <h3>Poncho</h3>
+                            <p>Frontend and Blazor experience design.</p>
+                        </div>
+                        <div class="team-card">
+                            <h3>Mac</h3>
+                            <p>Backend services and API logic.</p>
+                        </div>
+                        <div class="team-card">
+                            <h3>Hawkins</h3>
+                            <p>Testing strategy and validation.</p>
+                        </div>
+                        <div class="team-card">
+                            <h3>Blain</h3>
+                            <p>DevOps, deployment, and pipeline execution.</p>
+                        </div>
+                        <div class="team-card">
+                            <h3>Billy</h3>
+                            <p>Presentation design and technical storytelling.</p>
+                        </div>
+                    </div>
+                    <div class="diagram-frame">
+                        <pre class="mermaid">
+flowchart LR
+    A[Squad coordinator] --> B[Dutch]
+    A --> C[Poncho]
+    A --> D[Mac]
+    A --> E[Hawkins]
+    A --> F[Blain]
+    A --> G[Billy]
+    B --> H[Architecture confidence]
+    C --> I[Frontend flow]
+    D --> J[Backend implementation]
+    E --> K[Quality signals]
+    F --> L[Delivery automation]
+    G --> M[Stakeholder communication]
+                        </pre>
+                    </div>
+                </div>
+                <aside class="notes">
+                    Frame this as role-based augmentation, not magic. The value is specialization, consistency, and faster movement across architecture, code, testing, operations, and communication.
+                </aside>
+            </section>
+
+            <section>
+                <div class="slide-shell">
+                    <div class="eyebrow">Project anatomy</div>
+                    <h2>The repository is organized around delivery responsibilities</h2>
+                    <div class="three-col">
+                        <div class="panel">
+                            <h3>src/</h3>
+                            <p>CheckList.Web, Database, AppHost, ServiceDefaults, Tests, and Playwright coverage.</p>
+                        </div>
+                        <div class="panel">
+                            <h3>infra/Bicep/</h3>
+                            <p>Main deployment plus modules for web app, SQL, monitoring, and networking.</p>
+                        </div>
+                        <div class="panel">
+                            <h3>.github/ + .azdo/</h3>
+                            <p>Parallel CI/CD implementations for GitHub Actions and Azure DevOps consumers.</p>
+                        </div>
+                    </div>
+                    <div class="pill-row">
+                        <div class="pill">Single deployable app</div>
+                        <div class="pill">Dedicated database project</div>
+                        <div class="pill">E2E + unit testing paths</div>
+                        <div class="pill">Docs and AI workspace included</div>
+                    </div>
+                </div>
+            </section>
+
+            <section>
+                <div class="slide-shell">
+                    <div class="eyebrow">Roadmap</div>
+                    <h2>Current backlog is clear — next value is about polish and scale</h2>
+                    <div class="roadmap-grid">
+                        <div class="roadmap-card">
+                            <h3>Open issues today</h3>
+                            <p><strong>GitHub open issues: 0.</strong> The visible backlog is clean, which creates room to prioritize strategic improvements instead of firefighting.</p>
+                        </div>
+                        <div class="roadmap-card">
+                            <h3>Product evolution</h3>
+                            <p>Continue improving collaboration flows, template curation, and mobile-first execution for real campsite usage.</p>
+                        </div>
+                        <div class="roadmap-card">
+                            <h3>Operational maturity</h3>
+                            <p>Expand smoke testing, observability, and environment automation as the app moves from demo strength to production routine.</p>
+                        </div>
+                        <div class="roadmap-card">
+                            <h3>Platform opportunities</h3>
+                            <p>Explore richer sharing workflows, resilience for variable connectivity, and deeper trip-specific customization.</p>
+                        </div>
+                    </div>
+                    <div class="footer-note">Roadmap note: no open issues were returned by GitHub at the time this presentation was built.</div>
+                </div>
+                <aside class="notes">
+                    Because the issue list is empty, present this as an opportunity slide. The message is that the foundation is in place, and the next cycle can target refinement and adoption.
+                </aside>
+            </section>
+
+            <section>
+                <div class="slide-shell">
+                    <div class="eyebrow">Closing</div>
+                    <h2>RigRoll makes shared RV process visible, repeatable, and trustworthy</h2>
+                    <div class="two-col">
+                        <div>
+                            <ul class="clean">
+                                <li><strong>For users:</strong> fewer missed steps, less friction, more confidence at the campsite.</li>
+                                <li><strong>For builders:</strong> one .NET app, clear Azure deployment, strong testing, and repeatable CI/CD.</li>
+                                <li><strong>For stakeholders:</strong> a niche but highly relatable product with a crisp technical story.</li>
+                            </ul>
+                            <div class="pill-row">
+                                <div class="pill">Product clarity</div>
+                                <div class="pill">Technical simplicity</div>
+                                <div class="pill">Real-time collaboration</div>
+                            </div>
+                        </div>
+                        <div class="quote-card">
+                            <div class="kicker">Useful links</div>
+                            <p>Repository: <a href="https://github.com/lluppesms/checklist-squad">github.com/lluppesms/checklist-squad</a></p>
+                            <p>Reference repo: <a href="https://github.com/lluppesms/dadabase.demo">github.com/lluppesms/dadabase.demo</a></p>
+                            <p style="margin-top:0.8rem;"><strong>Q&amp;A</strong><br />What would matter most next: wider adoption, deeper collaboration features, or production hardening?</p>
+                        </div>
+                    </div>
+                </div>
+                <aside class="notes">
+                    End with both the user value and the engineering credibility. Invite questions around roadmap tradeoffs, because the system foundation is already strong.
+                </aside>
+            </section>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/reveal.js@5/dist/reveal.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/reveal.js@5/plugin/notes/notes.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/reveal.js@5/plugin/highlight/highlight.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'base',
+            securityLevel: 'loose',
+            themeVariables: {
+                primaryColor: '#2f5d50',
+                primaryTextColor: '#f7f3ea',
+                primaryBorderColor: '#95b89b',
+                lineColor: '#7eb6d9',
+                secondaryColor: '#26463b',
+                tertiaryColor: '#1b2d25',
+                background: '#1b2d25',
+                mainBkg: '#26463b',
+                nodeBorder: '#95b89b',
+                clusterBkg: '#20352c',
+                clusterBorder: '#7eb6d9',
+                edgeLabelBackground: '#20352c',
+                fontFamily: 'Segoe UI, Inter, sans-serif'
+            }
+        });
+
+        Reveal.initialize({
+            hash: true,
+            slideNumber: true,
+            transition: 'slide',
+            backgroundTransition: 'fade',
+            controlsTutorial: false,
+            plugins: [RevealNotes, RevealHighlight]
+        });
+    </script>
+</body>
+</html>

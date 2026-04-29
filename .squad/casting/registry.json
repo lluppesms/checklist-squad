@@ -39,6 +39,14 @@
       "created_at": "2026-04-21T09:42:00Z",
       "legacy_named": false,
       "status": "active"
+    },
+    "billy": {
+      "persistent_name": "Billy",
+      "universe": "Predator",
+      "role": "Presentation Designer",
+      "created_at": "2026-04-29T13:37:00Z",
+      "legacy_named": false,
+      "status": "active"
     }
   }
 }
