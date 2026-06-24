@@ -62,12 +62,19 @@ jobs:
         VAR_INSTANCE_NUMBER: ${{ vars.INSTANCE_NUMBER }}
       run: |
         if [ -n "$INPUT_APP_NAME" ]; then
-          echo "app_name=$INPUT_APP_NAME" >> "$GITHUB_OUTPUT"
+          resolved_app_name="$INPUT_APP_NAME"
         elif [ "$INPUT_ENV_CODE" = "prod" ]; then
-          echo "app_name=$VAR_APP_NAME" >> "$GITHUB_OUTPUT"
+          resolved_app_name="$VAR_APP_NAME"
         else
-          echo "app_name=${VAR_APP_NAME}${VAR_INSTANCE_NUMBER}-${INPUT_ENV_CODE}" >> "$GITHUB_OUTPUT"
+          resolved_app_name="${VAR_APP_NAME}${VAR_INSTANCE_NUMBER}-${INPUT_ENV_CODE}"
         fi
+
+        if ! [[ "$resolved_app_name" =~ ^[a-zA-Z0-9-]+$ ]]; then
+          echo "Resolved app name contains unsupported characters: $resolved_app_name"
+          exit 1
+        fi
+
+        printf 'app_name=%s\n' "$resolved_app_name" >> "$GITHUB_OUTPUT"
 
     - name: Deploy WebApp Zip
       uses: Azure/webapps-deploy@v2

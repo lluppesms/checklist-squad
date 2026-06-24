@@ -10,7 +10,7 @@ on:
     outputs:
       web_app_name:
         description: 'Deployed Web App name from Bicep outputs'
-        value: ${{ jobs.deploy.outputs.WEB_APP_NAME }}
+        value: ${{ jobs.deploy.outputs.web_app_name }}
     inputs:
       envCode:
         required: true
@@ -83,7 +83,7 @@ jobs:
     # ------------------------------------------------------------------------------------------------------------------------
     outputs:
       UI_CONTAINER_APP_FQDN: ${{ steps.deploy-bicep-rg.outputs.UI_CONTAINER_APP_FQDN }}
-      WEB_APP_NAME: ${{ steps.deploy-bicep-rg.outputs.webAppName || steps.deploy-bicep-sub.outputs.webAppName }}
+      web_app_name: ${{ steps.deploy-bicep-rg.outputs.webAppName || steps.deploy-bicep-sub.outputs.webAppName }}
 
     # ------------------------------------------------------------------------------------------------------------------------
     # Actions
