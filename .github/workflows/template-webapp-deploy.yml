@@ -52,15 +52,21 @@ jobs:
         subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
     - name: Resolve WebApp name
+      # Prefer explicit appName from infra outputs; fall back to legacy environment-based naming.
       id: resolve-app
       shell: bash
+      env:
+        INPUT_APP_NAME: ${{ inputs.appName }}
+        INPUT_ENV_CODE: ${{ inputs.envCode }}
+        VAR_APP_NAME: ${{ vars.APP_NAME }}
+        VAR_INSTANCE_NUMBER: ${{ vars.INSTANCE_NUMBER }}
       run: |
-        if [ -n "${{ inputs.appName }}" ]; then
-          echo "app_name=${{ inputs.appName }}" >> "$GITHUB_OUTPUT"
-        elif [ "${{ inputs.envCode }}" = "prod" ]; then
-          echo "app_name=${{ vars.APP_NAME }}" >> "$GITHUB_OUTPUT"
+        if [ -n "$INPUT_APP_NAME" ]; then
+          echo "app_name=$INPUT_APP_NAME" >> "$GITHUB_OUTPUT"
+        elif [ "$INPUT_ENV_CODE" = "prod" ]; then
+          echo "app_name=$VAR_APP_NAME" >> "$GITHUB_OUTPUT"
         else
-          echo "app_name=${{ vars.APP_NAME }}${{ vars.INSTANCE_NUMBER }}-${{ inputs.envCode }}" >> "$GITHUB_OUTPUT"
+          echo "app_name=${VAR_APP_NAME}${VAR_INSTANCE_NUMBER}-${INPUT_ENV_CODE}" >> "$GITHUB_OUTPUT"
         fi
 
     - name: Deploy WebApp Zip
