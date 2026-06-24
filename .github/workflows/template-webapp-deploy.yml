@@ -80,8 +80,18 @@ jobs:
 
         # Azure Web App naming: 2-60 chars, lowercase alphanumeric/hyphen, cannot start/end with hyphen.
         name_length=${#resolved_app_name}
-        if [ "$name_length" -lt 2 ] || [ "$name_length" -gt 60 ] || ! [[ "$resolved_app_name" =~ ^[a-z0-9-]+$ ]] || [[ "$resolved_app_name" == -* ]] || [[ "$resolved_app_name" == *- ]]; then
-          echo "Error: Web App name must be 2-60 chars, lowercase alphanumeric or hyphen, and cannot start/end with hyphen. Got: $resolved_app_name"
+        if [ "$name_length" -lt 2 ] || [ "$name_length" -gt 60 ]; then
+          echo "Error: Web App name must be 2-60 characters. Got: $resolved_app_name"
+          exit 1
+        fi
+
+        if ! [[ "$resolved_app_name" =~ ^[a-z0-9-]+$ ]]; then
+          echo "Error: Web App name must contain only lowercase alphanumeric characters or hyphens. Got: $resolved_app_name"
+          exit 1
+        fi
+
+        if [[ "$resolved_app_name" == -* ]] || [[ "$resolved_app_name" == *- ]]; then
+          echo "Error: Web App name cannot start or end with a hyphen. Got: $resolved_app_name"
           exit 1
         fi
 
