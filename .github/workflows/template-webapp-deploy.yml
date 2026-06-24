@@ -31,6 +31,7 @@ jobs:
 
     env:
       artifactName: webapp
+      # Precedence: explicit appName input -> prod naming -> non-prod naming
       generatedAppEnvName: "${{ inputs.appName != '' && inputs.appName || (inputs.envCode == 'prod' && format('{0}', vars.APP_NAME) || format('{0}{1}-{2}', vars.APP_NAME, vars.INSTANCE_NUMBER, inputs.envCode)) }}"
 
     steps:
