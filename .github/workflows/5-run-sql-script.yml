@@ -2,9 +2,7 @@
 # GHA Workflow to run a SQL script against an Azure SQL Database
 # ------------------------------------------------------------------------------------------------------------------------
 # You need to set up secrets in the GitHub Secrets Repository before running these workflows.
-#   AZURE_CLIENT_ID - Service principal client ID for Azure login
-#   AZURE_TENANT_ID - Azure tenant ID
-#   AZURE_SUBSCRIPTION_ID - Azure subscription ID
+#   AZURE_CREDENTIALS - Service principal credentials for Azure login
 #   SQL_ADMIN_USER - (Optional) SQL admin username for local SQL authentication
 #   SQL_ADMIN_PASSWORD - (Optional) SQL admin password for local SQL authentication
 # ------------------------------------------------------------------------------------------------------------------------
@@ -29,14 +27,23 @@ on:
       scriptName:
         description: 'SQL Script to Run'
         required: true
-        default: 'Add-App-User-Rights.sql'
+        default: 'InsertDefaultData.sql'
         type: choice
         options:
-          - 'Add-App-User-Rights.sql'
           - 'InsertDefaultData.sql'
           - 'Insert-List-ChangingLanes.sql'
           - 'Insert-List-Lyle.sql'
           - 'Insert-List-RVGoddessList'
+      databaseCopyName:
+        description: 'Database Copy Name (for DBCOPY action)'
+        required: false
+        default: 'DadABaseV02'
+        type: string
+      resourceGroupName:
+        description: 'Resource Group Name (for DBCOPY action)'
+        required: false
+        default: 'rg-dadabase-dev'
+        type: string
 
 # ------------------------------------------------------------------------------------------------------------------------
 jobs:
@@ -62,5 +69,6 @@ jobs:
       sqlFolderName: '${{ needs.load-config.outputs.sql_rootDirectory }}/Patch'
       sqlFileName: ${{ inputs.scriptName }}
       loginAccountType: ${{ inputs.loginAccountType }}
-      sqlCmdVariables: 'AppIdentityName=${{ vars.APP_NAME }}${{ vars.INSTANCE_NUMBER }}-${{ inputs.deployEnvironment }}'
+      resourceGroupName: ${{ inputs.resourceGroupName }}
+      databaseCopyName: ${{ inputs.databaseCopyName }}
     secrets: inherit
