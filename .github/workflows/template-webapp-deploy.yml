@@ -65,13 +65,21 @@ jobs:
         if [ -n "$INPUT_APP_NAME" ]; then
           resolved_app_name="$INPUT_APP_NAME"
         elif [ "$INPUT_ENV_CODE" = "prod" ]; then
+          if [ -z "$VAR_APP_NAME" ]; then
+            echo "Error: APP_NAME must be set when appName input is not provided."
+            exit 1
+          fi
           resolved_app_name="$VAR_APP_NAME"
         else
+          if [ -z "$VAR_APP_NAME" ] || [ -z "$VAR_INSTANCE_NUMBER" ] || [ -z "$INPUT_ENV_CODE" ]; then
+            echo "Error: APP_NAME, INSTANCE_NUMBER, and envCode are required to construct non-prod Web App name."
+            exit 1
+          fi
           resolved_app_name="${VAR_APP_NAME}${VAR_INSTANCE_NUMBER}-${INPUT_ENV_CODE}"
         fi
 
         # Azure Web App naming: 2-60 chars, lowercase alphanumeric/hyphen, cannot start/end with hyphen.
-        if ! [[ "$resolved_app_name" =~ ^[a-z0-9]([a-z0-9-]{0,58}[a-z0-9])?$ ]]; then
+        if ! [[ "$resolved_app_name" =~ ^[a-z0-9][a-z0-9-]{0,58}[a-z0-9]$ ]]; then
           echo "Error: Web App name must be 2-60 chars, lowercase alphanumeric or hyphen, and cannot start/end with hyphen. Got: $resolved_app_name"
           exit 1
         fi
