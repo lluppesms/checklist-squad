@@ -56,11 +56,11 @@ jobs:
         uses: NuGet/setup-nuget@v2
 
       - name: Restore NuGet Packages
-        run: nuget restore ${{ inputs.appFolderName }}/${{ inputs.appSolutionName }}.csproj
+        run: nuget restore ${{ inputs.appFolderName }}/${{ inputs.appSolutionName }}.sqlproj
 
       - name: Build DACPAC
         run: |
-          msbuild ${{ inputs.appFolderName }}/${{ inputs.appSolutionName }}.csproj `
+          msbuild ${{ inputs.appFolderName }}/${{ inputs.appSolutionName }}.sqlproj `
             /p:Configuration=${{ env.CONFIGURATION }} `
             /p:Platform="${{ env.PLATFORM }}" `
             /p:DropObjectsNotInSource=False
