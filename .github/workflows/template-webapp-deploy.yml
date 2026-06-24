@@ -61,6 +61,7 @@ jobs:
         VAR_APP_NAME: ${{ vars.APP_NAME }}
         VAR_INSTANCE_NUMBER: ${{ vars.INSTANCE_NUMBER }}
       run: |
+        # Priority: 1) explicit appName from infra outputs, 2) prod APP_NAME, 3) non-prod APP_NAME+INSTANCE_NUMBER-envCode
         if [ -n "$INPUT_APP_NAME" ]; then
           resolved_app_name="$INPUT_APP_NAME"
         elif [ "$INPUT_ENV_CODE" = "prod" ]; then
@@ -69,8 +70,9 @@ jobs:
           resolved_app_name="${VAR_APP_NAME}${VAR_INSTANCE_NUMBER}-${INPUT_ENV_CODE}"
         fi
 
-        if ! [[ "$resolved_app_name" =~ ^[a-zA-Z0-9-]+$ ]]; then
-          echo "Resolved app name contains unsupported characters: $resolved_app_name"
+        # Azure Web App naming: 2-60 chars, lowercase alphanumeric/hyphen, cannot start/end with hyphen.
+        if ! [[ "$resolved_app_name" =~ ^[a-z0-9]([a-z0-9-]{0,58}[a-z0-9])?$ ]]; then
+          echo "Error: Web App name must be 2-60 chars, lowercase alphanumeric or hyphen, and cannot start/end with hyphen. Got: $resolved_app_name"
           exit 1
         fi
 
