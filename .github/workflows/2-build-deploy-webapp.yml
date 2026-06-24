@@ -110,10 +110,11 @@ jobs:
     name: Deploy WebApp ${{ inputs.deployEnvironment }}
     uses: ./.github/workflows/template-webapp-deploy.yml
     if: inputs.runDeploy
-    needs: build-web-app
+    needs: [build-web-app, create-infra]
     secrets: inherit
     with:
       envCode: ${{ inputs.deployEnvironment }}
+      appName: ${{ needs.create-infra.outputs.web_app_name }}
 
 # ------------------------------------------------------------------------------------------------------------------------
   run-smoke-test:

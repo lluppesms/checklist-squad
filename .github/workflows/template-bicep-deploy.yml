@@ -7,6 +7,10 @@ name: z_template_deploy_infra
 run-name: Deploy Bicep
 on:
   workflow_call:
+    outputs:
+      web_app_name:
+        description: 'Deployed Web App name from Bicep outputs'
+        value: ${{ jobs.deploy.outputs.WEB_APP_NAME }}
     inputs:
       envCode:
         required: true
@@ -79,6 +83,7 @@ jobs:
     # ------------------------------------------------------------------------------------------------------------------------
     outputs:
       UI_CONTAINER_APP_FQDN: ${{ steps.deploy-bicep-rg.outputs.UI_CONTAINER_APP_FQDN }}
+      WEB_APP_NAME: ${{ steps.deploy-bicep-rg.outputs.webAppName || steps.deploy-bicep-sub.outputs.webAppName }}
 
     # ------------------------------------------------------------------------------------------------------------------------
     # Actions
