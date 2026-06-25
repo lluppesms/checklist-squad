@@ -75,5 +75,5 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: ${{ env.artifactName }}
-          path: ${{ inputs.appFolderName }}/bin/${{ env.PLATFORM }}/${{ inputs.appProjectName }}.dacpac
+          path: ${{ inputs.appFolderName }}/bin/${{ env.PLATFORM }}/${{ env.CONFIGURATION }}/${{ inputs.appProjectName }}.dacpac
           if-no-files-found: error
