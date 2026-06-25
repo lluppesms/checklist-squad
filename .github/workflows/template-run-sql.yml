@@ -37,16 +37,6 @@ on:
         required: false
         type: string
         default: ''
-      sqlCmdVariables:
-        required: false
-        type: string
-        default: ''
-        description: 'Comma-separated SQLCMD variables (e.g. "AppIdentityName=myapp-dev")'
-      addFirewallRule:
-        required: false
-        type: boolean
-        default: true
-        description: 'Temporarily add the runner IP to the SQL Server firewall before running the script, then remove it.'
 
 # ------------------------------------------------------------------------------------------------------------------------
 jobs:
@@ -55,10 +45,6 @@ jobs:
     runs-on: windows-latest
     environment:
       name: ${{ inputs.envCode }}
-    env:
-      sqlServerName: '${{ vars.SQL_SERVER_NAME_PREFIX }}${{vars.INSTANCE_NUMBER}}sql${{ inputs.envCode }}'
-      fqdnServerName: '${{ vars.SQL_SERVER_NAME_PREFIX }}${{vars.INSTANCE_NUMBER}}sql${{ inputs.envCode }}.database.windows.net'
-      resourceGroupName: ${{ vars.RESOURCE_GROUP_NAME || format('{0}-{1}-{2}', vars.RESOURCE_GROUP_PREFIX, inputs.envCode, vars.INSTANCE_NUMBER) }}
     permissions:
       id-token: write
     steps:
@@ -73,20 +59,44 @@ jobs:
           echo "runDateTime=$runDateTime" >> $env:GITHUB_OUTPUT
           echo "Run DateTime: $runDateTime"
 
+      - name: Resolve SQL target
+        shell: pwsh
+        run: |
+          $useExistingSqlResources = -not [string]::IsNullOrWhiteSpace('${{ vars.EXISTING_SQLSERVER_NAME }}') -and -not [string]::IsNullOrWhiteSpace('${{ vars.EXISTING_SQLDATABASE_NAME }}')
+
+          if ($useExistingSqlResources) {
+            $sqlServerName = '${{ vars.EXISTING_SQLSERVER_NAME }}'
+            $sqlDatabaseName = '${{ vars.EXISTING_SQLDATABASE_NAME }}'
+          }
+          else {
+            $sqlServerName = '${{ vars.SQL_SERVER_NAME_PREFIX }}${{ vars.INSTANCE_NUMBER }}sql${{ inputs.envCode }}'
+            $sqlDatabaseName = '${{ vars.SQL_DATABASE_NAME }}'
+          }
+
+          $fqdnServerName = "$sqlServerName.database.windows.net"
+
+          Add-Content -Path $env:GITHUB_ENV -Value "USE_EXISTING_SQL_RESOURCES=$useExistingSqlResources"
+          Add-Content -Path $env:GITHUB_ENV -Value "SQL_SERVER_NAME=$sqlServerName"
+          Add-Content -Path $env:GITHUB_ENV -Value "SQL_DATABASE_NAME=$sqlDatabaseName"
+          Add-Content -Path $env:GITHUB_ENV -Value "FQDN_SERVER_NAME=$fqdnServerName"
+
       - name: Display Variables
         shell: pwsh
         run: |
           Write-Host "Environment: ${{ inputs.envCode }}"
-          Write-Host "SQL Server Name: ${{ env.sqlServerName }}"
-          Write-Host "FQDN Server Name: ${{ env.fqdnServerName }}"
+          Write-Host "Use Existing SQL Resources: $env:USE_EXISTING_SQL_RESOURCES"
+          Write-Host "SQL Server Name: $env:SQL_SERVER_NAME"
+          Write-Host "SQL Database Name: $env:SQL_DATABASE_NAME"
+          Write-Host "FQDN Server Name: $env:FQDN_SERVER_NAME"
           echo "Server: vars.SQL_SERVER_NAME_PREFIX=${{ vars.SQL_SERVER_NAME_PREFIX }}"
-          echo "Database: inputs.sqlDatabaseName=${{ vars.SQL_DATABASE_NAME }}"
+          echo "Existing server: vars.EXISTING_SQLSERVER_NAME=${{ vars.EXISTING_SQLSERVER_NAME }}"
+          echo "Existing database: vars.EXISTING_SQLDATABASE_NAME=${{ vars.EXISTING_SQLDATABASE_NAME }}"
+          echo "Database: vars.SQL_DATABASE_NAME=${{ vars.SQL_DATABASE_NAME }}"
           Write-Host "SQL Folder: ${{ inputs.sqlFolderName }}"
           Write-Host "SQL File: ${{ inputs.sqlFileName }}"
           Write-Host "Login Type: ${{ inputs.loginAccountType }}"
           Write-Host "Resource Group: ${{ inputs.resourceGroupName }}"
           Write-Host "Database Copy Name: ${{ inputs.databaseCopyName }}"
-          Write-Host "SQLCMD Variables: ${{ inputs.sqlCmdVariables }}"
 
       - name: List Input Files
         shell: pwsh
@@ -106,38 +116,6 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      # Temporarily add the runner's public IP to the SQL Server firewall
-      - name: Add Runner IP to SQL Firewall
-        if: inputs.addFirewallRule
-        id: add-firewall
-        shell: pwsh
-        run: |
-          # Retry ipify with backoff to avoid rate limiting
-          $runnerIp = $null
-          foreach ($attempt in 1..5) {
-            try {
-              $runnerIp = (Invoke-RestMethod -Uri "https://api.ipify.org" -TimeoutSec 10).Trim()
-              break
-            } catch {
-              Write-Host "Attempt $attempt to get public IP failed: $_"
-              if ($attempt -lt 5) { Start-Sleep -Seconds (2 * $attempt) }
-            }
-          }
-          if (-not $runnerIp) {
-            # Fallback to alternative service
-            $runnerIp = (Invoke-RestMethod -Uri "https://ifconfig.me/ip" -TimeoutSec 10).Trim()
-          }
-          echo "runner-ip=$runnerIp" >> $env:GITHUB_OUTPUT
-          Write-Host "Runner public IP: $runnerIp"
-          Write-Host "Adding temporary firewall rule to server ${{ env.sqlServerName }} in ${{ env.resourceGroupName }}..."
-          az sql server firewall-rule create `
-            --resource-group "${{ env.resourceGroupName }}" `
-            --server "${{ env.sqlServerName }}" `
-            --name "gha-runner-temp-${{ github.run_id }}-sql-${{ github.job }}" `
-            --start-ip-address $runnerIp `
-            --end-ip-address $runnerIp
-          Write-Host "Firewall rule added successfully."
-
       # ------------------------------------------------------------------------------------------------------------------------
       # Run SQL Script with Local SQL User/Password
       # ------------------------------------------------------------------------------------------------------------------------
@@ -146,7 +124,7 @@ jobs:
         shell: pwsh
         run: |
           $sqlFile = "${{ inputs.sqlFolderName }}/${{ inputs.sqlFileName }}"
-          Write-Host "Running SQL script: $sqlFile on ${{ env.fqdnServerName }} / ${{ vars.SQL_DATABASE_NAME }}"
+          Write-Host "Running SQL script: $sqlFile on $env:FQDN_SERVER_NAME / $env:SQL_DATABASE_NAME"
           
           # Install SqlServer module if not present
           if (-not (Get-Module -ListAvailable -Name SqlServer)) {
@@ -154,23 +132,12 @@ jobs:
           }
           Import-Module SqlServer
           
-          $sqlParams = @{
-            ServerInstance = "${{ env.fqdnServerName }}"
-            Database       = "${{ vars.SQL_DATABASE_NAME }}"
-            Username       = "${{ secrets.SQL_ADMIN_USER }}"
-            Password       = "${{ secrets.SQL_ADMIN_PASSWORD }}"
-            InputFile      = "$sqlFile"
-            Verbose        = $true
-          }
-          
-          # Add SQLCMD variables if provided
-          $sqlCmdVars = "${{ inputs.sqlCmdVariables }}"
-          if ($sqlCmdVars -ne '') {
-            $varArray = $sqlCmdVars -split ',' | ForEach-Object { $_.Trim() }
-            $sqlParams.Variable = $varArray
-          }
-          
-          Invoke-Sqlcmd @sqlParams
+          Invoke-Sqlcmd -ServerInstance "$env:FQDN_SERVER_NAME" `
+            -Database "$env:SQL_DATABASE_NAME" `
+            -Username "${{ secrets.SQL_ADMIN_USER }}" `
+            -Password "${{ secrets.SQL_ADMIN_PASSWORD }}" `
+            -InputFile "$sqlFile" `
+            -Verbose
 
       # ------------------------------------------------------------------------------------------------------------------------
       # Run SQL Script with Service Principal Access Token
@@ -180,7 +147,7 @@ jobs:
         shell: pwsh
         run: |
           $sqlFile = "${{ inputs.sqlFolderName }}/${{ inputs.sqlFileName }}"
-          Write-Host "Running SQL script: $sqlFile on ${{ env.fqdnServerName }} / ${{ vars.SQL_DATABASE_NAME }}"
+          Write-Host "Running SQL script: $sqlFile on $env:FQDN_SERVER_NAME / $env:SQL_DATABASE_NAME"
           
           # Get access token for Azure SQL
           $accessToken = az account get-access-token --resource=https://database.windows.net/ --query accessToken -o tsv
@@ -191,22 +158,11 @@ jobs:
           }
           Import-Module SqlServer
           
-          $sqlParams = @{
-            ServerInstance = "${{ env.fqdnServerName }}"
-            Database       = "${{ vars.SQL_DATABASE_NAME }}"
-            AccessToken    = $accessToken
-            InputFile      = "$sqlFile"
-            Verbose        = $true
-          }
-          
-          # Add SQLCMD variables if provided
-          $sqlCmdVars = "${{ inputs.sqlCmdVariables }}"
-          if ($sqlCmdVars -ne '') {
-            $varArray = $sqlCmdVars -split ',' | ForEach-Object { $_.Trim() }
-            $sqlParams.Variable = $varArray
-          }
-          
-          Invoke-Sqlcmd @sqlParams
+          Invoke-Sqlcmd -ServerInstance "$env:FQDN_SERVER_NAME" `
+            -Database "$env:SQL_DATABASE_NAME" `
+            -AccessToken $accessToken `
+            -InputFile "$sqlFile" `
+            -Verbose
 
       # ------------------------------------------------------------------------------------------------------------------------
       # Run Database Copy with Service Principal
@@ -215,8 +171,8 @@ jobs:
         if: inputs.loginAccountType == 'SVC_PRINCIPAL' && inputs.sqlFileName == 'DBCOPY'
         shell: pwsh
         run: |
-          Write-Host "Copying database ${{ vars.SQL_DATABASE_NAME }} to ${{ inputs.databaseCopyName }}"
-          Write-Host "Server: ${{ env.sqlServerName }}, Resource Group: ${{ inputs.resourceGroupName }}"
+          Write-Host "Copying database $env:SQL_DATABASE_NAME to ${{ inputs.databaseCopyName }}"
+          Write-Host "Server: $env:SQL_SERVER_NAME, Resource Group: ${{ inputs.resourceGroupName }}"
           
           # Install Az.Sql module if not present
           if (-not (Get-Module -ListAvailable -Name Az.Sql)) {
@@ -226,23 +182,11 @@ jobs:
           
           New-AzSqlDatabaseCopy `
             -ResourceGroupName "${{ inputs.resourceGroupName }}" `
-            -ServerName "${{ env.sqlServerName }}" `
-            -DatabaseName "${{ vars.SQL_DATABASE_NAME }}" `
+            -ServerName "$env:SQL_SERVER_NAME" `
+            -DatabaseName "$env:SQL_DATABASE_NAME" `
             -CopyResourceGroupName "${{ inputs.resourceGroupName }}" `
-            -CopyServerName "${{ env.sqlServerName }}" `
+            -CopyServerName "$env:SQL_SERVER_NAME" `
             -CopyDatabaseName "${{ inputs.databaseCopyName }}"
-
-      # Always remove the temporary firewall rule, even if the script fails
-      - name: Remove Runner IP from SQL Firewall
-        if: always() && inputs.addFirewallRule && steps.add-firewall.outcome == 'success'
-        shell: pwsh
-        run: |
-          Write-Host "Removing temporary firewall rule from server ${{ env.sqlServerName }}..."
-          az sql server firewall-rule delete `
-            --resource-group "${{ env.resourceGroupName }}" `
-            --server "${{ env.sqlServerName }}" `
-            --name "gha-runner-temp-${{ github.run_id }}-sql-${{ github.job }}"
-          Write-Host "Firewall rule removed successfully."
 
       - name: Azure Logout
         if: always()

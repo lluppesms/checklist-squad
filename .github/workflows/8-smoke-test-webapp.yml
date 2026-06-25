@@ -26,10 +26,10 @@ jobs:
     secrets: inherit
 
   run-smoke-test:
-    name: Smoke Test ${{ inputs.deployEnvironment || 'dev' }}
+    name: Smoke Test ${{ inputs.deployEnvironment }}
     needs: [load-config]
     uses: ./.github/workflows/template-smoke-test.yml
     secrets: inherit
     with:
-      envCode: ${{ inputs.deployEnvironment || 'dev' }}
+      envCode: ${{ inputs.deployEnvironment }}
       testProject: '${{ needs.load-config.outputs.web_playwrightDirectory }}/${{ needs.load-config.outputs.web_playwrightProjectName }}.csproj'

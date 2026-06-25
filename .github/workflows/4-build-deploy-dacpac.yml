@@ -26,8 +26,8 @@ on:
         options:
           - 'build-deploy'
           - 'build-only'
-      addFirewallRule:
-        description: Temporarily add runner IP to SQL firewall?
+      createDefaultData:
+        description: Create Default Data?
         type: boolean
         default: true
 

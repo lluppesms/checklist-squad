@@ -40,12 +40,15 @@ on:
         default: true
         type: boolean
       createResourceGroup:
+        description: Create Resource Group?
         type: boolean
         default: false
       requestorName:
+        description: Requestor Name
         type: string
         default: 'UNKNOWN'
       bicepDeploymentMode:
+        description: 'Bicep deploy action: Valid = create, validate, whatIf'
         required: false
         type: string
         default: 'create'
@@ -133,7 +136,7 @@ jobs:
       uses: qetza/replacetokens-action@v1
       with:
         sources: '${{ inputs.templatePath }}${{ inputs.parameterFile }}; !local/ => ${{ inputs.parameterFile }}'
-        variables: '[${{ toJSON(env) }},${{ toJSON(vars) }},${{ toJSON(secrets) }}]'
+        variables: '[${{ toJSON(env) }},${{ toJSON(vars) }},${{ toJSON(secrets) }}]' # use environment & variables & secrets
 
     - name: Display Param File
       if: ${{ inputs.runCreateInfra }}
@@ -217,6 +220,32 @@ jobs:
           # Deployment summary
           - Resource Group: ${{ steps.deploy-bicep-rg.outputs.RESOURCE_GROUP_NAME || steps.deploy-bicep-sub.outputs.RESOURCE_GROUP_NAME }}
           - Environment: ${{ inputs.envCode }}
-          - Application URL: [https://${{ steps.deploy-bicep-rg.outputs.HOST_NAME || steps.deploy-bicep-sub.outputs.HOST_NAME }}](https://${{ steps.deploy-bicep-rg.outputs.HOST_NAME || steps.deploy-bicep-sub.outputs.HOST_NAME }})
+          - Application URL: [https://${{ steps.deploy-bicep-rg.outputs.WEB_HOST_NAME || steps.deploy-bicep-sub.outputs.WEB_HOST_NAME }}](https://${{ steps.deploy-bicep-rg.outputs.WEB_HOST_NAME || steps.deploy-bicep-sub.outputs.WEB_HOST_NAME }})
+
+          ## First-time SQL database permissions
+          If this is the first time you created the SQL database, grant rights to your CI/CD service principal so it can deploy the DACPAC schema, create the schema, then grant the application access to use the data.
+
+          **CI/CD:**
+          ```sql
+          CREATE USER [yourServicePrincipalName] FROM EXTERNAL PROVIDER;
+          ALTER ROLE db_owner ADD MEMBER [yourServicePrincipalName];
+          ```
+
+          **Schema:**
+          ```sql
+          CREATE SCHEMA [Checklist];
+          GO
+          ```
+
+          **Application:**
+          ```sql
+          CREATE USER [yourAppManagedIdentityName] FROM EXTERNAL PROVIDER;
+          GRANT SELECT, INSERT, UPDATE, DELETE ON SCHEMA::[Checklist] TO [yourAppManagedIdentityName];
+          GRANT EXECUTE ON SCHEMA::[Checklist] TO [yourAppManagedIdentityName];
+
+          CREATE USER [yourAppId] FROM EXTERNAL PROVIDER;
+          GRANT SELECT, INSERT, UPDATE, DELETE ON SCHEMA::[Checklist] TO [yourAppId];
+          GRANT EXECUTE ON SCHEMA::[Checklist] TO [yourAppId];
+          ```
       run: echo "$SUMMARY" >> $GITHUB_STEP_SUMMARY
       continue-on-error: true
