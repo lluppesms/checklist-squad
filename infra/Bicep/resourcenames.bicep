@@ -2,7 +2,7 @@
 // Bicep file that builds all the resource names used by other Bicep templates
 // --------------------------------------------------------------------------------
 param appName string = ''
-param environmentCode string = 'dev'
+param environmentCode string = 'azd'
 param instanceNumber string = '1'
 
 // --------------------------------------------------------------------------------
@@ -16,7 +16,8 @@ var sanitizedAppNameInstance = replace(replace(replace(toLower('${appName}${inst
 var resourceAbbreviations = loadJsonContent('./data/resourceAbbreviations.json')
 
 // --------------------------------------------------------------------------------
-var webSiteName = environmentCode == 'prod' ? toLower('${sanitizedAppNameWithDashes}') : toLower('${sanitizedAppInstanceNameWithDashes}-${sanitizedEnvironment}')
+var webSiteName         = environmentCode == 'prod' ? toLower('${sanitizedAppNameWithDashes}') : toLower('${sanitizedAppInstanceNameWithDashes}-${sanitizedEnvironment}')
+var baseStorageName     = toLower('${sanitizedAppNameInstance}${resourceAbbreviations.storageAccountSuffix}${sanitizedEnvironment}')
 
 // --------------------------------------------------------------------------------
 output logAnalyticsWorkspaceName string  = toLower('${sanitizedAppInstanceNameWithDashes}-${sanitizedEnvironment}-${resourceAbbreviations.logWorkspaceSuffix}')
@@ -27,5 +28,6 @@ output sqlServerName string              = toLower('${sanitizedAppNameInstance}$
 output signalRServiceName string         = toLower('${sanitizedAppInstanceNameWithDashes}-${resourceAbbreviations.signalRSuffix}-${sanitizedEnvironment}')
 output userAssignedIdentityName string   = toLower('${sanitizedAppNameInstance}-app-${resourceAbbreviations.managedIdentity}')
 
-// Key Vaults can only be 24 characters long
+// Key Vaults and Storage Accounts can only be 24 characters long
 output keyVaultName string               = take('${sanitizedAppNameInstance}${resourceAbbreviations.keyVaultAbbreviation}${sanitizedEnvironment}', 24)
+output storageAccountName string         = take('${sanitizedAppNameInstance}${resourceAbbreviations.storageAccountSuffix}${sanitizedEnvironment}', 24)

@@ -2,82 +2,95 @@
 // Main Bicep file that creates all of the Azure Resources for one environment
 // --------------------------------------------------------------------------------
 // To deploy this Bicep manually:
-//   az login
+// 	 az login
 //   az account set --subscription <subscriptionId>
 //   az deployment group create -n "manual-$(Get-Date -Format 'yyyyMMdd-HHmmss')" `
 //     --resource-group rg-checklist-dev --template-file 'main.bicep' --parameters appName=xxx environmentCode=dev adminUserId=xxxxxxxx-xxxx-xxxx
 // --------------------------------------------------------------------------------
-param appName string
-
-@allowed(['dev', 'qa', 'prod'])
-@description('The environment code (dev, qa, prod).')
-param environmentCode string = 'dev'
-
-@description('The Azure region for resource deployment.')
+param appName string = ''
+param environmentCode string = 'azd'
 param location string = resourceGroup().location
-
-@description('The instance number for multiple deployments.')
 param instanceNumber string = '1'
+
+@description('Deployment type for the web application')
+param deploymentType string = 'webapp'  // ['webapp', 'containerapp', 'functionapp', 'all']
 
 @description('Deploy only website infrastructure (skip SQL resources).')
 param websiteOnly bool = false
 
-@description('Name of a pre-existing App Service Plan to use instead of creating a new one.')
+//@description('Optional Object ID of the Azure DevOps service principal to grant AcrPush on the Container Registry')
+// param pipelineServicePrincipalObjectId string = ''
+
 param servicePlanName string = ''
+param servicePlanResourceGroupName string = '' // if using an existing service plan in a different resource group
 
-@description('Resource group of a pre-existing App Service Plan.')
-param servicePlanResourceGroupName string = ''
-
-@description('The kind of web app (linux or windows).')
-param webAppKind string = 'linux'
-
-@description('The SKU for the App Service Plan when creating a new one.')
-@allowed(['F1','B1','B2','S1','S2','S3'])
+param webAppKind string = 'linux' // 'linux' or 'windows'
 param webSiteSku string = 'B1'
+param webStorageSku string = 'Standard_LRS'
+param webApiKey string = ''
 
-@description('The name of the SQL database.')
-param sqlDatabaseName string = 'CheckListDb'
+param sqlDatabaseName string = 'checklist'
+@allowed(['Basic','Standard','Premium','BusinessCritical','GeneralPurpose'])
+param sqlSkuTier string = 'GeneralPurpose'
+param sqlSkuFamily string = 'Gen5'
+param sqlSkuName string = 'GP_S_Gen5'
+param sqlAdminLoginUserId string = ''
+param sqlAdminLoginUserSid string = ''
+param sqlAdminLoginTenantId string = ''
+param sqlAdminUser string = ''
+@secure()
+param sqlAdminPassword string = ''
 
-@description('Name of an existing SQL Server to use instead of creating a new one.')
 param existingSqlServerName string = ''
-
-@description('Resource group of an existing SQL Server.')
+param existingSqlDatabaseName string = ''
 param existingSqlServerResourceGroupName string = ''
 
-@description('The AAD admin login user ID (email).')
-param sqlAdminLoginUserId string = ''
+param adInstance string = environment().authentication.loginEndpoint // 'https://login.microsoftonline.com/'
+param adDomain string = ''
+param adTenantId string = ''
+param adClientId string = ''
+param adCallbackPath string = '/signin-oidc'
 
-@description('The AAD admin login user SID (object ID).')
-param sqlAdminLoginUserSid string = ''
+param adminUserList string = ''
 
-@description('The AAD admin login tenant ID.')
-param sqlAdminLoginTenantId string = ''
+@description('Data source used by the web app. JSON avoids database-backed repository usage.')
+@allowed(['JSON', 'SQL'])
+param appDataSource string = 'JSON'
+param appSwaggerEnabled string = 'true'
 
-@description('The Key Vault owner user ID (object ID).')
+@description('Add Role Assignments for the user assigned identity?')
+param addRoleAssignments bool = true
+
+@description('Add this Admin User Id to KeyVault Access')
 param adminUserId string = ''
-
-@description('The Entra ID (Azure AD) tenant ID for app authentication.')
-param azureAdTenantId string = ''
-
-@description('The Entra ID (Azure AD) app registration client ID for app authentication.')
-param azureAdClientId string = ''
-
-@description('The Entra ID (Azure AD) tenant domain for app authentication (e.g. myorg.onmicrosoft.com).')
-param azureAdDomain string = ''
 
 // calculated variables disguised as parameters
 param runDateTime string = utcNow()
 
 // --------------------------------------------------------------------------------
 var deploymentSuffix = '-${runDateTime}'
+var existingServicePlanNameEffective = empty(trim(servicePlanName)) || contains(servicePlanName, '#{') ? '' : trim(servicePlanName)
+var existingServicePlanRgNameEffective = empty(trim(servicePlanResourceGroupName)) || contains(servicePlanResourceGroupName, '#{') ? '' : trim(servicePlanResourceGroupName)
+var existingSqlServerNameEffective = empty(trim(existingSqlServerName)) || contains(existingSqlServerName, '#{') ? '' : trim(existingSqlServerName)
+var existingSqlDatabaseNameEffective = empty(trim(existingSqlDatabaseName)) || contains(existingSqlDatabaseName, '#{') ? '' : trim(existingSqlDatabaseName)
+var existingSqlServerRgNameEffective = empty(trim(existingSqlServerResourceGroupName)) || contains(existingSqlServerResourceGroupName, '#{') ? '' : trim(existingSqlServerResourceGroupName)
 var commonTags = {
   LastDeployed: runDateTime
   Application: appName
   Environment: environmentCode
 }
+var resourceGroupName = resourceGroup().name
+var useSqlDataSource = toUpper(appDataSource) == 'SQL' && !websiteOnly
+var webAppConnectionString = useSqlDataSource ? sqlDbModule!.outputs.identityConnectionString : ''
+var deploymentTypeNormalized = toLower(deploymentType)
+var deployWebAppEffective = contains(['webapp', 'all'], deploymentTypeNormalized)
+var deployWebsiteEffective = deployWebAppEffective
+var keyVaultApplicationUserObjectIds = deployWebsiteEffective
+  ? concat(
+      deployWebAppEffective ? [ webSiteModule!.outputs.userManagedPrincipalId, webSiteModule!.outputs.systemPrincipalId ] : [])
+  : [ identity.outputs.managedIdentityPrincipalId ]
+// var resourceToken = toLower(uniqueString(resourceGroup().id, location))
 
-// --------------------------------------------------------------------------------
-// Resource Names
 // --------------------------------------------------------------------------------
 module resourceNames 'resourcenames.bicep' = {
   name: 'resourcenames${deploymentSuffix}'
@@ -89,35 +102,51 @@ module resourceNames 'resourcenames.bicep' = {
 }
 
 // --------------------------------------------------------------------------------
-// Monitoring: Log Analytics + App Insights
-// --------------------------------------------------------------------------------
-module monitorModule 'modules/monitor/monitor.bicep' = {
-  name: 'monitor${deploymentSuffix}'
+module logAnalyticsWorkspaceModule './modules/monitor/loganalyticsworkspace.bicep' = {
+  name: 'logAnalytics${deploymentSuffix}'
   params: {
     logAnalyticsWorkspaceName: resourceNames.outputs.logAnalyticsWorkspaceName
-    appInsightsName: resourceNames.outputs.webSiteAppInsightsName
     location: location
     commonTags: commonTags
   }
 }
 
 // --------------------------------------------------------------------------------
-// Database: Azure SQL Server + Database
-// --------------------------------------------------------------------------------
-module databaseModule 'modules/database/sqlserver.bicep' = if (!websiteOnly) {
-  name: 'database${deploymentSuffix}'
+module storageModule './modules/storage/storageaccount.bicep' = {
+  name: 'storage${deploymentSuffix}'
   params: {
-    sqlServerName: resourceNames.outputs.sqlServerName
-    sqlDatabaseName: sqlDatabaseName
-    existingSqlServerName: existingSqlServerName
-    existingSqlServerResourceGroupName: existingSqlServerResourceGroupName
+    storageSku: webStorageSku
+    storageAccountName: resourceNames.outputs.storageAccountName
     location: location
     commonTags: commonTags
-    environmentCode: environmentCode
-    adAdminLoginUserId: sqlAdminLoginUserId
-    adAdminLoginUserSid: sqlAdminLoginUserSid
-    adAdminLoginTenantId: sqlAdminLoginTenantId
-    workspaceId: monitorModule.outputs.logAnalyticsWorkspaceId
+    containerNames: ['input', 'output', 'backup-data']
+  }
+}
+
+// --------------------------------------------------------------------------------
+module sqlDbModule './modules/database/sqlserver.bicep' = {
+  name: 'sql-server${deploymentSuffix}'
+  params: {
+    sqlServerName: resourceNames.outputs.sqlServerName
+    sqlDBName: sqlDatabaseName
+    existingSqlServerName: existingSqlServerNameEffective
+    existingSqlDatabaseName: existingSqlDatabaseNameEffective
+    existingSqlServerResourceGroupName: existingSqlServerRgNameEffective
+    sqlSkuTier: sqlSkuTier
+    sqlSkuName: sqlSkuName
+    sqlSkuFamily: sqlSkuFamily
+    mincores: 1
+    autopause: 60
+    location: location
+    commonTags: commonTags
+    adAdminUserId: sqlAdminLoginUserId
+    adAdminUserSid: sqlAdminLoginUserSid
+    adAdminTenantId: sqlAdminLoginTenantId
+    userAssignedIdentityResourceId: identity.outputs.managedIdentityId
+    sqlAdminUser:sqlAdminUser
+    sqlAdminPassword: sqlAdminPassword
+    workspaceId: logAnalyticsWorkspaceModule.outputs.id
+    addSecurityControlIgnoreTag: true
   }
 }
 
@@ -135,79 +164,128 @@ module signalRModule 'modules/signalr/signalr.bicep' = {
 }
 
 // --------------------------------------------------------------------------------
-// App Service Plan (new or existing)
-// --------------------------------------------------------------------------------
-module appServicePlanModule 'modules/webapp/websiteserviceplan.bicep' = {
-  name: 'appServicePlan${deploymentSuffix}'
+module identity './modules/iam/identity.bicep' = {
+  name: 'appIdentity${deploymentSuffix}'
   params: {
+    identityName: resourceNames.outputs.userAssignedIdentityName
     location: location
-    commonTags: commonTags
-    sku: webSiteSku
-    appServicePlanName: servicePlanName == '' ? resourceNames.outputs.webSiteAppServicePlanName : servicePlanName
-    existingServicePlanName: servicePlanName
-    existingServicePlanResourceGroupName: servicePlanResourceGroupName
-    webAppKind: webAppKind
+  }
+}
+
+module appRoleAssignments './modules/iam/roleassignments.bicep' = if (addRoleAssignments) {
+  name: 'appRoleAssignments${deploymentSuffix}'
+  params: {
+    identityPrincipalId: identity.outputs.managedIdentityPrincipalId
+    principalType: 'ServicePrincipal'
+    storageAccountName: storageModule.outputs.name
+    keyVaultName:  keyVaultModule.outputs.name
+  }
+}
+// also add rights to the web app storage account (App Service only)
+module appRoleAssignments2 './modules/iam/roleassignments.bicep' = if (addRoleAssignments && deployWebAppEffective) {
+  name: 'appRoleAssignments-webapp-storage${deploymentSuffix}'
+  params: {
+    identityPrincipalId: webSiteModule!.outputs.systemPrincipalId
+    principalType: 'ServicePrincipal'
+    storageAccountName: storageModule.outputs.name
   }
 }
 
 // --------------------------------------------------------------------------------
-// Web App
-// --------------------------------------------------------------------------------
-var webAppConnectionString = !websiteOnly ? databaseModule!.outputs.connectionString : ''
-
-module webAppModule 'modules/webapp/webapp.bicep' = {
-  name: 'webapp${deploymentSuffix}'
-  params: {
-    webSiteName: resourceNames.outputs.webSiteName
-    location: location
-    commonTags: commonTags
-    environmentCode: environmentCode
-    appInsightsConnectionString: monitorModule.outputs.appInsightsConnectionString
-    appInsightsInstrumentationKey: monitorModule.outputs.appInsightsInstrumentationKey
-    workspaceId: monitorModule.outputs.logAnalyticsWorkspaceId
-    appServicePlanName: appServicePlanModule.outputs.name
-    appServicePlanResourceGroupName: appServicePlanModule.outputs.resourceGroupName
-    webAppKind: webAppKind
-    customAppSettings: {
-      ASPNETCORE_ENVIRONMENT: environmentCode == 'prod' ? 'Production' : 'Development'
-      ConnectionStrings__DefaultConnection: webAppConnectionString
-      Azure__SignalR__ConnectionString: '@Microsoft.KeyVault(VaultName=${resourceNames.outputs.keyVaultName};SecretName=SignalRConnectionString)'
-      AzureAd__Instance: 'https://login.microsoftonline.com/'
-      AzureAd__TenantId: azureAdTenantId
-      AzureAd__ClientId: azureAdClientId
-      AzureAd__Domain: azureAdDomain
-      AzureAd__CallbackPath: '/signin-oidc'
-      AzureAd__SignedOutCallbackPath: '/signout-callback-oidc'
-    }
-  }
-}
-
-// --------------------------------------------------------------------------------
-// Security: Key Vault with secrets
-// --------------------------------------------------------------------------------
-module keyVaultModule 'modules/security/keyvault.bicep' = {
-  name: 'keyvault${deploymentSuffix}'
+module keyVaultModule './modules/security/keyvault.bicep' = {
+  name: 'keyVault${deploymentSuffix}'
   params: {
     keyVaultName: resourceNames.outputs.keyVaultName
     location: location
     commonTags: commonTags
     keyVaultOwnerUserId: adminUserId
-    applicationUserObjectIds: [webAppModule.outputs.principalId]
-    workspaceId: monitorModule.outputs.logAnalyticsWorkspaceId
-    sqlConnectionString: webAppConnectionString
-    signalRConnectionString: signalRModule.outputs.signalRConnectionString
+    adminUserObjectIds: [ identity.outputs.managedIdentityPrincipalId ]
+    applicationUserObjectIds: keyVaultApplicationUserObjectIds
+    workspaceId: logAnalyticsWorkspaceModule.outputs.id
     publicNetworkAccess: 'Enabled'
     allowNetworkAccess: 'Allow'
+    useRBAC: true
+  }
+}
+
+module keyVaultStorageSecret './modules/security/keyvaultsecretstorageconnection.bicep' = if (deployWebAppEffective) {
+  name: 'keyVaultStorageSecret${deploymentSuffix}'
+  params: {
+    keyVaultName: keyVaultModule.outputs.name
+    secretName: 'azurefilesconnectionstring'
+    storageAccountName: storageModule!.outputs.name
+  }
+}
+module keyVaultSignalRSecret './modules/security/keyvaultsecretsignalrconnection.bicep' = if (deployWebAppEffective) {
+  name: 'keyVaultSignalRSecret${deploymentSuffix}'
+  params: {
+    keyVaultName: keyVaultModule.outputs.name
+    secretName: 'azurefilesconnectionstring'
+    signalRName: signalRModule.outputs.signalRName
+  }
+}
+
+// --------------------------------------------------------------------------------
+// App Service Infrastructure (deployed when deploymentType is webapp/appservice alias or all)
+// --------------------------------------------------------------------------------
+module appServicePlanModule './modules/webapp/websiteserviceplan.bicep' = if (deployWebAppEffective) {
+  name: 'appService${deploymentSuffix}'
+  params: {
+    location: location
+    commonTags: commonTags
+    sku: webSiteSku
+    appServicePlanName: empty(existingServicePlanNameEffective) ? resourceNames.outputs.webSiteAppServicePlanName : existingServicePlanNameEffective
+    existingServicePlanName: existingServicePlanNameEffective
+    existingServicePlanResourceGroupName: existingServicePlanRgNameEffective
+    webAppKind: webAppKind
+  }
+}
+
+module webSiteModule './modules/webapp/website.bicep' = if (deployWebAppEffective) {
+  name: 'webSite${deploymentSuffix}'
+  params: {
+    webSiteName: resourceNames.outputs.webSiteName
+    location: location
+    appInsightsLocation: location
+    commonTags: commonTags
+    environmentCode: environmentCode
+    webAppKind: webAppKind
+    managedIdentityId: identity.outputs.managedIdentityId
+    managedIdentityPrincipalId: identity.outputs.managedIdentityPrincipalId
+    workspaceId: logAnalyticsWorkspaceModule.outputs.id
+    appServicePlanName: appServicePlanModule!.outputs.name
+    appServicePlanResourceGroupName: appServicePlanModule!.outputs.resourceGroupName
+// In a Linux app service, any nested JSON app key like AppSettings:MyKey needs to be 
+// configured in App Service as AppSettings__MyKey for the key name. 
+// In other words, any : should be replaced by __ (double underscore).
+// NOTE: See https://learn.microsoft.com/en-us/azure/app-service/configure-common?tabs=portal
+    customAppSettings: {
+      AppSettings__AppInsights_InstrumentationKey: '' // Will be set by base settings
+      ConnectionStrings__DefaultConnection: webAppConnectionString
+      AppSettings__DefaultConnection: webAppConnectionString
+      Azure__SignalR__ConnectionString: '@Microsoft.KeyVault(VaultName=${resourceNames.outputs.keyVaultName};SecretName=SignalRConnectionString)'
+      AppSettings__EnvironmentName: environmentCode
+      AppSettings__EnableSwagger: appSwaggerEnabled
+      AppSettings__DataSource: appDataSource
+      AppSettings__ApiKey: webApiKey
+      AppSettings__AdminUserList: adminUserList
+      AzureAD__Instance: adInstance
+      AzureAD__Domain: adDomain
+      AzureAD__TenantId: adTenantId
+      AzureAD__ClientId: adClientId
+      AzureAD__CallbackPath: adCallbackPath
+    }
   }
 }
 
 // --------------------------------------------------------------------------------
 // Outputs
 // --------------------------------------------------------------------------------
-output webAppName string = webAppModule.outputs.webAppName
-output webAppHostName string = webAppModule.outputs.defaultHostName
-output webAppUrl string = 'https://${webAppModule.outputs.defaultHostName}'
-output sqlServerFqdn string = !websiteOnly ? databaseModule!.outputs.serverFqdn : ''
+output SUBSCRIPTION_ID string = subscription().subscriptionId
+output RESOURCE_GROUP_NAME string = resourceGroupName
+output DEPLOYMENT_TYPE string = deploymentTypeNormalized
+output WEB_HOST_NAME string = deployWebAppEffective ? webSiteModule!.outputs.hostName : ''
+output WEB_URL string = deployWebAppEffective ? 'https://${webSiteModule!.outputs.hostName}' : ''
 output keyVaultName string = keyVaultModule.outputs.name
 output signalRHostName string = signalRModule.outputs.signalRHostName
-output appInsightsName string = monitorModule.outputs.appInsightsName
+

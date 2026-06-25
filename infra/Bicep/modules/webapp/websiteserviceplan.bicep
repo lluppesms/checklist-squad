@@ -15,14 +15,15 @@ param sku string = 'B1'
 param webAppKind string = 'linux'
 
 // --------------------------------------------------------------------------------
-var templateTag = { TemplateFile: '~websiteserviceplan.bicep'}
+var templateTag = { TemplateFile: '~website.bicep'}
 var tags = union(commonTags, templateTag)
+var existingServicePlanRgName = empty(existingServicePlanResourceGroupName) ? resourceGroup().name : existingServicePlanResourceGroupName
 
 // --------------------------------------------------------------------------------
 
 resource existingAppServiceResource 'Microsoft.Web/serverfarms@2024-11-01' existing = if (!empty(existingServicePlanName)) {
   name: existingServicePlanName
-  scope: resourceGroup(existingServicePlanResourceGroupName == '' ? resourceGroup().name : existingServicePlanResourceGroupName)
+  scope: resourceGroup(existingServicePlanRgName)
 }
 
 resource appServiceResource 'Microsoft.Web/serverfarms@2024-11-01' = if (empty(existingServicePlanName)) {
@@ -39,4 +40,4 @@ resource appServiceResource 'Microsoft.Web/serverfarms@2024-11-01' = if (empty(e
 }
 output name string = empty(existingServicePlanName) ? appServiceResource.name : existingAppServiceResource.name
 output id string = empty(existingServicePlanName) ? appServiceResource.id : existingAppServiceResource.id
-output resourceGroupName string = empty(existingServicePlanName) ? resourceGroup().name : existingServicePlanResourceGroupName
+output resourceGroupName string = empty(existingServicePlanName) ? resourceGroup().name : existingServicePlanRgName

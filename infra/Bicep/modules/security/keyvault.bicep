@@ -1,8 +1,8 @@
 // --------------------------------------------------------------------------------
-// This BICEP file will create a Key Vault with secrets
+// This BICEP file will create a KeyVault
 // FYI: To purge a KV with soft delete enabled: > az keyvault purge --name kvName
 // --------------------------------------------------------------------------------
-param keyVaultName string
+param keyVaultName string = 'mykeyvaultname'
 param location string = resourceGroup().location
 param commonTags object = {}
 
@@ -21,7 +21,7 @@ param enabledForDeployment bool = true
 @description('Determines if templates can reference secrets from this Key Vault.')
 param enabledForTemplateDeployment bool = true
 @description('Determines if this Key Vault can be used for Azure Disk Encryption.')
-param enabledForDiskEncryption bool = false
+param enabledForDiskEncryption bool = true
 @description('Determine if soft delete is enabled on this Key Vault.')
 param enableSoftDelete bool = false
 @description('Determine if purge protection is enabled on this Key Vault.')
@@ -36,20 +36,18 @@ param publicNetworkAccess string = 'Enabled'
 @allowed(['Allow','Deny'])
 param allowNetworkAccess string = 'Allow'
 
-@description('The Log Analytics workspace ID for diagnostic settings.')
+@description('The workspace to store audit logs.')
+@metadata({
+  strongType: 'Microsoft.OperationalInsights/workspaces'
+  example: '/subscriptions/<subscription_id>/resourceGroups/<resource_group>/providers/Microsoft.OperationalInsights/workspaces/<workspace_name>'
+})
 param workspaceId string = ''
-
-@description('SQL Server connection string to store as a secret')
-@secure()
-param sqlConnectionString string = ''
-
-@description('SignalR connection string to store as a secret')
-@secure()
-param signalRConnectionString string = ''
 
 // --------------------------------------------------------------------------------
 var templateTag = { TemplateFile: '~keyvault.bicep' }
 var tags = union(commonTags, templateTag)
+
+var skuName = 'standard'
 var subTenantId = subscription().tenantId
 
 var ownerAccessPolicy = keyVaultOwnerUserId == '' ? [] : [
@@ -61,7 +59,7 @@ var ownerAccessPolicy = keyVaultOwnerUserId == '' ? [] : [
       secrets: [ 'all' ]
       keys: [ 'all' ]
     }
-  }
+  } 
 ]
 var adminAccessPolicies = [for adminUser in adminUserObjectIds: {
   objectId: adminUser
@@ -76,17 +74,17 @@ var applicationUserPolicies = [for appUser in applicationUserObjectIds: {
   objectId: appUser
   tenantId: subTenantId
   permissions: {
-    secrets: [ 'get', 'list' ]
+    secrets: [ 'get' ]
+    keys: [ 'get', 'wrapKey', 'unwrapKey' ] // Azure SQL uses these permissions to access TDE key
   }
 }]
-
 var accessPolicies = union(ownerAccessPolicy, adminAccessPolicies, applicationUserPolicies)
 
 var kvIpRules = keyVaultOwnerIpAddress == '' ? [] : [
   {
     value: keyVaultOwnerIpAddress
   }
-]
+] 
 
 // --------------------------------------------------------------------------------
 resource keyVaultResource 'Microsoft.KeyVault/vaults@2023-07-01' = {
@@ -96,43 +94,25 @@ resource keyVaultResource 'Microsoft.KeyVault/vaults@2023-07-01' = {
   properties: {
     sku: {
       family: 'A'
-      name: 'standard'
+      name: skuName
     }
     tenantId: subTenantId
     enableRbacAuthorization: useRBAC
     accessPolicies: accessPolicies
     enabledForDeployment: enabledForDeployment
-    enabledForTemplateDeployment: enabledForTemplateDeployment
     enabledForDiskEncryption: enabledForDiskEncryption
+    enabledForTemplateDeployment: enabledForTemplateDeployment
     enableSoftDelete: enableSoftDelete
-    enablePurgeProtection: enablePurgeProtection
-    createMode: 'default'
+    enablePurgeProtection: enablePurgeProtection // Not allowing to purge key vault or its objects after deletion
+    createMode: 'default'                        // Creating or updating the key vault (not recovering)
     softDeleteRetentionInDays: softDeleteRetentionInDays
-    publicNetworkAccess: publicNetworkAccess
+    publicNetworkAccess: publicNetworkAccess   // Allow access from all networks
     networkAcls: {
       defaultAction: allowNetworkAccess
       bypass: 'AzureServices'
       ipRules: kvIpRules
       virtualNetworkRules: []
     }
-  }
-}
-
-// Store SQL connection string as a secret
-resource sqlConnectionStringSecret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = if (sqlConnectionString != '') {
-  parent: keyVaultResource
-  name: 'SqlConnectionString'
-  properties: {
-    value: sqlConnectionString
-  }
-}
-
-// Store SignalR connection string as a secret
-resource signalRConnectionStringSecret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = if (signalRConnectionString != '') {
-  parent: keyVaultResource
-  name: 'SignalRConnectionString'
-  properties: {
-    value: signalRConnectionString
   }
 }
 
@@ -145,6 +125,11 @@ resource keyVaultAuditLogging 'Microsoft.Insights/diagnosticSettings@2021-05-01-
       {
         category: 'AuditEvent'
         enabled: true
+        // Note: Causes error: Diagnostic settings does not support retention for new diagnostic settings.
+        // retentionPolicy: {
+        //   days: 180
+        //   enabled: true 
+        // }
       }
     ]
   }
@@ -159,6 +144,11 @@ resource keyVaultMetricLogging 'Microsoft.Insights/diagnosticSettings@2021-05-01
       {
         category: 'AllMetrics'
         enabled: true
+        // Note: Causes error: Diagnostic settings does not support retention for new diagnostic settings.
+        // retentionPolicy: {
+        //   days: 30
+        //   enabled: true 
+        // }
       }
     ]
   }
@@ -167,4 +157,5 @@ resource keyVaultMetricLogging 'Microsoft.Insights/diagnosticSettings@2021-05-01
 // --------------------------------------------------------------------------------
 output name string = keyVaultResource.name
 output id string = keyVaultResource.id
-output vaultUri string = keyVaultResource.properties.vaultUri
+// output userManagedIdentityId string = grantManagedIdentityAccess ? existingManagedIdentity.id : ''
+// output daprManagedIdentityId string = grantDAPRIdentityAccess ? existingDaprIdentity.id : ''
