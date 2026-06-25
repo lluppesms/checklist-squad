@@ -20,7 +20,7 @@ param servicePlanName = '#{EXISTING_SERVICEPLAN_NAME}#'
 param servicePlanResourceGroupName = '#{EXISTING_SERVICEPLAN_RESOURCE_GROUP_NAME}#'
 param webAppKind = 'linux' // 'linux' or 'windows'
 
-param pipelineServicePrincipalObjectId = '#{PIPELINE_SERVICE_PRINCIPAL_OBJECT_ID}#'
+//param pipelineServicePrincipalObjectId = '#{PIPELINE_SERVICE_PRINCIPAL_OBJECT_ID}#'
 
 param sqlAdminLoginUserId = '#{SQLADMIN_LOGIN_USERID}#'
 param sqlAdminLoginUserSid = '#{SQLADMIN_LOGIN_USERSID}#'
